@@ -36,13 +36,14 @@ function buildCal() {
 async function inviaPren() {
     const email = document.getElementById('u-email').value;
     if(!selectedDays.length || !email) return alert("Dati mancanti!");
-    if(selectedDays.length > 15) return alert("Massimo 15 giorni selezionabili!");
-
     const res = await fetch('/api/prenota', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({npass:userPass, giorni:selectedDays, email:email}) });
     if(res.ok) {
         selectedDays.sort();
-        document.getElementById('summary-details').innerHTML = `<b>Pass:</b> ${userPass}<br><b>Dal:</b> ${new Date(selectedDays[0]).toLocaleDateString('it-IT')}<br><b>Al:</b> ${new Date(selectedDays[selectedDays.length-1]).toLocaleDateString('it-IT')}`;
+        document.getElementById('summary-details').innerHTML = `<b>Pass:</b> ${userPass}<br><b>Email:</b> ${email}<br><b>Date:</b> ${selectedDays.map(d => new Date(d).toLocaleDateString('it-IT')).join(', ')}`;
         show('view-success');
+    } else {
+        const error = await res.json();
+        alert(error.error || "Errore durante la prenotazione");
     }
 }
 
@@ -51,17 +52,33 @@ async function mostraMie() {
     const res = await fetch(`/api/mie-prenotazioni/${userPass}`);
     const dati = await res.json();
     document.getElementById('my-list-content').innerHTML = dati.map(p => `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:#f8fafc; border-radius:12px; margin-bottom:8px; border:1px solid #e2e8f0;">
-            <div>📅 ${new Date(p.data_inizio).toLocaleDateString('it-IT')} - ${new Date(p.data_fine).toLocaleDateString('it-IT')}</div>
-            <div style="color:red; cursor:pointer; font-size:20px;" onclick="eliminaPren(${p.id})">🗑️</div>
+        <div class="pren-row">
+            <div>📅 Dal ${new Date(p.data_inizio).toLocaleDateString('it-IT')} al ${new Date(p.data_fine).toLocaleDateString('it-IT')}</div>
+            <div class="btn-delete" onclick="eliminaPren(${p.id}, '${userPass}')">✖</div>
         </div>
     `).join('') || "Nessuna prenotazione attiva.";
 }
 
-async function eliminaPren(id) {
-    if(!confirm("Eliminare questa prenotazione?")) return;
-    const res = await fetch('/api/elimina-prenotazione', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, npass:userPass}) });
-    if(res.ok) mostraMie();
+async function eliminaPren(id, npass) {
+    if(!confirm("Annullare questa prenotazione?")) return;
+    const res = await fetch('/api/elimina-prenotazione', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id, npass }) });
+    if(res.ok) {
+        alert("Prenotazione annullata");
+        mostraMie(); // Ricarica subito la lista (Punto 4)
+    }
+}
+
+async function aggiornaVeicoli() {
+    const res = await fetch('/api/veicoli-dentro');
+    const dati = await res.json();
+    document.getElementById('body-dentro').innerHTML = dati.map(v => `
+        <tr>
+            <td class="txt-bold">${v.npass}</td>
+            <td>${v.data_accesso || '-'}</td>
+            <td>${v.ora_ingresso || '-'}</td>
+            <td>${v.data_ora_uscita || '-'}</td>
+        </tr>
+    `).join('') || "<tr><td colspan='4'>Nessun movimento recente</td></tr>";
 }
 
 async function cercaPass() {
@@ -69,41 +86,18 @@ async function cercaPass() {
     if(!p) return;
     const res = await fetch(`/api/piantone/cerca/${p}`);
     const data = await res.json();
-    
     if(data.trovato) {
         currentPren = data.prenotazione;
         document.getElementById('panel-piantone').classList.remove('hidden');
         document.getElementById('lab-pass').innerHTML = `PASS: ${currentPren.npass}`;
-        
-        // Formatta periodo
-        const d1 = new Date(currentPren.data_inizio).toLocaleDateString('it-IT');
-        const d2 = new Date(currentPren.data_fine).toLocaleDateString('it-IT');
-        document.getElementById('lab-periodo').innerHTML = `(Periodo: ${d1} - ${d2})`;
-        
-        // Gestione orari sotto pulsanti (se presenti nel DB)
-        document.getElementById('reg-e').innerHTML = currentPren.orario_ingresso ? 
-            `Registrato il ${new Date(currentPren.orario_ingresso).toLocaleString('it-IT', {dateStyle:'short', timeStyle:'short'})}` : "";
-        document.getElementById('reg-u').innerHTML = currentPren.orario_uscita ? 
-            `Registrato il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT', {dateStyle:'short', timeStyle:'short'})}` : "";
-            
-    } else {
-        alert("Nessuna prenotazione trovata per questo PASS.");
-        document.getElementById('panel-piantone').classList.add('hidden');
-    }
-}
-
-async function aggiornaVeicoli() {
-    const res = await fetch('/api/veicoli-dentro');
-    const dati = await res.json();
-    document.getElementById('lista-veicoli').innerHTML = dati.map(x => `
-        <tr>
-            <td style="font-weight:bold;">${x.npass}</td>
-            <td>${new Date(x.orario_ingresso).toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'})}</td>
-        </tr>
-    `).join('') || "<tr><td colspan='2' style='text-align:center;'>Nessun veicolo presente</td></tr>";
+        document.getElementById('lab-periodo').innerHTML = `(Periodo: ${new Date(currentPren.data_inizio).toLocaleDateString('it-IT')} - ${new Date(currentPren.data_fine).toLocaleDateString('it-IT')})`;
+        document.getElementById('reg-e').innerHTML = currentPren.orario_ingresso ? `Registrato il ${new Date(currentPren.orario_ingresso).toLocaleString('it-IT')}` : "";
+        document.getElementById('reg-u').innerHTML = currentPren.orario_uscita ? `Registrato il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT')}` : "";
+    } else alert("Nessuna prenotazione trovata");
 }
 
 async function mossa(tipo) {
+    if(!currentPren) return;
     await fetch('/api/piantone/azione', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:currentPren.id, azione:tipo}) });
     cercaPass(); aggiornaVeicoli();
 }
