@@ -58,10 +58,33 @@ async function mostraMie() {
     `).join('') || "Nessuna prenotazione attiva.";
 }
 
-async function eliminaPren(id) {
-    if(!confirm("Eliminare questa prenotazione?")) return;
-    const res = await fetch('/api/elimina-prenotazione', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, npass:userPass}) });
-    if(res.ok) mostraMie();
+// Ricarica la lista dopo l'eliminazione
+async function eliminaPren(id, npass) {
+    if(!confirm("Annullare questa prenotazione?")) return;
+    const res = await fetch('/api/elimina-prenotazione', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ id, npass })
+    });
+    if(res.ok) {
+        alert("Prenotazione annullata");
+        mostraMie(); // <--- Questa riga risolve il punto 4
+    }
+}
+
+// Aggiorna la tabella Piantone con le nuove colonne
+async function caricaVeicoliDentro() {
+    const res = await fetch('/api/veicoli-dentro');
+    const dati = await res.json();
+    const body = document.getElementById('body-dentro');
+    body.innerHTML = dati.map(v => `
+        <tr>
+            <td><b>${v.npass}</b></td>
+            <td>${v.data_accesso || '-'}</td>
+            <td>${v.ora_ingresso || '-'}</td>
+            <td>${v.data_ora_uscita || '-'}</td>
+        </tr>
+    `).join('');
 }
 
 async function cercaPass() {
