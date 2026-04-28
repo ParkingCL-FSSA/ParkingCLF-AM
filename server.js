@@ -21,7 +21,7 @@ const transporter = nodemailer.createTransport({
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// LOGIN con aggiornamento ult_accesso
+// LOGIN con tracciamento accesso
 app.post('/api/valida-pass', async (req, res) => {
     const { npass } = req.body;
     if (!npass) return res.json({ valid: false });
@@ -29,8 +29,8 @@ app.post('/api/valida-pass', async (req, res) => {
         const result = await pool.query('SELECT ruolo FROM registro_pass WHERE UPPER(npass) = $1', [npass.trim().toUpperCase()]);
         if (result.rows.length > 0) {
             try {
-                await pool.query('UPDATE registro_pass SET ult_accesso = NOW() WHERE UPPER(npass) = $1', [npass.trim().toUpperCase()]);
-            } catch (e) { console.error("Errore update ult_accesso:", e.message); }
+                await pool.query('UPDATE registro_pass SET ultimo_accesso = NOW() WHERE UPPER(npass) = $1', [npass.trim().toUpperCase()]);
+            } catch (e) { console.error("Errore aggiornamento ultimo_accesso:", e.message); }
             res.json({ valid: true, ruolo: result.rows[0].ruolo });
         } else {
             res.json({ valid: false });
@@ -38,7 +38,7 @@ app.post('/api/valida-pass', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PRENOTAZIONE con PDF e Doppia Email
+// PRENOTAZIONE con invio PDF all'utente e notifica leggera a te
 app.post('/api/prenota', async (req, res) => {
     const { npass, giorni, email } = req.body;
     if (giorni.length > 15) return res.status(400).json({ error: "Limite 15 giorni superato" });
@@ -53,7 +53,7 @@ app.post('/api/prenota', async (req, res) => {
         
         try {
             await pool.query('UPDATE registro_pass SET ult_pren = NOW() WHERE UPPER(npass) = $1', [npass.toUpperCase()]);
-        } catch (e) { console.error("Errore update ult_pren:", e.message); }
+        } catch (e) { console.error("Errore aggiornamento ult_pren:", e.message); }
 
         const doc = new PDFDocument({ size: 'A4', margin: 50 });
         let buffers = [];
@@ -74,28 +74,26 @@ app.post('/api/prenota', async (req, res) => {
                         <hr>
                         <p>Periodo: dal ${new Date(dataInizio).toLocaleDateString('it-IT')} al ${new Date(dataFine).toLocaleDateString('it-IT')}</p>
                         <div style="margin-top:30px; padding-top:10px; border-top:1px solid #eee; font-size:10px; color:#999;">
-                            <p><i>Informativa: I dati forniti sono trattati solo per fini organizzativi. Il sistema non profila gli utenti e non cede dati a terzi.</i></p>
+                            <p><i>Informativa: I dati forniti sono trattati esclusivamente per la gestione tecnica della sosta. Il sistema non profila gli utenti e non cede dati a terzi.</i></p>
                         </div>
                     </div>`,
-                    <div style="font-family:sans-serif; border:2px solid #3b82f6; border-radius:15px; padding:20px; max-width:600px;">
-            
                 attachments: [{ filename: `PASS_${npass.toUpperCase()}.pdf`, content: pdfData }]
             };
             await transporter.sendMail(mailUtente);
 
-            // 2. NOTIFICA LEGGERA PER TE
+            // 2. EMAIL DI NOTIFICA PER TE (Senza Allegato)
             const mailNotificaAdmin = {
                 from: '"Sistema Parcheggio" <parkingclf.am@gmail.com>',
                 to: 'parkingclf.am@gmail.com',
                 subject: `🔔 Nuova Prenotazione - ${npass.toUpperCase()}`,
-                html: `<p>Nuova prenotazione per il Pass <b>${npass.toUpperCase()}</b> dal ${new Date(dataInizio).toLocaleDateString('it-IT')} al ${new Date(dataFine).toLocaleDateString('it-IT')}.</p>`
+                html: `<h3>Nuova Prenotazione Ricevuta</h3><p><b>Pass:</b> ${npass.toUpperCase()}</p><p><b>Periodo:</b> dal ${new Date(dataInizio).toLocaleDateString('it-IT')} al ${new Date(dataFine).toLocaleDateString('it-IT')}</p><p><b>Email Utente:</b> ${email}</p>`
             };
             await transporter.sendMail(mailNotificaAdmin);
 
             res.json({ success: true });
         });
 
-        // Contenuto Grafico PDF
+        // Generazione grafica del PDF
         doc.rect(20, 20, 555, 300).lineWidth(3).stroke('#3b82f6');
         doc.fontSize(25).fillColor('#3b82f6').text('PARCHEGGIO C.L. FONTANAROSSA', { align: 'center' });
         doc.moveDown();
@@ -108,7 +106,7 @@ app.post('/api/prenota', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// DISDETTA con Email di notifica
+// DISDETTA con notifica email
 app.post('/api/elimina-prenotazione', async (req, res) => {
     const { id, npass } = req.body;
     try {
@@ -122,7 +120,7 @@ app.post('/api/elimina-prenotazione', async (req, res) => {
                 from: '"Sistema Parcheggio" <parkingclf.am@gmail.com>',
                 to: 'parkingclf.am@gmail.com',
                 subject: `⚠️ DISDETTA - ${npass.toUpperCase()}`,
-                html: `<h3>Prenotazione Cancellata</h3><p>Il Pass <b>${npass.toUpperCase()}</b> ha annullato la sosta dal ${new Date(data_inizio).toLocaleDateString('it-IT')} al ${new Date(data_fine).toLocaleDateString('it-IT')}.</p>`
+                html: `<h3 style="color:red;">Prenotazione Cancellata</h3><p>L'utente con Pass <b>${npass.toUpperCase()}</b> ha annullato la sosta dal ${new Date(data_inizio).toLocaleDateString('it-IT')} al ${new Date(data_fine).toLocaleDateString('it-IT')}.</p>`
             };
             await transporter.sendMail(mailDisdetta);
         }
@@ -130,14 +128,12 @@ app.post('/api/elimina-prenotazione', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Altre rotte (mie-prenotazioni, piantone, admin) rimangono invariate...
 app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
-    try {
-        const r = await pool.query('SELECT id, data_inizio, data_fine, stato FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE ORDER BY data_inizio ASC', [req.params.npass.toUpperCase()]);
-        res.json(r.rows);
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    const r = await pool.query('SELECT id, data_inizio, data_fine, stato FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE ORDER BY data_inizio ASC', [req.params.npass.toUpperCase()]);
+    res.json(r.rows);
 });
 
-// ROTTE PIANTONE / ADMIN
 app.get('/api/piantone/cerca/:npass', async (req, res) => {
     const r = await pool.query('SELECT * FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE ORDER BY data_inizio ASC LIMIT 1', [req.params.npass.toUpperCase()]);
     res.json(r.rows.length > 0 ? { trovato: true, prenotazione: r.rows[0] } : { trovato: false });
