@@ -58,22 +58,46 @@ app.post('/api/prenota', async (req, res) => {
         const doc = new PDFDocument({ size: 'A4', margin: 50 });
         let buffers = [];
         doc.on('data', buffers.push.bind(buffers));
-        doc.on('end', async () => {
-            const pdfData = Buffer.concat(buffers);
-            const mailOptions = {
-                from: '"Parcheggio C.L. Fontanarossa" <parkingclf.am@gmail.com>',
-                to: [email, 'parkingclf.am@gmail.com'],
-                subject: `Conferma e PASS - ${npass.toUpperCase()}`,
-                html: `<div style="font-family:sans-serif; border:2px solid #3b82f6; border-radius:15px; padding:20px; max-width:600px;">
-                        <h2 style="color:#3b82f6;">🅿️ Parcheggio C.L. Fontanarossa</h2>
-                        <p>Prenotazione confermata. In allegato il PASS da esporre.</p>
-                        <p>Periodo: dal ${new Date(dataInizio).toLocaleDateString('it-IT')} al ${new Date(dataFine).toLocaleDateString('it-IT')}</p>
-                       </div>`,
-                attachments: [{ filename: `PASS_${npass.toUpperCase()}.pdf`, content: pdfData }]
-            };
-            await transporter.sendMail(mailOptions);
-            res.json({ success: true });
-        });
+    doc.on('end', async () => {
+    const pdfData = Buffer.concat(buffers);
+    
+    // 1. EMAIL PER L'UTENTE (Con Allegato)
+    const mailOptions = {
+    from: '"Parcheggio C.L. Fontanarossa" <parkingclf.am@gmail.com>',
+    to: [email, 'parkingclf.am@gmail.com'],
+    subject: `Conferma e PASS - ${npass.toUpperCase()}`,
+    html: `
+        <div style="font-family:sans-serif; border:2px solid #3b82f6; border-radius:15px; padding:20px; max-width:600px;">
+            <h2 style="color:#3b82f6;">🅿️ Parcheggio C.L. Fontanarossa</h2>
+            <p>Gentile utente, la tua prenotazione è confermata.</p>
+            <p><b>In allegato trovi il PASS da stampare ed esporre sul parabrezza.</b></p>
+            <hr>
+            <p>Periodo: dal ${new Date(dataInizio).toLocaleDateString('it-IT')} al ${new Date(dataFine).toLocaleDateString('it-IT')}</p>
+            
+            <div style="margin-top:30px; padding-top:10px; border-top:1px solid #eee; font-size:10px; color:#999;">
+                <p><i>Informativa breve: I dati forniti (nPass ed eMail) sono trattati esclusivamente per la gestione tecnica della sosta. 
+                Il sistema non profila gli utenti e non cede dati a terzi. I log di accesso sono conservati per soli fini organizzativi e vengono cancellati periodicamente.</i></p>
+            </div>
+        </div>`,
+    attachments: [{ filename: `PASS_${npass.toUpperCase()}.pdf`, content: pdfData }]
+};
+    await transporter.sendMail(mailUtente);
+
+    // 2. EMAIL DI NOTIFICA PER TE (Senza Allegato e "Invisibile" all'utente)
+    const mailNotificaAdmin = {
+        from: '"Sistema Parcheggio" <parkingclf.am@gmail.com>',
+        to: 'parkingclf.am@gmail.com',
+        subject: `🔔 Nuova Prenotazione - ${npass.toUpperCase()}`,
+        html: `
+            <h3>Nuova Prenotazione Ricevuta</h3>
+            <p><b>Pass:</b> ${npass.toUpperCase()}</p>
+            <p><b>Periodo:</b> dal ${new Date(dataInizio).toLocaleDateString('it-IT')} al ${new Date(dataFine).toLocaleDateString('it-IT')}</p>
+            <p><b>Email Utente:</b> ${email}</p>`
+    };
+    await transporter.sendMail(mailNotificaAdmin);
+
+    res.json({ success: true });
+});
 
         doc.rect(20, 20, 555, 300).lineWidth(3).stroke('#3b82f6');
         doc.fontSize(25).fillColor('#3b82f6').text('PARCHEGGIO C.L. FONTANAROSSA', { align: 'center' });
@@ -87,11 +111,31 @@ app.post('/api/prenota', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ELIMINAZIONE
 app.post('/api/elimina-prenotazione', async (req, res) => {
     const { id, npass } = req.body;
     try {
-        await pool.query('DELETE FROM prenotazioni WHERE id = $1 AND UPPER(npass) = $2', [id, npass.toUpperCase()]);
+        // 1. Recuperiamo i dettagli prima di eliminare per la tua mail
+        const info = await pool.query('SELECT data_inizio, data_fine FROM prenotazioni WHERE id = $1 AND UPPER(npass) = $2', [id, npass.toUpperCase()]);
+        
+        if (info.rows.length > 0) {
+            const { data_inizio, data_fine } = info.rows[0];
+
+            // 2. Cancelliamo dal database
+            await pool.query('DELETE FROM prenotazioni WHERE id = $1 AND UPPER(npass) = $2', [id, npass.toUpperCase()]);
+
+            // 3. Inviata mail di disdetta a te
+            const mailDisdetta = {
+                from: '"Sistema Parcheggio" <parkingclf.am@gmail.com>',
+                to: 'parkingclf.am@gmail.com',
+                subject: `⚠️ DISDETTA - ${npass.toUpperCase()}`,
+                html: `
+                    <h3 style="color:red;">Prenotazione Cancellata</h3>
+                    <p>L'utente con Pass <b>${npass.toUpperCase()}</b> ha annullato la sua sosta.</p>
+                    <p><b>Periodo rimosso:</b> dal ${new Date(data_inizio).toLocaleDateString('it-IT')} al ${new Date(data_fine).toLocaleDateString('it-IT')}</p>
+                    <p><i>Il posto è ora tornato disponibile nel sistema.</i></p>`
+            };
+            await transporter.sendMail(mailDisdetta);
+        }
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
