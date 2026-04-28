@@ -14,22 +14,19 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// Configurazione Mail con Timeout estremo e fallback sulla 587
+// Configurazione Mail - Porta 587 con timeout brevi per evitare blocchi del server
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
-  secure: false, // STARTTLS
-  auth: { 
-    user: 'parkingclf.am@gmail.com', 
-    pass: process.env.EMAIL_PASSWORD 
-  },
-  connectionTimeout: 5000, // Non aspettare più di 5 secondi
-  greetingTimeout: 5000
+  secure: false,
+  auth: { user: 'parkingclf.am@gmail.com', pass: process.env.EMAIL_PASSWORD },
+  connectionTimeout: 5000, 
+  socketTimeout: 5000
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- 1. LOGIN (Corretto con ult_accesso) ---
+// --- 1. LOGIN ---
 app.post('/api/valida-pass', async (req, res) => {
     const { npass } = req.body;
     const cleanPass = npass?.trim().toUpperCase();
@@ -43,10 +40,10 @@ app.post('/api/valida-pass', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- 2. PRENOTAZIONE (Anti-Accavallamento + Risposta Rapida) ---
+// --- 2. PRENOTAZIONE (Logica Utente + Admin) ---
 app.post('/api/prenota', async (req, res) => {
     const { npass, giorni, email } = req.body;
-    if (!giorni || giorni.length === 0) return res.status(400).json({ error: "Date mancanti" });
+    if (!giorni || giorni.length === 0) return res.status(400).json({ error: "Date non selezionate" });
 
     try {
         const cleanPass = npass.toUpperCase();
@@ -54,61 +51,74 @@ app.post('/api/prenota', async (req, res) => {
         const dInizio = sorted[0];
         const dFine = sorted[sorted.length - 1];
 
-        // CONTROLLO SOVRAPPOSIZIONE RIGIDO
+        // CONTROLLO ACCAVALLAMENTO (Punto Critico)
         const check = await pool.query(
-            `SELECT id FROM prenotazioni 
-             WHERE UPPER(npass) = $1 
-             AND stato != 'USCITO' 
-             AND NOT (data_fine < $2::DATE OR data_inizio > $3::DATE)`,
+            "SELECT id FROM prenotazioni WHERE UPPER(npass) = $1 AND stato != 'USCITO' AND (data_inizio, data_fine) OVERLAPS ($2::DATE, $3::DATE)",
             [cleanPass, dInizio, dFine]
         );
 
         if (check.rows.length > 0) {
-            return res.status(400).json({ error: "Attenzione: Hai già una prenotazione attiva che si sovrappone a queste date!" });
+            return res.status(400).json({ error: "ERRORE: Date già occupate per questo PASS!" });
         }
 
-        // SALVATAGGIO DB
+        // SALVATAGGIO
         await pool.query('INSERT INTO prenotazioni (npass, data_inizio, data_fine, stato) VALUES ($1, $2, $3, $4)', 
             [cleanPass, dInizio, dFine, 'PRENOTATO']);
         await pool.query('UPDATE registro_pass SET ult_pren = NOW() WHERE UPPER(npass) = $1', [cleanPass]);
 
-        // RISPOSTA IMMEDIATA AL SITO
+        // RISPOSTA IMMEDIATA (Sito veloce)
         res.json({ success: true });
 
-        // TENTATIVO INVIO MAIL IN "FIRE AND FORGET" (Non blocca il server)
-        inviaMailSilenziosa(cleanPass, dInizio, dFine, email);
+        // GESTIONE EMAIL (Senza attendere risposta)
+        gestioneEmailBackground(cleanPass, dInizio, dFine, email);
 
     } catch (err) {
-        console.error("Errore critico:", err.message);
-        res.status(500).json({ error: "Errore durante il salvataggio" });
+        console.error("Errore DB:", err.message);
+        res.status(500).json({ error: "Errore interno" });
     }
 });
 
-// Funzione interna per gestire la mail senza crashare se c'è timeout
-async function inviaMailSilenziosa(npass, inizio, fine, email) {
+async function gestioneEmailBackground(npass, inizio, fine, emailUtente) {
     try {
-        const doc = new PDFDocument();
+        const doc = new PDFDocument({ size: 'A4' });
         let buffers = [];
         doc.on('data', buffers.push.bind(buffers));
         doc.on('end', async () => {
             const pdfData = Buffer.concat(buffers);
-            try {
-                await transporter.sendMail({
-                    from: '"Parcheggio C.L. Fontanarossa" <parkingclf.am@gmail.com>',
-                    to: email,
-                    subject: `Conferma PASS ${npass}`,
-                    html: `<p>Prenotazione confermata per <b>${npass}</b> dal ${inizio} al ${fine}.</p><br><small>Informativa: Dati trattati solo per fini organizzativi.</small>`,
-                    attachments: [{ filename: `PASS_${npass}.pdf`, content: pdfData }]
-                });
-                console.log("✅ Mail inviata con successo.");
-            } catch (e) { console.error("⚠️ Mail non inviata (Timeout/SMTP), ma prenotazione salvata."); }
+
+            // 1. MAIL PER L'UTENTE (Con PASS)
+            const mailUtente = {
+                from: '"Parking CLF" <parkingclf.am@gmail.com>',
+                to: emailUtente,
+                subject: `Conferma PASS ${npass}`,
+                html: `<p>Prenotazione confermata per il PASS <b>${npass}</b>.</p><p>Valido dal ${inizio} al ${fine}.</p>`,
+                attachments: [{ filename: `PASS_${npass}.pdf`, content: pdfData }]
+            };
+
+            // 2. MAIL PER L'AMMINISTRATORE (Notifica)
+            const mailAdmin = {
+                from: '"Sistema Parking" <parkingclf.am@gmail.com>',
+                to: 'parkingclf.am@gmail.com',
+                subject: `NUOVA PRENOTAZIONE: ${npass}`,
+                text: `L'utente con PASS ${npass} ha prenotato dal ${inizio} al ${fine}. Email utente: ${emailUtente}`
+            };
+
+            // Invio protetto da timeout
+            try { await transporter.sendMail(mailUtente); } catch (e) { console.log("Timeout Mail Utente ignorato."); }
+            try { await transporter.sendMail(mailAdmin); } catch (e) { console.log("Timeout Mail Admin ignorato."); }
         });
-        doc.text(`PASS PARCHEGGIO: ${npass}`, { align: 'center', size: 30 });
+
+        // Contenuto PDF
+        doc.fontSize(20).text('PARCHEGGIO C.L. FONTANAROSSA', { align: 'center' });
+        doc.moveDown().fontSize(50).text(npass, { align: 'center' });
+        doc.fontSize(12).text(`Valido: ${inizio} / ${fine}`, { align: 'center' });
+        doc.fontSize(8).text('Dati trattati solo per fini organizzativi.', 20, 350, { align: 'center' });
         doc.end();
-    } catch (err) { console.error("❌ Errore generazione PDF."); }
+
+    } catch (err) { console.error("Errore Background Process."); }
 }
 
-// --- 3. ALTRE FUNZIONI (Ripristinate e Pulite) ---
+// --- 3. ALTRE ROTTE (Mie Prenotazioni, Piantone, Veicoli) ---
 app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
     const r = await pool.query('SELECT id, data_inizio, data_fine FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE ORDER BY data_inizio ASC', [req.params.npass.toUpperCase()]);
     res.json(r.rows);
@@ -132,8 +142,8 @@ app.post('/api/piantone/azione', async (req, res) => {
 });
 
 app.get('/api/veicoli-dentro', async (req, res) => {
-    const r = await pool.query(`SELECT npass, TO_CHAR(orario_ingresso, 'DD/MM HH24:MI') as data_accesso FROM prenotazioni WHERE stato = 'INGRESSO' ORDER BY orario_ingresso DESC`);
+    const r = await pool.query("SELECT npass, TO_CHAR(orario_ingresso, 'DD/MM HH24:MI') as data_accesso FROM prenotazioni WHERE stato = 'INGRESSO' ORDER BY orario_ingresso DESC");
     res.json(r.rows);
 });
 
-app.listen(process.env.PORT || 3000);
+app.listen(process.env.PORT || 10000);
