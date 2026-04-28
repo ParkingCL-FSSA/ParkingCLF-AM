@@ -155,8 +155,19 @@ app.get('/api/admin/cruscotto', async (req, res) => {
 });
 
 app.get('/api/veicoli-dentro', async (req, res) => {
-    const r = await pool.query("SELECT npass, data_fine, orario_ingresso FROM prenotazioni WHERE stato = 'INGRESSO'");
-    res.json(r.rows);
+    try {
+        // Recupera gli ultimi movimenti (sia dentro che usciti di recente per la cronologia)
+        const r = await pool.query(`
+            SELECT npass, 
+                   TO_CHAR(orario_ingresso, 'DD/MM/YY') as data_accesso,
+                   TO_CHAR(orario_ingresso, 'HH24:MI') as ora_ingresso,
+                   TO_CHAR(orario_uscita, 'DD/MM/YY - HH24:MI') as data_ora_uscita
+            FROM prenotazioni 
+            WHERE stato IN ('INGRESSO', 'USCITO')
+            ORDER BY orario_ingresso DESC LIMIT 10
+        `);
+        res.json(r.rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.listen(process.env.PORT || 3000);
