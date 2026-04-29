@@ -18,11 +18,12 @@ const pool = new Pool({
 
 const LOGO_URL = "https://parkingclf-am.onrender.com/LogoCLF.png";
 
-// Funzione di formattazione robusta per evitare "Invalid Date"
+// FUNZIONE DATE CORRETTA: Gestisce stringhe ISO, oggetti Date e formati IT
 const formattaDataIT = (data) => {
     if (!data) return "N/D";
     const d = new Date(data);
-    if (isNaN(d.getTime())) return data; // Se è già formattata o invalida, restituisci l'originale
+    // Se la conversione fallisce, restituisce il dato originale senza rompere il sistema
+    if (isNaN(d.getTime())) return data; 
     return d.toLocaleDateString('it-IT', {
         day: '2-digit', month: '2-digit', year: 'numeric'
     });
@@ -33,6 +34,8 @@ async function inviaMailBrevoAPI(toEmail, subject, htmlContent, pdfBuffer = null
         const payload = {
             sender: { name: "Parcheggio C.L. Fontanarossa", email: "parkingclf.am@gmail.com" },
             to: [{ email: toEmail }],
+            // AGGIUNTO: Ricevi sempre una copia sulla mail del parcheggio
+            bcc: [{ email: "parkingclf.am@gmail.com" }], 
             subject: subject,
             htmlContent: htmlContent
         };
@@ -47,7 +50,27 @@ async function inviaMailBrevoAPI(toEmail, subject, htmlContent, pdfBuffer = null
     }
 }
 
-// 1. LOGIN
+// 1. LE MIE PRENOTAZIONI (Sistemata per il Frontend)
+app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
+    try {
+        const p = req.params.npass.trim().toUpperCase();
+        const r = await pool.query(
+            'SELECT id, data_inizio, data_fine, stato FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE ORDER BY data_inizio ASC', 
+            [p]
+        );
+        
+        // Inviamo le date pulite al frontend
+        const risultati = r.rows.map(row => ({
+            ...row,
+            data_inizio: formattaDataIT(row.data_inizio),
+            data_fine: formattaDataIT(row.data_fine)
+        }));
+        
+        res.json(risultati);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 2. LOGIN
 app.post('/api/valida-pass', async (req, res) => {
     const { npass } = req.body;
     if (!npass) return res.json({ valid: false });
@@ -58,25 +81,6 @@ app.post('/api/valida-pass', async (req, res) => {
             await pool.query('UPDATE registro_pass SET ult_accesso = NOW() WHERE UPPER(npass) = $1', [p]).catch(e => console.error(e));
             res.json({ valid: true, ruolo: result.rows[0].ruolo });
         } else { res.json({ valid: false }); }
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// 2. LE MIE PRENOTAZIONI (Corretta per evitare Invalid Date)
-app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
-    try {
-        const p = req.params.npass.trim().toUpperCase();
-        const r = await pool.query(
-            'SELECT id, data_inizio, data_fine, stato FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE ORDER BY data_inizio ASC', 
-            [p]
-        );
-        
-        const risultati = r.rows.map(row => ({
-            ...row,
-            data_inizio: formattaDataIT(row.data_inizio),
-            data_fine: formattaDataIT(row.data_fine)
-        }));
-        
-        res.json(risultati);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -122,12 +126,17 @@ app.post('/api/prenota', async (req, res) => {
         doc.on('end', async () => {
             const pdfData = Buffer.concat(buffers);
             const html = `
-                <div style="font-family: Arial; border: 2px solid #4A90E2; padding: 20px; border-radius: 15px; max-width: 600px;">
-                    <div style="text-align:center;"><img src="${LOGO_URL}" style="width:130px;"></div>
-                    <h2 style="color: #4A90E2; text-align: center;">Parcheggio C.L. Fontanarossa</h2>
-                    <p>Gentile utente <b>${p}</b>, prenotazione confermata dal ${formattaDataIT(dInizio)} al ${formattaDataIT(dFine)}.</p>
+                <div style="font-family: Arial; border: 2px solid #4A90E2; padding: 25px; border-radius: 20px; max-width: 600px;">
+                    <div style="text-align:center; margin-bottom:15px;">
+                        <img src="${LOGO_URL}" alt="Logo CLF" style="width:140px;">
+                    </div>
+                    <h2 style="color: #4A90E2; text-align: center;">🅿️ Parcheggio C.L. Fontanarossa</h2>
+                    <p>Gentile utente <b>${p}</b>, la tua prenotazione è confermata.</p>
+                    <p><b>Periodo:</b> dal ${formattaDataIT(dInizio)} al ${formattaDataIT(dFine)}</p>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                    <p style="font-size: 11px; color: #999; text-align:center;">Email inviata automaticamente dal sistema.</p>
                 </div>`;
-            await inviaMailBrevoAPI(email, `Conferma Pass ${p}`, html, pdfData, `PASS_${p}.pdf`);
+            await inviaMailBrevoAPI(email, `Conferma Prenotazione - ${p}`, html, pdfData, `PASS_${p}.pdf`);
             res.json({ success: true });
         });
         doc.rect(40, 40, 515, 320).lineWidth(3).stroke('#4A90E2');
@@ -138,7 +147,7 @@ app.post('/api/prenota', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 6. CRUSCOTTO E VEICOLI
+// 6. CRUSCOTTO E STORICO
 app.get('/api/admin/cruscotto', async (req, res) => {
     const query = `WITH giorni AS (SELECT generate_series(CURRENT_DATE, CURRENT_DATE + interval '44 days', '1 day')::date AS d)
                    SELECT g.d AS data, COUNT(p.id) AS occupati FROM giorni g LEFT JOIN prenotazioni p ON g.d BETWEEN p.data_inizio AND p.data_fine
