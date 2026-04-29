@@ -20,6 +20,23 @@ const pool = new Pool({
 
 const LOGO_URL = "https://parkingclf-am.onrender.com/LogoCLF.png";
 
+// ⏰ JOB SCADENZA: prenotazioni PRENOTATO con data_inizio già passata → SCADUTO
+// Gira all'avvio e ogni ora. Libera i posti nel cruscotto.
+async function scadenzaPrenotazioni() {
+    try {
+        const result = await pool.query(
+            `UPDATE prenotazioni SET stato = 'SCADUTO'
+             WHERE stato = 'PRENOTATO' AND data_inizio < CURRENT_DATE`
+        );
+        if (result.rowCount > 0)
+            console.log(`[SCADENZA] ${result.rowCount} prenotazione/i scaduta/e.`);
+    } catch (err) {
+        console.error('[SCADENZA] Errore:', err.message);
+    }
+}
+scadenzaPrenotazioni();
+setInterval(scadenzaPrenotazioni, 60 * 60 * 1000);
+
 // Helper per formattare le date in italiano (usato solo in PDF ed email, non nel frontend)
 const formattaDataIT = (data) => {
     return new Date(data).toLocaleDateString('it-IT', {
@@ -150,12 +167,16 @@ app.post('/api/prenota', async (req, res) => {
     }
 });
 
-// --- 3. LE MIE PRENOTAZIONI ---
+// --- 3. LE MIE PRENOTAZIONI (attive + storico ultimi 60 giorni) ---
 app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
     try {
         const p = req.params.npass.toUpperCase();
         const r = await pool.query(
-            'SELECT id, data_inizio, data_fine, stato FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE ORDER BY data_inizio ASC',
+            `SELECT id, data_inizio, data_fine, stato
+             FROM prenotazioni
+             WHERE UPPER(npass) = $1
+               AND data_inizio >= CURRENT_DATE - interval '60 days'
+             ORDER BY data_inizio DESC`,
             [p]
         );
         res.json(r.rows);
@@ -171,21 +192,28 @@ app.post('/api/elimina-prenotazione', async (req, res) => {
     try {
         const p = npass.toUpperCase();
         const info = await pool.query(
-            'SELECT data_inizio, data_fine FROM prenotazioni WHERE id = $1 AND UPPER(npass) = $2',
+            'SELECT data_inizio, data_fine, stato FROM prenotazioni WHERE id = $1 AND UPPER(npass) = $2',
             [id, p]
         );
-        if (info.rows.length > 0) {
-            const { data_inizio, data_fine } = info.rows[0];
-            await pool.query('DELETE FROM prenotazioni WHERE id = $1 AND UPPER(npass) = $2', [id, p]);
+        if (info.rows.length === 0) return res.status(404).json({ error: "Prenotazione non trovata" });
 
-            const htmlDisdetta = `
-                <div style="text-align:center; font-family:sans-serif; border:2px solid red; padding:20px; border-radius:10px; max-width:400px; margin:auto;">
-                    <h3 style="color:red;">⚠️ Prenotazione Cancellata</h3>
-                    <p><b>Pass:</b> ${p}</p>
-                    <p><b>Periodo:</b> ${formattaDataIT(data_inizio)} al ${formattaDataIT(data_fine)}</p>
-                </div>`;
-            await inviaMailBrevoAPI("parkingclf.am@gmail.com", `⚠️ Disdetta: ${p}`, htmlDisdetta);
+        const { data_inizio, data_fine, stato } = info.rows[0];
+
+        // 🔒 Blocca cancellazione se già entrato o uscito
+        if (stato === 'INGRESSO' || stato === 'USCITO') {
+            return res.status(400).json({ error: "Non cancellabile: veicolo già registrato." });
         }
+
+        await pool.query('DELETE FROM prenotazioni WHERE id = $1 AND UPPER(npass) = $2', [id, p]);
+
+        const htmlDisdetta = `
+            <div style="text-align:center; font-family:sans-serif; border:2px solid red; padding:20px; border-radius:10px; max-width:400px; margin:auto;">
+                <h3 style="color:red;">⚠️ Prenotazione Cancellata</h3>
+                <p><b>Pass:</b> ${p}</p>
+                <p><b>Periodo:</b> ${formattaDataIT(data_inizio)} al ${formattaDataIT(data_fine)}</p>
+            </div>`;
+        await inviaMailBrevoAPI("parkingclf.am@gmail.com", `⚠️ Disdetta: ${p}`, htmlDisdetta);
+
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -228,7 +256,6 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
 });
 
 // --- 7. PIANTONE: REGISTRA ENTRATA/USCITA ---
-// FIX 🟡: verifica ruolo prima di aggiornare lo stato
 app.post('/api/piantone/azione', async (req, res) => {
     const { id, azione, npass } = req.body;
     if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
@@ -237,12 +264,20 @@ app.post('/api/piantone/azione', async (req, res) => {
     if (!id || !azione) return res.status(400).json({ error: "Dati mancanti" });
     try {
         const ora = new Date();
-        const campo = azione === 'E' ? 'orario_ingresso' : 'orario_uscita';
-        const stato = azione === 'E' ? 'INGRESSO' : 'USCITO';
-        await pool.query(
-            `UPDATE prenotazioni SET stato = $1, ${campo} = $2 WHERE id = $3`,
-            [stato, ora, id]
-        );
+        if (azione === 'E') {
+            // ENTRATA: registra orario ingresso
+            await pool.query(
+                `UPDATE prenotazioni SET stato = 'INGRESSO', orario_ingresso = $1 WHERE id = $2`,
+                [ora, id]
+            );
+        } else {
+            // USCITA: registra orario uscita e tronca data_fine a oggi
+            // → libera i posti per i giorni restanti del periodo originale
+            await pool.query(
+                `UPDATE prenotazioni SET stato = 'USCITO', orario_uscita = $1, data_fine = CURRENT_DATE WHERE id = $2`,
+                [ora, id]
+            );
+        }
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -263,7 +298,9 @@ app.get('/api/admin/cruscotto', async (req, res) => {
             )
             SELECT g.d AS data, COUNT(p.id) AS occupati
             FROM giorni g
-            LEFT JOIN prenotazioni p ON g.d BETWEEN p.data_inizio AND p.data_fine
+            LEFT JOIN prenotazioni p
+                ON g.d BETWEEN p.data_inizio AND p.data_fine
+                AND p.stato NOT IN ('SCADUTO')
             GROUP BY g.d
             ORDER BY g.d;
         `;
