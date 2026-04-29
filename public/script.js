@@ -112,23 +112,19 @@ async function aggiornaVeicoli() {
         const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
         const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
 
-        const dataAccesso = ing
-            ? ing.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' })
-            : '--';
-        const oraIngresso = ing
-            ? ing.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
-            : '--';
-        const dataOraUscita = usc
-            ? `${usc.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' })} - ${usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`
-            : '';
+        const dataIng = ing ? ing.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '--';
+        const oraIng  = ing ? ing.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
+        const dataUsc = usc ? usc.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '';
+        const oraUsc  = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '';
 
         return `<tr>
             <td style="font-weight:bold;">${x.npass}</td>
-            <td>${dataAccesso}</td>
-            <td style="color:#22c55e; font-weight:bold;">${oraIngresso}</td>
-            <td style="color:${usc ? '#f59e0b' : '#94a3b8'};">${dataOraUscita}</td>
+            <td>${dataIng}</td>
+            <td style="color:#22c55e; font-weight:bold;">${oraIng}</td>
+            <td style="color:${usc ? '#f59e0b' : '#94a3b8'};">${dataUsc}</td>
+            <td style="color:${usc ? '#f59e0b' : '#94a3b8'};">${oraUsc}</td>
         </tr>`;
-    }).join('') || "<tr><td colspan='4' style='text-align:center; color:#64748b; padding:16px;'>Nessun veicolo presente</td></tr>";
+    }).join('') || "<tr><td colspan='5' style='text-align:center; color:#64748b; padding:16px;'>Nessun veicolo presente</td></tr>";
 }
 
 async function mossa(tipo) {
@@ -143,7 +139,7 @@ async function mostraAdmin() {
     document.getElementById('tab-admin').innerHTML =
         `<tr>
             <th style="color:#64748b;">Data</th>
-            <th style="color:#64748b;">Liberi / 120</th>
+            <th style="color:#64748b;">Liberi</th>
             <th style="color:#64748b;">Occupati</th>
         </tr>` +
         dati.map(x => `<tr>
