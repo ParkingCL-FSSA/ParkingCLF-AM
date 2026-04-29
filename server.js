@@ -2,52 +2,77 @@ const express = require('express');
 const { Pool } = require('pg');
 const path = require('path');
 const cors = require('cors');
-const nodemailer = require('nodemailer');
+const axios = require('axios'); // Necessario per le API di Brevo
 const PDFDocument = require('pdfkit');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
+// Connessione al Database (Supabase/PostgreSQL)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
-// CONFIGURAZIONE BREVO (Addio Timeout Gmail)
-const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: "a9a951001@smtp-brevo.com",
-    pass: process.env.EMAIL_PASSWORD // Assicurati di aver messo la chiave Brevo su Render
-  }
-});
+/**
+ * FUNZIONE PER INVIO MAIL TRAMITE API BREVO
+ * Risolve i problemi di timeout e blocchi delle porte su Render
+ */
+async function inviaMailBrevoAPI(toEmail, subject, htmlContent, pdfBuffer = null, fileName = "") {
+    try {
+        const payload = {
+            sender: { name: "Parcheggio C.L. Fontanarossa", email: "parkingclf.am@gmail.com" },
+            to: [{ email: toEmail }],
+            subject: subject,
+            htmlContent: htmlContent
+        };
 
-app.use(express.static(path.join(__dirname, 'public')));
+        // Aggiunge l'allegato PDF se presente
+        if (pdfBuffer) {
+            payload.attachment = [{
+                content: pdfBuffer.toString('base64'),
+                name: fileName
+            }];
+        }
 
-// LOGIN CORRETTO (Senza colonne mancanti)
+        await axios.post('https://api.brevo.com/v3/smtp/email', payload, {
+            headers: {
+                'api-key': process.env.EMAIL_PASSWORD, // Qui deve esserci la CHIAVE API Th1zgx
+                'Content-Type': 'application/json'
+            }
+        });
+        console.log(`Email inviata con successo a: ${toEmail}`);
+    } catch (error) {
+        console.error("Errore invio mail API:", error.response ? error.response.data : error.message);
+    }
+}
+
+// 1. LOGIN (Corretto: rimosse colonne inesistenti che causavano errori)
 app.post('/api/valida-pass', async (req, res) => {
     try {
         const { npass } = req.body;
         if (!npass) return res.json({ valid: false });
         const cleanPass = npass.trim().toUpperCase();
-        
-        const result = await pool.query('SELECT ruolo FROM registro_pass WHERE UPPER(npass) = $1', [cleanPass]);
-        
+
+        const result = await pool.query(
+            'SELECT ruolo FROM registro_pass WHERE UPPER(npass) = $1', 
+            [cleanPass]
+        );
+
         if (result.rows.length > 0) {
             res.json({ valid: true, ruolo: result.rows[0].ruolo });
         } else {
             res.json({ valid: false });
         }
     } catch (err) {
-        console.error("Errore Login:", err.message);
-        res.status(500).json({ error: "Errore database" });
+        console.error("Errore nel Login:", err.message);
+        res.status(500).json({ error: "Errore interno del server" });
     }
 });
 
-// PRENOTAZIONE
+// 2. PRENOTAZIONE CON INVIO PDF VIA API
 app.post('/api/prenota', async (req, res) => {
     try {
         const { npass, giorni, email } = req.body;
@@ -56,62 +81,97 @@ app.post('/api/prenota', async (req, res) => {
         const dInizio = sorted[0];
         const dFine = sorted[sorted.length - 1];
 
-        await pool.query('INSERT INTO prenotazioni (npass, data_inizio, data_fine, stato) VALUES ($1, $2, $3, $4)', 
-            [p, dInizio, dFine, 'PRENOTATO']);
+        // Salvataggio nel database
+        await pool.query(
+            'INSERT INTO prenotazioni (npass, data_inizio, data_fine, stato) VALUES ($1, $2, $3, $4)', 
+            [p, dInizio, dFine, 'PRENOTATO']
+        );
 
+        // Creazione PDF
         const doc = new PDFDocument({ size: 'A4', margin: 50 });
         let buffers = [];
         doc.on('data', buffers.push.bind(buffers));
         doc.on('end', async () => {
             const pdfData = Buffer.concat(buffers);
-            try {
-                await transporter.sendMail({
-                    from: '"Parcheggio C.L. Fontanarossa" <parkingclf.am@gmail.com>',
-                    to: email,
-                    subject: `Conferma e PASS - ${p}`,
-                    html: `<h2>Prenotazione Confermata</h2><p>PASS: <b>${p}</b></p>`,
-                    attachments: [{ filename: `PASS_${p}.pdf`, content: pdfData }]
-                });
-            } catch (e) { console.error("Errore Mail:", e.message); }
+            
+            // Invio Mail all'Utente
+            await inviaMailBrevoAPI(
+                email, 
+                `Conferma Prenotazione e PASS - ${p}`, 
+                `<h2>Prenotazione Confermata</h2><p>Il tuo PASS per il periodo ${dInizio} - ${dFine} è in allegato.</p>`,
+                pdfData,
+                `PASS_${p}.pdf`
+            );
+
+            // Invio Mail di notifica all'Admin
+            await inviaMailBrevoAPI(
+                "parkingclf.am@gmail.com",
+                `🔔 Nuova Prenotazione: ${p}`,
+                `<p>Il Pass <b>${p}</b> è stato prenotato da: ${email}</p><p>Periodo: ${dInizio} - ${dFine}</p>`
+            );
+
             res.json({ success: true });
         });
+
+        // Contenuto grafico del PDF
         doc.fontSize(25).text('PARCHEGGIO C.L. FONTANAROSSA', { align: 'center' });
-        doc.moveDown().fontSize(70).text(p, { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(70).text(p, { align: 'center', color: 'black' });
+        doc.moveDown();
+        doc.fontSize(20).text(`Valido dal: ${dInizio}`, { align: 'center' });
+        doc.text(`Al: ${dFine}`, { align: 'center' });
         doc.end();
-    } catch (err) { res.status(500).json({ error: err.message }); }
+
+    } catch (err) {
+        console.error("Errore prenotazione:", err.message);
+        res.status(500).json({ error: "Impossibile salvare la prenotazione" });
+    }
 });
 
-// DISDETTA
+// 3. DISDETTA
 app.post('/api/elimina-prenotazione', async (req, res) => {
     try {
         const { id, npass } = req.body;
         await pool.query('DELETE FROM prenotazioni WHERE id = $1', [id]);
-        try {
-            await transporter.sendMail({
-                from: '"Sistema" <parkingclf.am@gmail.com>',
-                to: 'parkingclf.am@gmail.com',
-                subject: `⚠️ DISDETTA - ${npass.toUpperCase()}`,
-                html: `<p>Il Pass ${npass.toUpperCase()} ha cancellato.</p>`
-            });
-        } catch (e) {}
+        
+        await inviaMailBrevoAPI(
+            "parkingclf.am@gmail.com",
+            `⚠️ DISDETTA PASS - ${npass.toUpperCase()}`,
+            `<p>L'utente con Pass <b>${npass.toUpperCase()}</b> ha cancellato la sua prenotazione.</p>`
+        );
+        
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// VARCO
+// 4. ROTTE PER IL VARCO / PIANTONE
 app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
-    const r = await pool.query('SELECT id, data_inizio, data_fine, stato FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE', [req.params.npass.toUpperCase()]);
+    const r = await pool.query(
+        'SELECT id, data_inizio, data_fine, stato FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE', 
+        [req.params.npass.toUpperCase()]
+    );
     res.json(r.rows);
 });
 
 app.get('/api/piantone/cerca/:npass', async (req, res) => {
-    const r = await pool.query('SELECT * FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE LIMIT 1', [req.params.npass.toUpperCase()]);
+    const r = await pool.query(
+        'SELECT * FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE LIMIT 1', 
+        [req.params.npass.toUpperCase()]
+    );
     res.json(r.rows.length > 0 ? { trovato: true, prenotazione: r.rows[0] } : { trovato: false });
 });
 
 app.post('/api/piantone/azione', async (req, res) => {
     const { id, azione } = req.body;
-    await pool.query(`UPDATE prenotazioni SET stato = $1, ${azione === 'E' ? 'orario_ingresso' : 'orario_uscita'} = NOW() WHERE id = $2`, [azione === 'E' ? 'INGRESSO' : 'USCITO', id]);
+    const nuovoStato = azione === 'E' ? 'INGRESSO' : 'USCITO';
+    const colonnaOrario = azione === 'E' ? 'orario_ingresso' : 'orario_uscita';
+    
+    await pool.query(
+        `UPDATE prenotazioni SET stato = $1, ${colonnaOrario} = NOW() WHERE id = $2`, 
+        [nuovoStato, id]
+    );
     res.json({ success: true });
 });
 
@@ -120,4 +180,8 @@ app.get('/api/veicoli-dentro', async (req, res) => {
     res.json(r.rows);
 });
 
-app.listen(process.env.PORT || 10000);
+// Avvio Server
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+    console.log(`Server attivo sulla porta ${PORT}`);
+});
