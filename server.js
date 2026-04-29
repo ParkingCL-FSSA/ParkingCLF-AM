@@ -43,6 +43,29 @@ async function inviaMailBrevoAPI(toEmail, subject, htmlContent, pdfBuffer = null
     }
 }
 
+// --- LE MIE PRENOTAZIONI ---
+app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
+    try {
+        const p = req.params.npass.trim().toUpperCase();
+        // Seleziona le prenotazioni non ancora scadute (data_fine >= oggi)
+        const r = await pool.query(
+            'SELECT id, data_inizio, data_fine, stato FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE ORDER BY data_inizio ASC', 
+            [p]
+        );
+        
+        // Formatta le date per il frontend prima di inviarle
+        const risultati = r.rows.map(row => ({
+            ...row,
+            data_inizio: formattaDataIT(row.data_inizio),
+            data_fine: formattaDataIT(row.data_fine)
+        }));
+        
+        res.json(risultati);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // 1. LOGIN (Usa sempre ult_accesso)
 app.post('/api/valida-pass', async (req, res) => {
     const { npass } = req.body;
