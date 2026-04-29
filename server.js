@@ -2,7 +2,7 @@ const express = require('express');
 const { Pool } = require('pg');
 const path = require('path');
 const cors = require('cors');
-const axios = require('axios'); // Necessario per le API di Brevo
+const axios = require('axios');
 const PDFDocument = require('pdfkit');
 
 const app = express();
@@ -10,16 +10,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Connessione al Database (Supabase/PostgreSQL)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
-/**
- * FUNZIONE PER INVIO MAIL TRAMITE API BREVO
- * Risolve i problemi di timeout e blocchi delle porte su Render
- */
+// FUNZIONE INVIO MAIL CON GRAFICA
 async function inviaMailBrevoAPI(toEmail, subject, htmlContent, pdfBuffer = null, fileName = "") {
     try {
         const payload = {
@@ -28,51 +24,36 @@ async function inviaMailBrevoAPI(toEmail, subject, htmlContent, pdfBuffer = null
             subject: subject,
             htmlContent: htmlContent
         };
-
-        // Aggiunge l'allegato PDF se presente
         if (pdfBuffer) {
-            payload.attachment = [{
-                content: pdfBuffer.toString('base64'),
-                name: fileName
-            }];
+            payload.attachment = [{ content: pdfBuffer.toString('base64'), name: fileName }];
         }
-
         await axios.post('https://api.brevo.com/v3/smtp/email', payload, {
-            headers: {
-                'api-key': process.env.EMAIL_PASSWORD, // Qui deve esserci la CHIAVE API Th1zgx
-                'Content-Type': 'application/json'
-            }
+            headers: { 'api-key': process.env.EMAIL_PASSWORD, 'Content-Type': 'application/json' }
         });
-        console.log(`Email inviata con successo a: ${toEmail}`);
     } catch (error) {
-        console.error("Errore invio mail API:", error.response ? error.response.data : error.message);
+        console.error("Errore invio mail:", error.response ? error.response.data : error.message);
     }
 }
 
-// 1. LOGIN (Corretto: rimosse colonne inesistenti che causavano errori)
-app.post('/api/valida-pass', async (req, res) => {
+// --- ROTTE ---
+
+// 1. POSTI DISPONIBILI (Risolve IMG 3)
+app.get('/api/posti-disponibili', async (req, res) => {
     try {
-        const { npass } = req.body;
-        if (!npass) return res.json({ valid: false });
-        const cleanPass = npass.trim().toUpperCase();
-
+        const totalePosti = 100; // Cambia con il tuo numero reale
+        const oggi = new Date().toISOString().split('T')[0];
         const result = await pool.query(
-            'SELECT ruolo FROM registro_pass WHERE UPPER(npass) = $1', 
-            [cleanPass]
+            "SELECT COUNT(*) FROM prenotazioni WHERE data_inizio <= $1 AND data_fine >= $1", 
+            [oggi]
         );
-
-        if (result.rows.length > 0) {
-            res.json({ valid: true, ruolo: result.rows[0].ruolo });
-        } else {
-            res.json({ valid: false });
-        }
+        const occupati = parseInt(result.rows[0].count);
+        res.json({ disponibili: totalePosti - occupati, totali: totalePosti });
     } catch (err) {
-        console.error("Errore nel Login:", err.message);
-        res.status(500).json({ error: "Errore interno del server" });
+        res.status(500).json({ error: err.message });
     }
 });
 
-// 2. PRENOTAZIONE CON INVIO PDF VIA API
+// 2. PRENOTAZIONE CON GRAFICA (Risolve IMG 1 e 2)
 app.post('/api/prenota', async (req, res) => {
     try {
         const { npass, giorni, email } = req.body;
@@ -81,107 +62,56 @@ app.post('/api/prenota', async (req, res) => {
         const dInizio = sorted[0];
         const dFine = sorted[sorted.length - 1];
 
-        // Salvataggio nel database
-        await pool.query(
-            'INSERT INTO prenotazioni (npass, data_inizio, data_fine, stato) VALUES ($1, $2, $3, $4)', 
-            [p, dInizio, dFine, 'PRENOTATO']
-        );
+        await pool.query('INSERT INTO prenotazioni (npass, data_inizio, data_fine, stato) VALUES ($1, $2, $3, $4)', [p, dInizio, dFine, 'PRENOTATO']);
 
-        // Creazione PDF
-        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        const doc = new PDFDocument({ size: 'A4' });
         let buffers = [];
         doc.on('data', buffers.push.bind(buffers));
         doc.on('end', async () => {
             const pdfData = Buffer.concat(buffers);
             
-            // Invio Mail all'Utente
-            await inviaMailBrevoAPI(
-                email, 
-                `Conferma Prenotazione e PASS - ${p}`, 
-                `<h2>Prenotazione Confermata</h2><p>Il tuo PASS per il periodo ${dInizio} - ${dFine} è in allegato.</p>`,
-                pdfData,
-                `PASS_${p}.pdf`
-            );
+            // EMAIL UTENTE (Con Grafica Blu)
+            const htmlUtente = `
+                <div style="font-family: sans-serif; border: 2px solid #007bff; padding: 20px; border-radius: 15px; max-width: 500px;">
+                    <h2 style="color: #007bff;">🅿️ Parcheggio C.L. Fontanarossa</h2>
+                    <p>Prenotazione confermata. In allegato il PASS da esporre.</p>
+                    <p style="background: #f8f9fa; padding: 10px;"><b>Periodo:</b> dal ${dInizio} al ${dFine}</p>
+                    <p><i>Ti preghiamo di stampare l'allegato o mostrarlo al piantone.</i></p>
+                </div>`;
+            
+            await inviaMailBrevoAPI(email, `Conferma e PASS - ${p}`, htmlUtente, pdfData, `PASS_${p}.pdf`);
 
-            // Invio Mail di notifica all'Admin
-            await inviaMailBrevoAPI(
-                "parkingclf.am@gmail.com",
-                `🔔 Nuova Prenotazione: ${p}`,
-                `<p>Il Pass <b>${p}</b> è stato prenotato da: ${email}</p><p>Periodo: ${dInizio} - ${dFine}</p>`
-            );
+            // EMAIL ADMIN (Semplice)
+            const htmlAdmin = `
+                <div style="font-family: sans-serif; padding: 15px; border-left: 5px solid #ffc107;">
+                    <h3>🔔 Nuova Prenotazione: ${p}</h3>
+                    <p>Effettuata da: <b>${email}</b></p>
+                    <p>Periodo: ${dInizio} - ${dFine}</p>
+                </div>`;
 
+            await inviaMailBrevoAPI("parkingclf.am@gmail.com", `🔔 Nuova: ${p}`, htmlAdmin);
             res.json({ success: true });
         });
 
-        // Contenuto grafico del PDF
         doc.fontSize(25).text('PARCHEGGIO C.L. FONTANAROSSA', { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(70).text(p, { align: 'center', color: 'black' });
-        doc.moveDown();
-        doc.fontSize(20).text(`Valido dal: ${dInizio}`, { align: 'center' });
-        doc.text(`Al: ${dFine}`, { align: 'center' });
+        doc.moveDown().fontSize(60).text(p, { align: 'center' });
+        doc.moveDown().fontSize(20).text(`Valido: ${dInizio} - ${dFine}`, { align: 'center' });
         doc.end();
-
-    } catch (err) {
-        console.error("Errore prenotazione:", err.message);
-        res.status(500).json({ error: "Impossibile salvare la prenotazione" });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 3. DISDETTA
-app.post('/api/elimina-prenotazione', async (req, res) => {
-    try {
-        const { id, npass } = req.body;
-        await pool.query('DELETE FROM prenotazioni WHERE id = $1', [id]);
-        
-        await inviaMailBrevoAPI(
-            "parkingclf.am@gmail.com",
-            `⚠️ DISDETTA PASS - ${npass.toUpperCase()}`,
-            `<p>L'utente con Pass <b>${npass.toUpperCase()}</b> ha cancellato la sua prenotazione.</p>`
-        );
-        
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+// 3. LOGIN
+app.post('/api/valida-pass', async (req, res) => {
+    const { npass } = req.body;
+    const p = npass.trim().toUpperCase();
+    const result = await pool.query('SELECT ruolo FROM registro_pass WHERE UPPER(npass) = $1', [p]);
+    res.json({ valid: result.rows.length > 0, ruolo: result.rows[0]?.ruolo });
 });
 
-// 4. ROTTE PER IL VARCO / PIANTONE
+// (Mantieni le altre rotte: /api/mie-prenotazioni, /api/piantone/azione, ecc. come prima)
 app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
-    const r = await pool.query(
-        'SELECT id, data_inizio, data_fine, stato FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE', 
-        [req.params.npass.toUpperCase()]
-    );
+    const r = await pool.query('SELECT id, data_inizio, data_fine, stato FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE', [req.params.npass.toUpperCase()]);
     res.json(r.rows);
 });
 
-app.get('/api/piantone/cerca/:npass', async (req, res) => {
-    const r = await pool.query(
-        'SELECT * FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE LIMIT 1', 
-        [req.params.npass.toUpperCase()]
-    );
-    res.json(r.rows.length > 0 ? { trovato: true, prenotazione: r.rows[0] } : { trovato: false });
-});
-
-app.post('/api/piantone/azione', async (req, res) => {
-    const { id, azione } = req.body;
-    const nuovoStato = azione === 'E' ? 'INGRESSO' : 'USCITO';
-    const colonnaOrario = azione === 'E' ? 'orario_ingresso' : 'orario_uscita';
-    
-    await pool.query(
-        `UPDATE prenotazioni SET stato = $1, ${colonnaOrario} = NOW() WHERE id = $2`, 
-        [nuovoStato, id]
-    );
-    res.json({ success: true });
-});
-
-app.get('/api/veicoli-dentro', async (req, res) => {
-    const r = await pool.query("SELECT npass, orario_ingresso FROM prenotazioni WHERE stato = 'INGRESSO'");
-    res.json(r.rows);
-});
-
-// Avvio Server
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-    console.log(`Server attivo sulla porta ${PORT}`);
-});
+app.listen(process.env.PORT || 10000);
