@@ -15,6 +15,15 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+// Funzione per formattare sempre in data italiana (GG/MM/AAAA)
+const formattaDataIT = (data) => {
+    return new Date(data).toLocaleDateString('it-IT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+};
+
 // FUNZIONE INVIO MAIL (API BREVO)
 async function inviaMailBrevoAPI(toEmail, subject, htmlContent, pdfBuffer = null, fileName = "") {
     try {
@@ -35,11 +44,10 @@ async function inviaMailBrevoAPI(toEmail, subject, htmlContent, pdfBuffer = null
     }
 }
 
-// 1. DISPONIBILITÀ POSTI (Basato sui veicoli effettivamente dentro - IMG 1000319256.jpg)
+// 1. DISPONIBILITÀ POSTI 
 app.get('/api/posti-disponibili', async (req, res) => {
     try {
-        const totalePosti = 100; 
-        // Conta i veicoli che sono entrati ma non ancora usciti
+        const totalePosti = 120; 
         const result = await pool.query("SELECT COUNT(*) FROM log_accessi WHERE data_uscita IS NULL");
         const occupati = parseInt(result.rows[0].count);
         res.json({ disponibili: totalePosti - occupati, totali: totalePosti });
@@ -48,7 +56,7 @@ app.get('/api/posti-disponibili', async (req, res) => {
     }
 });
 
-// 2. LOGIN CON AGGIORNAMENTO 'ult_accesso' (Come richiesto)
+// 2. LOGIN CON CORREZIONE 'ult_accesso'
 app.post('/api/valida-pass', async (req, res) => {
     const { npass } = req.body;
     if (!npass) return res.json({ valid: false });
@@ -57,7 +65,7 @@ app.post('/api/valida-pass', async (req, res) => {
         const result = await pool.query('SELECT ruolo FROM registro_pass WHERE UPPER(npass) = $1', [p]);
         
         if (result.rows.length > 0) {
-            // Aggiorno la colonna corretta 'ult_accesso'
+            // Utilizzo 'ult_accesso' come richiesto
             await pool.query('UPDATE registro_pass SET ult_accesso = NOW() WHERE UPPER(npass) = $1', [p]);
             res.json({ valid: true, ruolo: result.rows[0].ruolo });
         } else {
@@ -66,17 +74,17 @@ app.post('/api/valida-pass', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 3. LOGICA CONTROLLO SBARRA (Entrata/Uscita - IMG Screenshot 2026-04-28 234956.png)
+// 3. CONTROLLO SBARRA 
 app.get('/api/veicoli-dentro', async (req, res) => {
     try {
-        const r = await pool.query("SELECT npass, data_entrata, ora_entrata, data_uscita, ora_uscita FROM log_accessi ORDER BY data_entrata DESC, ora_entrata DESC LIMIT 10");
+        const r = await pool.query("SELECT npass, data_entrata, ora_entrata, data_uscita, ora_uscita FROM log_accessi ORDER BY id DESC LIMIT 10");
         res.json(r.rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/registra-ingresso', async (req, res) => {
     const { npass } = req.body;
-    const oggi = new Date().toLocaleDateString('it-IT');
+    const oggi = formattaDataIT(new Date());
     const ora = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
     try {
         await pool.query("INSERT INTO log_accessi (npass, data_entrata, ora_entrata) VALUES ($1, $2, $3)", [npass.toUpperCase(), oggi, ora]);
@@ -86,7 +94,7 @@ app.post('/api/registra-ingresso', async (req, res) => {
 
 app.post('/api/registra-uscita', async (req, res) => {
     const { npass } = req.body;
-    const oggi = new Date().toLocaleDateString('it-IT');
+    const oggi = formattaDataIT(new Date());
     const ora = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
     try {
         await pool.query("UPDATE log_accessi SET data_uscita = $1, ora_uscita = $2 WHERE UPPER(npass) = $3 AND data_uscita IS NULL", [oggi, ora, npass.toUpperCase()]);
@@ -94,14 +102,14 @@ app.post('/api/registra-uscita', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 4. PRENOTAZIONE E PDF CON RIQUADRO (IMG image_7c9afa.png)
+// 4. PRENOTAZIONE E PDF CON DATE ITALIANE E RIQUADRO 
 app.post('/api/prenota', async (req, res) => {
     try {
         const { npass, giorni, email } = req.body;
         const p = npass.trim().toUpperCase();
         const sorted = giorni.sort();
-        const dInizio = sorted[0];
-        const dFine = sorted[sorted.length - 1];
+        const dInizio = formattaDataIT(sorted[0]);
+        const dFine = formattaDataIT(sorted[sorted.length - 1]);
 
         await pool.query('INSERT INTO prenotazioni (npass, data_inizio, data_fine, stato) VALUES ($1, $2, $3, $4)', [p, dInizio, dFine, 'PRENOTATO']);
 
@@ -110,39 +118,33 @@ app.post('/api/prenota', async (req, res) => {
         doc.on('data', buffers.push.bind(buffers));
         doc.on('end', async () => {
             const pdfData = Buffer.concat(buffers);
-            const htmlUtente = `<div style="font-family:sans-serif;border:2px solid #4A90E2;padding:20px;border-radius:15px;"><h2 style="color:#4A90E2;">🅿️ Parcheggio C.L. Fontanarossa</h2><p>Gentile utente <b>${p}</b>, prenotazione confermata dal ${dInizio} al ${dFine}.</p></div>`;
+            
+            // Email Utente con date italiane
+            const htmlUtente = `
+                <div style="font-family:sans-serif;border:2px solid #4A90E2;padding:20px;border-radius:15px;">
+                    <h2 style="color:#4A90E2;">🅿️ Parcheggio C.L. Fontanarossa</h2>
+                    <p>Gentile utente <b>${p}</b>, prenotazione confermata.</p>
+                    <p><b>Periodo:</b> dal ${dInizio} al ${dFine}</p>
+                </div>`;
+            
             await inviaMailBrevoAPI(email, `Conferma - ${p}`, htmlUtente, pdfData, `PASS_${p}.pdf`);
             
-            // Mail Admin senza mittente nel testo
+            // Email Admin (Senza email utente nel testo)
             const htmlAdmin = `<h3>🔔 Nuova Prenotazione: ${p}</h3><p>Periodo: ${dInizio} - ${dFine}</p>`;
             await inviaMailBrevoAPI("parkingclf.am@gmail.com", `🔔 Nuova: ${p}`, htmlAdmin);
+            
             res.json({ success: true });
         });
 
-        // PDF con Riquadro Blu (Rif. image_7c9afa.png)
+        // Generazione PDF (Rif. image_7c9afa.png)
         doc.lineWidth(3).rect(40, 40, 515, 320).stroke('#4A90E2');
         doc.fillColor('#4A90E2').fontSize(22).text('PARCHEGGIO C.L. FONTANAROSSA', 50, 80, { align: 'center' });
         doc.fillColor('black').fontSize(90).text(p, 50, 150, { align: 'center' });
         doc.fontSize(20).text('PERIODO DI SOSTA:', 50, 265, { align: 'center' });
         doc.fontSize(24).text(`DAL ${dInizio} AL ${dFine}`, 50, 300, { align: 'center' });
         doc.end();
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
 
-// 5. DISDETTA
-app.post('/api/elimina-prenotazione', async (req, res) => {
-    try {
-        const { id, npass } = req.body;
-        await pool.query('DELETE FROM prenotazioni WHERE id = $1', [id]);
-        const htmlDisdetta = `<h2 style="color:red;">⚠️ DISDETTA PASS: ${npass.toUpperCase()}</h2>`;
-        await inviaMailBrevoAPI("parkingclf.am@gmail.com", `⚠️ DISDETTA: ${npass}`, htmlDisdetta);
-        res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
-    const r = await pool.query('SELECT id, data_inizio, data_fine, stato FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE', [req.params.npass.toUpperCase()]);
-    res.json(r.rows);
 });
 
 app.listen(process.env.PORT || 10000);
