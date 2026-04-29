@@ -16,18 +16,13 @@ const pool = new Pool({
 
 // CONFIGURAZIONE PORTA 587 (Spesso più stabile su Render rispetto alla 465)
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  host: "smtp-relay.brevo.com",
   port: 587,
   secure: false, // TLS
   auth: {
-    user: "parkingclf.am@gmail.com",
+    user: "9a951001@smtp-brevo.com",
     pass: process.env.EMAIL_PASSWORD,
   },
-  tls: {
-    // Questa riga è magica: permette la connessione anche se 
-    // il server Render ha problemi di certificati con Google
-    rejectUnauthorized: false 
-  }
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
