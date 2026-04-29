@@ -14,34 +14,40 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// CONFIGURAZIONE PORTA 587 (Spesso più stabile su Render rispetto alla 465)
+// CONFIGURAZIONE BREVO (Addio Timeout Gmail)
 const transporter = nodemailer.createTransport({
   host: "smtp-relay.brevo.com",
   port: 587,
-  secure: false, // TLS
+  secure: false,
   auth: {
-    user: "9a951001@smtp-brevo.com",
-    pass: process.env.EMAIL_PASSWORD,
-  },
+    user: "a9a951001@smtp-brevo.com",
+    pass: process.env.EMAIL_PASSWORD // Assicurati di aver messo la chiave Brevo su Render
+  }
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// LOGIN SEMPLIFICATO (Senza update che causano errori)
+// LOGIN CORRETTO (Senza colonne mancanti)
 app.post('/api/valida-pass', async (req, res) => {
     try {
         const { npass } = req.body;
         if (!npass) return res.json({ valid: false });
-        const p = npass.trim().toUpperCase();
-        const result = await pool.query('SELECT ruolo FROM registro_pass WHERE UPPER(npass) = $1', [p]);
-        res.json({ valid: result.rows.length > 0, ruolo: result.rows[0]?.ruolo });
+        const cleanPass = npass.trim().toUpperCase();
+        
+        const result = await pool.query('SELECT ruolo FROM registro_pass WHERE UPPER(npass) = $1', [cleanPass]);
+        
+        if (result.rows.length > 0) {
+            res.json({ valid: true, ruolo: result.rows[0].ruolo });
+        } else {
+            res.json({ valid: false });
+        }
     } catch (err) {
-        console.error("Errore DB:", err.message);
+        console.error("Errore Login:", err.message);
         res.status(500).json({ error: "Errore database" });
     }
 });
 
-// PRENOTAZIONE CON GESTIONE ERRORE MAIL
+// PRENOTAZIONE
 app.post('/api/prenota', async (req, res) => {
     try {
         const { npass, giorni, email } = req.body;
@@ -50,42 +56,28 @@ app.post('/api/prenota', async (req, res) => {
         const dInizio = sorted[0];
         const dFine = sorted[sorted.length - 1];
 
-        await pool.query('INSERT INTO prenotazioni (npass, data_inizio, data_fine, stato) VALUES ($1, $2, $3, $4)', [p, dInizio, dFine, 'PRENOTATO']);
+        await pool.query('INSERT INTO prenotazioni (npass, data_inizio, data_fine, stato) VALUES ($1, $2, $3, $4)', 
+            [p, dInizio, dFine, 'PRENOTATO']);
 
-        const doc = new PDFDocument({ size: 'A4' });
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
         let buffers = [];
         doc.on('data', buffers.push.bind(buffers));
         doc.on('end', async () => {
             const pdfData = Buffer.concat(buffers);
-            
-            // Usiamo try/catch interno per le mail: se falliscono, l'utente vede comunque "Successo" sul sito
             try {
                 await transporter.sendMail({
                     from: '"Parcheggio C.L. Fontanarossa" <parkingclf.am@gmail.com>',
                     to: email,
-                    subject: `Conferma PASS - ${p}`,
-                    html: `<p>Prenotazione confermata per ${p}</p>`,
+                    subject: `Conferma e PASS - ${p}`,
+                    html: `<h2>Prenotazione Confermata</h2><p>PASS: <b>${p}</b></p>`,
                     attachments: [{ filename: `PASS_${p}.pdf`, content: pdfData }]
                 });
-
-                await transporter.sendMail({
-                    from: '"Sistema" <parkingclf.am@gmail.com>',
-                    to: 'parkingclf.am@gmail.com',
-                    subject: `🔔 Nuova: ${p}`,
-                    html: `<p>Nuova prenotazione: ${p} (${email})</p>`
-                });
-            } catch (mailErr) {
-                console.error("Mail non inviata (Timeout), ma prenotazione salvata:", mailErr.message);
-            }
-
+            } catch (e) { console.error("Errore Mail:", e.message); }
             res.json({ success: true });
         });
-
         doc.fontSize(25).text('PARCHEGGIO C.L. FONTANAROSSA', { align: 'center' });
-        doc.fontSize(60).text(p, { align: 'center' });
-        doc.fontSize(20).text(`${dInizio} - ${dFine}`, { align: 'center' });
+        doc.moveDown().fontSize(70).text(p, { align: 'center' });
         doc.end();
-
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -99,14 +91,14 @@ app.post('/api/elimina-prenotazione', async (req, res) => {
                 from: '"Sistema" <parkingclf.am@gmail.com>',
                 to: 'parkingclf.am@gmail.com',
                 subject: `⚠️ DISDETTA - ${npass.toUpperCase()}`,
-                html: `<p>Pass ${npass.toUpperCase()} ha cancellato.</p>`
+                html: `<p>Il Pass ${npass.toUpperCase()} ha cancellato.</p>`
             });
         } catch (e) {}
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ALTRE ROTTE
+// VARCO
 app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
     const r = await pool.query('SELECT id, data_inizio, data_fine, stato FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE', [req.params.npass.toUpperCase()]);
     res.json(r.rows);
@@ -119,8 +111,7 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
 
 app.post('/api/piantone/azione', async (req, res) => {
     const { id, azione } = req.body;
-    const colonna = azione === 'E' ? 'orario_ingresso' : 'orario_uscita';
-    await pool.query(`UPDATE prenotazioni SET stato = $1, ${colonna} = NOW() WHERE id = $2`, [azione === 'E' ? 'INGRESSO' : 'USCITO', id]);
+    await pool.query(`UPDATE prenotazioni SET stato = $1, ${azione === 'E' ? 'orario_ingresso' : 'orario_uscita'} = NOW() WHERE id = $2`, [azione === 'E' ? 'INGRESSO' : 'USCITO', id]);
     res.json({ success: true });
 });
 
@@ -129,5 +120,4 @@ app.get('/api/veicoli-dentro', async (req, res) => {
     res.json(r.rows);
 });
 
-app.listen(process.env.PORT || 10000, () => console.log("Server Online"));
-                  
+app.listen(process.env.PORT || 10000);
