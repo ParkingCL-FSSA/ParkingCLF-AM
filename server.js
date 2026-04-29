@@ -16,17 +16,18 @@ const pool = new Pool({
 
 // CONFIGURAZIONE PORTA 587 (Spesso più stabile su Render rispetto alla 465)
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
+  host: "smtp.gmail.com",
   port: 587,
-  secure: false, // false per porta 587
+  secure: false, // TLS
   auth: {
-    user: 'parkingclf.am@gmail.com',
-    pass: process.env.EMAIL_PASSWORD 
+    user: "parkingclf.am@gmail.com",
+    pass: process.env.EMAIL_PASSWORD,
   },
   tls: {
-    rejectUnauthorized: false // Evita blocchi sui certificati
-  },
-  connectionTimeout: 10000 // Se non risponde in 10 secondi, rinuncia invece di crashare
+    // Questa riga è magica: permette la connessione anche se 
+    // il server Render ha problemi di certificati con Google
+    rejectUnauthorized: false 
+  }
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
