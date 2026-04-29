@@ -1,5 +1,12 @@
 let userPass = ""; let selectedDays = []; let currentPren = null;
 
+// FIX: helper che evita lo sfasamento UTC (new Date("YYYY-MM-DD") = mezzanotte UTC → giorno sbagliato in IT)
+function fmtData(isoStr) {
+    if (!isoStr) return '--';
+    const p = isoStr.toString().split('T')[0].split('-');
+    return `${p[2]}/${p[1]}/${p[0]}`;
+}
+
 function show(id) {
     document.querySelectorAll('.card > div').forEach(d => d.classList.add('hidden'));
     document.getElementById(id).classList.remove('hidden');
@@ -7,12 +14,12 @@ function show(id) {
 
 async function doLogin() {
     userPass = document.getElementById('in-npass').value.trim().toUpperCase();
-    if(!userPass) return;
-    const res = await fetch('/api/valida-pass', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({npass:userPass}) });
+    if (!userPass) return;
+    const res = await fetch('/api/valida-pass', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ npass: userPass }) });
     const data = await res.json();
-    if(data.valid) {
-        if(data.ruolo === 'piantone') { show('view-piantone'); aggiornaVeicoli(); }
-        else if(data.ruolo === 'admin') { show('view-admin'); mostraAdmin(); }
+    if (data.valid) {
+        if (data.ruolo === 'piantone') { show('view-piantone'); aggiornaVeicoli(); }
+        else if (data.ruolo === 'admin') { show('view-admin'); mostraAdmin(); }
         else { show('view-user'); buildCal(); }
     } else alert("Accesso Negato");
 }
@@ -20,14 +27,14 @@ async function doLogin() {
 function buildCal() {
     const grid = document.getElementById('cal-grid'); grid.innerHTML = ""; selectedDays = [];
     let d = new Date();
-    for(let i=0; i<45; i++) {
+    for (let i = 0; i < 45; i++) {
         const iso = d.toISOString().split('T')[0];
         const slot = document.createElement('div'); slot.className = "day-slot";
-        slot.innerText = d.toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit'});
-        slot.onclick = () => { 
-            slot.classList.toggle('selected'); 
-            if(slot.classList.contains('selected')) selectedDays.push(iso); 
-            else selectedDays = selectedDays.filter(x => x !== iso); 
+        slot.innerText = d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+        slot.onclick = () => {
+            slot.classList.toggle('selected');
+            if (slot.classList.contains('selected')) selectedDays.push(iso);
+            else selectedDays = selectedDays.filter(x => x !== iso);
         };
         grid.appendChild(slot); d.setDate(d.getDate() + 1);
     }
@@ -35,75 +42,113 @@ function buildCal() {
 
 async function inviaPren() {
     const email = document.getElementById('u-email').value;
-    if(!selectedDays.length || !email) return alert("Dati mancanti!");
-    const res = await fetch('/api/prenota', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({npass:userPass, giorni:selectedDays, email:email}) });
-    if(res.ok) {
+    if (!selectedDays.length || !email) return alert("Dati mancanti!");
+    if (selectedDays.length > 15) return alert("Massimo 15 giorni selezionabili!");
+
+    const res = await fetch('/api/prenota', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ npass: userPass, giorni: selectedDays, email: email }) });
+    if (res.ok) {
         selectedDays.sort();
-        document.getElementById('summary-details').innerHTML = `<b>Pass:</b> ${userPass}<br><b>Email:</b> ${email}<br><b>Date:</b> ${selectedDays.map(d => new Date(d).toLocaleDateString('it-IT')).join(', ')}`;
+        // FIX: usa fmtData() invece di new Date() per evitare lo sfasamento UTC
+        document.getElementById('summary-details').innerHTML =
+            `<b>Pass:</b> ${userPass}<br><b>Dal:</b> ${fmtData(selectedDays[0])}<br><b>Al:</b> ${fmtData(selectedDays[selectedDays.length - 1])}`;
         show('view-success');
-    } else {
-        const error = await res.json();
-        alert(error.error || "Errore durante la prenotazione");
     }
 }
 
+// FIX: aggiunta colonna "Stato" e formattazione date corretta
 async function mostraMie() {
     show('view-my-list');
     const res = await fetch(`/api/mie-prenotazioni/${userPass}`);
     const dati = await res.json();
     document.getElementById('my-list-content').innerHTML = dati.map(p => `
-        <div class="pren-row">
-            <div>📅 Dal ${new Date(p.data_inizio).toLocaleDateString('it-IT')} al ${new Date(p.data_fine).toLocaleDateString('it-IT')}</div>
-            <div class="btn-delete" onclick="eliminaPren(${p.id}, '${userPass}')">✖</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:#f8fafc; border-radius:12px; margin-bottom:8px; border:1px solid #e2e8f0;">
+            <div>
+                <div>📅 Dal ${fmtData(p.data_inizio)} al ${fmtData(p.data_fine)}</div>
+                <div style="font-weight:bold; font-size:13px; margin-top:4px; color:#1e40af;">Stato: ${p.stato}</div>
+            </div>
+            <div style="color:red; cursor:pointer; font-size:20px;" onclick="eliminaPren(${p.id})">🗑️</div>
         </div>
-    `).join('') || "Nessuna prenotazione attiva.";
+    `).join('') || "<p style='color:#64748b; text-align:center;'>Nessuna prenotazione attiva.</p>";
 }
 
-async function eliminaPren(id, npass) {
-    if(!confirm("Annullare questa prenotazione?")) return;
-    const res = await fetch('/api/elimina-prenotazione', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id, npass }) });
-    if(res.ok) {
-        alert("Prenotazione annullata");
-        mostraMie(); // Ricarica subito la lista (Punto 4)
-    }
-}
-
-async function aggiornaVeicoli() {
-    const res = await fetch('/api/veicoli-dentro');
-    const dati = await res.json();
-    document.getElementById('body-dentro').innerHTML = dati.map(v => `
-        <tr>
-            <td class="txt-bold">${v.npass}</td>
-            <td>${v.data_accesso || '-'}</td>
-            <td>${v.ora_ingresso || '-'}</td>
-            <td>${v.data_ora_uscita || '-'}</td>
-        </tr>
-    `).join('') || "<tr><td colspan='4'>Nessun movimento recente</td></tr>";
+async function eliminaPren(id) {
+    if (!confirm("Eliminare questa prenotazione?")) return;
+    const res = await fetch('/api/elimina-prenotazione', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, npass: userPass }) });
+    if (res.ok) mostraMie();
 }
 
 async function cercaPass() {
     const p = document.getElementById('search-p').value.trim().toUpperCase();
-    if(!p) return;
-    const res = await fetch(`/api/piantone/cerca/${p}`);
+    if (!p) return;
+    const res = await fetch(`/api/piantone/cerca/${p}?auth=${userPass}`);
     const data = await res.json();
-    if(data.trovato) {
+
+    if (data.trovato) {
         currentPren = data.prenotazione;
         document.getElementById('panel-piantone').classList.remove('hidden');
         document.getElementById('lab-pass').innerHTML = `PASS: ${currentPren.npass}`;
-        document.getElementById('lab-periodo').innerHTML = `(Periodo: ${new Date(currentPren.data_inizio).toLocaleDateString('it-IT')} - ${new Date(currentPren.data_fine).toLocaleDateString('it-IT')})`;
-        document.getElementById('reg-e').innerHTML = currentPren.orario_ingresso ? `Registrato il ${new Date(currentPren.orario_ingresso).toLocaleString('it-IT')}` : "";
-        document.getElementById('reg-u').innerHTML = currentPren.orario_uscita ? `Registrato il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT')}` : "";
-    } else alert("Nessuna prenotazione trovata");
+
+        // FIX: usa fmtData() per evitare sfasamento UTC
+        document.getElementById('lab-periodo').innerHTML =
+            `(Periodo: ${fmtData(currentPren.data_inizio)} - ${fmtData(currentPren.data_fine)})`;
+
+        document.getElementById('reg-e').innerHTML = currentPren.orario_ingresso
+            ? `Registrato il ${new Date(currentPren.orario_ingresso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}` : "";
+        document.getElementById('reg-u').innerHTML = currentPren.orario_uscita
+            ? `Registrato il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}` : "";
+    } else {
+        alert("Nessuna prenotazione trovata per questo PASS.");
+        document.getElementById('panel-piantone').classList.add('hidden');
+    }
+}
+
+// FIX: tabella a 4 colonne (PASS | Data Accesso | Ora Ingresso | Data e Ora Uscita)
+// con gestione null su orario_ingresso e orario_uscita
+async function aggiornaVeicoli() {
+    const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
+    const dati = await res.json();
+
+    document.getElementById('lista-veicoli').innerHTML = dati.map(x => {
+        const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
+        const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
+
+        const dataAccesso = ing
+            ? ing.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' })
+            : '--';
+        const oraIngresso = ing
+            ? ing.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+            : '--';
+        const dataOraUscita = usc
+            ? `${usc.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' })} - ${usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`
+            : '';
+
+        return `<tr>
+            <td style="font-weight:bold;">${x.npass}</td>
+            <td>${dataAccesso}</td>
+            <td style="color:#22c55e; font-weight:bold;">${oraIngresso}</td>
+            <td style="color:${usc ? '#f59e0b' : '#94a3b8'};">${dataOraUscita}</td>
+        </tr>`;
+    }).join('') || "<tr><td colspan='4' style='text-align:center; color:#64748b; padding:16px;'>Nessun veicolo presente</td></tr>";
 }
 
 async function mossa(tipo) {
-    if(!currentPren) return;
-    await fetch('/api/piantone/azione', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:currentPren.id, azione:tipo}) });
+    await fetch('/api/piantone/azione', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: currentPren.id, azione: tipo, npass: userPass }) });
     cercaPass(); aggiornaVeicoli();
 }
 
+// FIX: formattazione data corretta nel cruscotto admin + intestazione tabella
 async function mostraAdmin() {
-    const res = await fetch('/api/admin/cruscotto');
+    const res = await fetch(`/api/admin/cruscotto?npass=${userPass}`);
     const dati = await res.json();
-    document.getElementById('tab-admin').innerHTML = dati.map(x => `<tr><td>${x.data}</td><td>${x.liberi} / 120</td></tr>`).join('');
+    document.getElementById('tab-admin').innerHTML =
+        `<tr>
+            <th style="color:#64748b;">Data</th>
+            <th style="color:#64748b;">Liberi / 120</th>
+            <th style="color:#64748b;">Occupati</th>
+        </tr>` +
+        dati.map(x => `<tr>
+            <td>${fmtData(x.data)}</td>
+            <td style="color:#22c55e; font-weight:bold;">${x.liberi}</td>
+            <td style="color:#ef4444;">${x.occupati}</td>
+        </tr>`).join('');
 }
