@@ -9,13 +9,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+// Rende accessibili anche i file nella cartella principale (dove probabilmente hai il logo)
+app.use(express.static(__dirname)); 
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
-const LOGO_URL = "https://parkingclf-am.onrender.com/public/LogoCLF.png";
+// LOGO CORRETTO (LogoCLF invece di LogoLCF)
+const LOGO_URL = "https://parkingclf-am.onrender.com/LogoCLF.png";
 
 const formattaDataIT = (data) => {
     return new Date(data).toLocaleDateString('it-IT', {
@@ -42,7 +45,7 @@ async function inviaMailBrevoAPI(toEmail, subject, htmlContent, pdfBuffer = null
     }
 }
 
-// 1. LOGIN (con ult_accesso)
+// 1. LOGIN (Memorizzato ult_accesso)
 app.post('/api/valida-pass', async (req, res) => {
     const { npass } = req.body;
     if (!npass) return res.json({ valid: false });
@@ -52,13 +55,13 @@ app.post('/api/valida-pass', async (req, res) => {
         if (result.rows.length > 0) {
             try {
                 await pool.query('UPDATE registro_pass SET ult_accesso = NOW() WHERE UPPER(npass) = $1', [p]);
-            } catch (e) { console.error("Errore ult_accesso:", e.message); }
+            } catch (e) { console.error("Errore database:", e.message); }
             res.json({ valid: true, ruolo: result.rows[0].ruolo });
         } else { res.json({ valid: false }); }
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 2. PRENOTAZIONE (Ripristinata grafica originale + Giorni Totali)
+// 2. PRENOTAZIONE (Grafica bloccata + LogoCLF)
 app.post('/api/prenota', async (req, res) => {
     const { npass, giorni, email } = req.body;
     if (giorni.length > 15) return res.status(400).json({ error: "Limite 15 giorni superato" });
@@ -69,14 +72,10 @@ app.post('/api/prenota', async (req, res) => {
         const dataFine = sorted[sorted.length - 1];
         const p = npass.toUpperCase();
         const numGiorni = giorni.length;
-        const giorniFormattati = sorted.map(d => formattaDataIT(d)).join(', ');
+        const elencoGiorni = sorted.map(d => formattaDataIT(d)).join(', ');
 
         await pool.query('INSERT INTO prenotazioni (npass, data_inizio, data_fine, stato) VALUES ($1, $2, $3, $4)', 
             [p, dataInizio, dataFine, 'PRENOTATO']);
-        
-        try {
-            await pool.query('UPDATE registro_pass SET ult_pren = NOW() WHERE UPPER(npass) = $1', [p]);
-        } catch (e) { console.error("Errore ult_pren:", e.message); }
 
         const doc = new PDFDocument({ size: 'A4', margin: 50 });
         let buffers = [];
@@ -84,33 +83,25 @@ app.post('/api/prenota', async (req, res) => {
         doc.on('end', async () => {
             const pdfData = Buffer.concat(buffers);
 
-            // RIPRISTINATA GRAFICA EMAIL ORIGINALE
             const htmlUtente = `
-                <div style="font-family: Arial, sans-serif; border: 2px solid #4A90E2; padding: 25px; border-radius: 20px; max-width: 600px; color: #333;">
+                <div style="font-family: Arial, sans-serif; border: 2px solid #4A90E2; padding: 25px; border-radius: 20px; max-width: 600px;">
                     <div style="text-align:center; margin-bottom:15px;">
-                        <img src="${LOGO_URL}" alt="Logo" style="width:120px;">
+                        <img src="${LOGO_URL}" alt="Logo Parcheggio CLF" style="width:140px; display:block; margin: 0 auto;">
                     </div>
-                    <h2 style="color: #4A90E2; display: flex; align-items: center; justify-content: center;">
-                        <span style="background: #4A90E2; color: white; padding: 2px 8px; border-radius: 4px; margin-right: 10px;">P</span> 
-                        Parcheggio C.L. Fontanarossa
-                    </h2>
+                    <h2 style="color: #4A90E2; text-align: center;">🅿️ Parcheggio C.L. Fontanarossa</h2>
                     <p>Gentile utente <b>${p}</b>, la tua prenotazione è confermata.</p>
                     <p><b>Periodo:</b> dal ${formattaDataIT(dataInizio)} al ${formattaDataIT(dataFine)}</p>
                     <p><b>Giorni totali:</b> ${numGiorni}</p>
-                    <p style="font-size: 13px; color: #555;"><b>Dettaglio date:</b> ${giorniFormattati}</p>
+                    <p style="font-size: 13px; color: #555;"><b>Date:</b> ${elencoGiorni}</p>
                     <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                    <p style="font-size: 12px; color: #888;">In allegato trovi il PASS da esporre sul parabrezza.</p>
+                    <p style="font-size: 11px; color: #999; text-align:center;">Mostra il PASS in allegato all'ingresso.</p>
                 </div>`;
 
             await inviaMailBrevoAPI(email, `Conferma Prenotazione - ${p}`, htmlUtente, pdfData, `PASS_${p}.pdf`);
-
-            const htmlAdmin = `<h3>Nuova Prenotazione: ${p}</h3><p>Periodo: ${formattaDataIT(dataInizio)} - ${formattaDataIT(dataFine)}</p><p>Giorni: ${numGiorni}</p>`;
-            await inviaMailBrevoAPI('parkingclf.am@gmail.com', `🔔 Nuova: ${p}`, htmlAdmin);
-
             res.json({ success: true });
         });
 
-        // GRAFICA PDF (Riquadro Blu)
+        // PDF con riquadro
         doc.rect(40, 40, 515, 320).lineWidth(3).stroke('#4A90E2');
         doc.fontSize(22).fillColor('#4A90E2').text('PARCHEGGIO C.L. FONTANAROSSA', 50, 80, { align: 'center' });
         doc.fontSize(90).fillColor('black').text(p, 50, 140, { align: 'center' });
@@ -129,31 +120,14 @@ app.post('/api/elimina-prenotazione', async (req, res) => {
         if (info.rows.length > 0) {
             const { data_inizio, data_fine } = info.rows[0];
             await pool.query('DELETE FROM prenotazioni WHERE id = $1 AND UPPER(npass) = $2', [id, npass.toUpperCase()]);
-            const htmlDisdetta = `<h3 style="color:red;">Prenotazione Cancellata: ${npass.toUpperCase()}</h3><p>Sosta dal ${formattaDataIT(data_inizio)} al ${formattaDataIT(data_fine)}</p>`;
+            const htmlDisdetta = `<h3 style="color:red;">⚠️ Prenotazione Annullata</h3><p>Pass: ${npass.toUpperCase()}</p><p>Sosta: ${formattaDataIT(data_inizio)} - ${formattaDataIT(data_fine)}</p>`;
             await inviaMailBrevoAPI('parkingclf.am@gmail.com', `⚠️ DISDETTA - ${npass.toUpperCase()}`, htmlDisdetta);
         }
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 4. ALTRE ROTTE (Cruscotto, Piantone, Veicoli Dentro)
-app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
-    const r = await pool.query('SELECT id, data_inizio, data_fine, stato FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE ORDER BY data_inizio ASC', [req.params.npass.toUpperCase()]);
-    res.json(r.rows);
-});
-
-app.get('/api/piantone/cerca/:npass', async (req, res) => {
-    const r = await pool.query('SELECT * FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE ORDER BY data_inizio ASC LIMIT 1', [req.params.npass.toUpperCase()]);
-    res.json(r.rows.length > 0 ? { trovato: true, prenotazione: r.rows[0] } : { trovato: false });
-});
-
-app.post('/api/piantone/azione', async (req, res) => {
-    const { id, azione } = req.body;
-    const ora = new Date();
-    await pool.query(`UPDATE prenotazioni SET stato = $1, ${azione === 'E' ? 'orario_ingresso' : 'orario_uscita'} = $2 WHERE id = $3`, [azione === 'E' ? 'INGRESSO' : 'USCITO', ora, id]);
-    res.json({ success: true });
-});
-
+// 4. CRUSCOTTO E STORICO
 app.get('/api/admin/cruscotto', async (req, res) => {
     const query = `WITH giorni AS (SELECT generate_series(CURRENT_DATE, CURRENT_DATE + interval '44 days', '1 day')::date AS d)
                    SELECT g.d AS data, COUNT(p.id) AS occupati FROM giorni g LEFT JOIN prenotazioni p ON g.d BETWEEN p.data_inizio AND p.data_fine
