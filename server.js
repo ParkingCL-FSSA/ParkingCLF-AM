@@ -15,7 +15,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// FUNZIONE INVIO MAIL CON GRAFICA
+// FUNZIONE INVIO MAIL VIA API (Brevo)
 async function inviaMailBrevoAPI(toEmail, subject, htmlContent, pdfBuffer = null, fileName = "") {
     try {
         const payload = {
@@ -35,12 +35,10 @@ async function inviaMailBrevoAPI(toEmail, subject, htmlContent, pdfBuffer = null
     }
 }
 
-// --- ROTTE ---
-
-// 1. POSTI DISPONIBILI (Risolve IMG 3)
+// --- 1. ROTTA POSTI DISPONIBILI (Risolve l'assenza del riquadro nel sito) ---
 app.get('/api/posti-disponibili', async (req, res) => {
     try {
-        const totalePosti = 100; // Cambia con il tuo numero reale
+        const totalePosti = 100; // Il numero totale dei tuoi posti
         const oggi = new Date().toISOString().split('T')[0];
         const result = await pool.query(
             "SELECT COUNT(*) FROM prenotazioni WHERE data_inizio <= $1 AND data_fine >= $1", 
@@ -53,7 +51,7 @@ app.get('/api/posti-disponibili', async (req, res) => {
     }
 });
 
-// 2. PRENOTAZIONE CON GRAFICA (Risolve IMG 1 e 2)
+// --- 2. ROTTA PRENOTAZIONE (Con PDF e Grafica Blu) ---
 app.post('/api/prenota', async (req, res) => {
     try {
         const { npass, giorni, email } = req.body;
@@ -70,26 +68,21 @@ app.post('/api/prenota', async (req, res) => {
         doc.on('end', async () => {
             const pdfData = Buffer.concat(buffers);
             
-            // EMAIL UTENTE (Con Grafica Blu)
             const htmlUtente = `
                 <div style="font-family: sans-serif; border: 2px solid #007bff; padding: 20px; border-radius: 15px; max-width: 500px;">
                     <h2 style="color: #007bff;">🅿️ Parcheggio C.L. Fontanarossa</h2>
                     <p>Prenotazione confermata. In allegato il PASS da esporre.</p>
                     <p style="background: #f8f9fa; padding: 10px;"><b>Periodo:</b> dal ${dInizio} al ${dFine}</p>
-                    <p><i>Ti preghiamo di stampare l'allegato o mostrarlo al piantone.</i></p>
                 </div>`;
             
             await inviaMailBrevoAPI(email, `Conferma e PASS - ${p}`, htmlUtente, pdfData, `PASS_${p}.pdf`);
 
-            // EMAIL ADMIN (Semplice)
-            const htmlAdmin = `
-                <div style="font-family: sans-serif; padding: 15px; border-left: 5px solid #ffc107;">
-                    <h3>🔔 Nuova Prenotazione: ${p}</h3>
-                    <p>Effettuata da: <b>${email}</b></p>
-                    <p>Periodo: ${dInizio} - ${dFine}</p>
-                </div>`;
-
+            const htmlAdmin = `<div style="font-family: sans-serif; padding: 15px; border-left: 5px solid #28a745;">
+                <h3>🔔 Nuova Prenotazione: ${p}</h3>
+                <p>Email: ${email} | Periodo: ${dInizio} - ${dFine}</p>
+            </div>`;
             await inviaMailBrevoAPI("parkingclf.am@gmail.com", `🔔 Nuova: ${p}`, htmlAdmin);
+
             res.json({ success: true });
         });
 
@@ -100,18 +93,44 @@ app.post('/api/prenota', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 3. LOGIN
+// --- 3. ROTTA DISDETTA (Rimuove dal DB e invia la mail a te) ---
+app.post('/api/elimina-prenotazione', async (req, res) => {
+    try {
+        const { id, npass } = req.body;
+        
+        // 1. Elimina la prenotazione dal database
+        await pool.query('DELETE FROM prenotazioni WHERE id = $1', [id]);
+        
+        // 2. Invia mail di notifica a te (Admin)
+        const htmlDisdetta = `
+            <div style="font-family: sans-serif; border: 2px solid #dc3545; padding: 20px; border-radius: 15px; max-width: 500px;">
+                <h2 style="color: #dc3545;">⚠️ Disdetta Prenotazione</h2>
+                <p>L'utente con PASS <b>${npass.toUpperCase()}</b> ha appena cancellato la sua prenotazione.</p>
+                <p>Il posto è tornato disponibile nel sistema.</p>
+            </div>`;
+            
+        await inviaMailBrevoAPI("parkingclf.am@gmail.com", `⚠️ DISDETTA PASS - ${npass.toUpperCase()}`, htmlDisdetta);
+        
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Errore disdetta:", err.message);
+        res.status(500).json({ error: "Errore durante la cancellazione" });
+    }
+});
+
+// --- 4. ALTRE ROTTE DI SERVIZIO ---
 app.post('/api/valida-pass', async (req, res) => {
     const { npass } = req.body;
-    const p = npass.trim().toUpperCase();
-    const result = await pool.query('SELECT ruolo FROM registro_pass WHERE UPPER(npass) = $1', [p]);
+    const result = await pool.query('SELECT ruolo FROM registro_pass WHERE UPPER(npass) = $1', [npass.trim().toUpperCase()]);
     res.json({ valid: result.rows.length > 0, ruolo: result.rows[0]?.ruolo });
 });
 
-// (Mantieni le altre rotte: /api/mie-prenotazioni, /api/piantone/azione, ecc. come prima)
 app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
     const r = await pool.query('SELECT id, data_inizio, data_fine, stato FROM prenotazioni WHERE UPPER(npass) = $1 AND data_fine >= CURRENT_DATE', [req.params.npass.toUpperCase()]);
     res.json(r.rows);
 });
 
-app.listen(process.env.PORT || 10000);
+// Avvio
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`Server attivo sulla porta ${PORT}`));
+          
