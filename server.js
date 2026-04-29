@@ -15,7 +15,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// FUNZIONE INVIO MAIL VIA API (Brevo)
+// FUNZIONE INVIO MAIL (API BREVO)
 async function inviaMailBrevoAPI(toEmail, subject, htmlContent, pdfBuffer = null, fileName = "") {
     try {
         const payload = {
@@ -35,10 +35,10 @@ async function inviaMailBrevoAPI(toEmail, subject, htmlContent, pdfBuffer = null
     }
 }
 
-// --- 1. ROTTA POSTI DISPONIBILI (Risolve l'assenza del riquadro nel sito) ---
+// 1. ROTTA POSTI DISPONIBILI (VISIBILE A TUTTI, ADMIN INCLUSI)
 app.get('/api/posti-disponibili', async (req, res) => {
     try {
-        const totalePosti = 100; // Il numero totale dei tuoi posti
+        const totalePosti = 100; 
         const oggi = new Date().toISOString().split('T')[0];
         const result = await pool.query(
             "SELECT COUNT(*) FROM prenotazioni WHERE data_inizio <= $1 AND data_fine >= $1", 
@@ -51,7 +51,7 @@ app.get('/api/posti-disponibili', async (req, res) => {
     }
 });
 
-// --- 2. ROTTA PRENOTAZIONE (Con PDF e Grafica Blu) ---
+// 2. ROTTA PRENOTAZIONE (CON GRAFICA ORIGINALE)
 app.post('/api/prenota', async (req, res) => {
     try {
         const { npass, giorni, email } = req.body;
@@ -59,6 +59,7 @@ app.post('/api/prenota', async (req, res) => {
         const sorted = giorni.sort();
         const dInizio = sorted[0];
         const dFine = sorted[sorted.length - 1];
+        const numGiorni = giorni.length;
 
         await pool.query('INSERT INTO prenotazioni (npass, data_inizio, data_fine, stato) VALUES ($1, $2, $3, $4)', [p, dInizio, dFine, 'PRENOTATO']);
 
@@ -68,21 +69,32 @@ app.post('/api/prenota', async (req, res) => {
         doc.on('end', async () => {
             const pdfData = Buffer.concat(buffers);
             
+            // GRAFICA ORIGINALE (IMG Screenshot 2026-04-25 190234.png)
             const htmlUtente = `
-                <div style="font-family: sans-serif; border: 2px solid #007bff; padding: 20px; border-radius: 15px; max-width: 500px;">
-                    <h2 style="color: #007bff;">🅿️ Parcheggio C.L. Fontanarossa</h2>
-                    <p>Prenotazione confermata. In allegato il PASS da esporre.</p>
-                    <p style="background: #f8f9fa; padding: 10px;"><b>Periodo:</b> dal ${dInizio} al ${dFine}</p>
+                <div style="font-family: Arial, sans-serif; border: 2px solid #4A90E2; padding: 25px; border-radius: 20px; max-width: 600px; color: #333;">
+                    <h2 style="color: #4A90E2; display: flex; align-items: center;">
+                        <span style="background: #4A90E2; color: white; padding: 2px 8px; border-radius: 4px; margin-right: 10px;">P</span> 
+                        Parcheggio C.L. Fontanarossa
+                    </h2>
+                    <p>Gentile utente <b>${p}</b>, la tua prenotazione è confermata.</p>
+                    <p><b>Periodo:</b> dal ${dInizio} al ${dFine}</p>
+                    <p><b>Giorni:</b> ${numGiorni} (${sorted.join(', ')})</p>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                    <p style="font-size: 12px; color: #888;">Sistema di prenotazione Parcheggio C.L. Fontanarossa</p>
                 </div>`;
             
-            await inviaMailBrevoAPI(email, `Conferma e PASS - ${p}`, htmlUtente, pdfData, `PASS_${p}.pdf`);
+            await inviaMailBrevoAPI(email, `Conferma Prenotazione C.L. Fontanarossa - ${p}`, htmlUtente, pdfData, `PASS_${p}.pdf`);
 
-            const htmlAdmin = `<div style="font-family: sans-serif; padding: 15px; border-left: 5px solid #28a745;">
-                <h3>🔔 Nuova Prenotazione: ${p}</h3>
-                <p>Email: ${email} | Periodo: ${dInizio} - ${dFine}</p>
-            </div>`;
-            await inviaMailBrevoAPI("parkingclf.am@gmail.com", `🔔 Nuova: ${p}`, htmlAdmin);
+            // MAIL ADMIN SENZA INDIRIZZO MITTENTE NEL TESTO
+            const htmlAdmin = `
+                <div style="font-family: Arial, sans-serif; padding: 15px; border-left: 5px solid #28a745; background: #f9f9f9;">
+                    <h3 style="color: #28a745;">🔔 Nuova Prenotazione Ricevuta</h3>
+                    <p>Il PASS <b>${p}</b> è stato appena registrato nel sistema.</p>
+                    <p><b>Periodo:</b> ${dInizio} - ${dFine}</p>
+                    <p><b>Durata:</b> ${numGiorni} giorni</p>
+                </div>`;
 
+            await inviaMailBrevoAPI("parkingclf.am@gmail.com", `🔔 Nuova Prenotazione: ${p}`, htmlAdmin);
             res.json({ success: true });
         });
 
@@ -93,32 +105,25 @@ app.post('/api/prenota', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- 3. ROTTA DISDETTA (Rimuove dal DB e invia la mail a te) ---
+// 3. DISDETTA CON MAIL PULITA
 app.post('/api/elimina-prenotazione', async (req, res) => {
     try {
         const { id, npass } = req.body;
-        
-        // 1. Elimina la prenotazione dal database
         await pool.query('DELETE FROM prenotazioni WHERE id = $1', [id]);
         
-        // 2. Invia mail di notifica a te (Admin)
         const htmlDisdetta = `
-            <div style="font-family: sans-serif; border: 2px solid #dc3545; padding: 20px; border-radius: 15px; max-width: 500px;">
-                <h2 style="color: #dc3545;">⚠️ Disdetta Prenotazione</h2>
-                <p>L'utente con PASS <b>${npass.toUpperCase()}</b> ha appena cancellato la sua prenotazione.</p>
-                <p>Il posto è tornato disponibile nel sistema.</p>
+            <div style="font-family: Arial, sans-serif; border: 2px solid #dc3545; padding: 20px; border-radius: 15px;">
+                <h2 style="color: #dc3545;">⚠️ Disdetta PASS ${npass.toUpperCase()}</h2>
+                <p>Una prenotazione è stata cancellata correttamente dal database.</p>
+                <p>Il posto è nuovamente disponibile per la data indicata.</p>
             </div>`;
             
         await inviaMailBrevoAPI("parkingclf.am@gmail.com", `⚠️ DISDETTA PASS - ${npass.toUpperCase()}`, htmlDisdetta);
-        
         res.json({ success: true });
-    } catch (err) {
-        console.error("Errore disdetta:", err.message);
-        res.status(500).json({ error: "Errore durante la cancellazione" });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- 4. ALTRE ROTTE DI SERVIZIO ---
+// 4. LOGIN E ALTRE FUNZIONI
 app.post('/api/valida-pass', async (req, res) => {
     const { npass } = req.body;
     const result = await pool.query('SELECT ruolo FROM registro_pass WHERE UPPER(npass) = $1', [npass.trim().toUpperCase()]);
@@ -130,7 +135,4 @@ app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
     res.json(r.rows);
 });
 
-// Avvio
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Server attivo sulla porta ${PORT}`));
-          
+app.listen(process.env.PORT || 10000);
