@@ -55,26 +55,61 @@ async function inviaPren() {
     }
 }
 
-// FIX: aggiunta colonna "Stato" e formattazione date corretta
+// FIX: mostra storico (USCITO, SCADUTO) con stile diverso e senza cestino
 async function mostraMie() {
     show('view-my-list');
     const res = await fetch(`/api/mie-prenotazioni/${userPass}`);
     const dati = await res.json();
-    document.getElementById('my-list-content').innerHTML = dati.map(p => `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:#f8fafc; border-radius:12px; margin-bottom:8px; border:1px solid #e2e8f0;">
+
+    const statoColore = {
+        'PRENOTATO': '#1e40af',
+        'INGRESSO':  '#15803d',
+        'USCITO':    '#b45309',
+        'SCADUTO':   '#94a3b8'
+    };
+    const statoEmoji = {
+        'PRENOTATO': '📅',
+        'INGRESSO':  '🚗',
+        'USCITO':    '✅',
+        'SCADUTO':   '⏰'
+    };
+
+    const cancellabile = (stato) => stato === 'PRENOTATO' || stato === 'SCADUTO';
+
+    document.getElementById('my-list-content').innerHTML = dati.map(p => {
+        const colore = statoColore[p.stato] || '#64748b';
+        const emoji  = statoEmoji[p.stato]  || '📅';
+        const isStorico = p.stato === 'USCITO' || p.stato === 'SCADUTO';
+        const cestino = cancellabile(p.stato)
+            ? `<div style="color:red; cursor:pointer; font-size:20px;" onclick="eliminaPren(${p.id})">🗑️</div>`
+            : `<div style="font-size:18px; color:#cbd5e1;" title="Non cancellabile">🔒</div>`;
+
+        return `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px;
+            background:${isStorico ? '#f8fafc' : 'white'};
+            border-radius:12px; margin-bottom:8px;
+            border:1px solid ${isStorico ? '#e2e8f0' : '#bfdbfe'};
+            opacity:${isStorico ? '0.75' : '1'};">
             <div>
-                <div>📅 Dal ${fmtData(p.data_inizio)} al ${fmtData(p.data_fine)}</div>
-                <div style="font-weight:bold; font-size:13px; margin-top:4px; color:#1e40af;">Stato: ${p.stato}</div>
+                <div style="font-size:13px;">${emoji} Dal ${fmtData(p.data_inizio)} al ${fmtData(p.data_fine)}</div>
+                <div style="font-weight:bold; font-size:12px; margin-top:4px; color:${colore};">
+                    Stato: ${p.stato}
+                </div>
             </div>
-            <div style="color:red; cursor:pointer; font-size:20px;" onclick="eliminaPren(${p.id})">🗑️</div>
-        </div>
-    `).join('') || "<p style='color:#64748b; text-align:center;'>Nessuna prenotazione attiva.</p>";
+            ${cestino}
+        </div>`;
+    }).join('') || "<p style='color:#64748b; text-align:center;'>Nessuna prenotazione.</p>";
 }
 
 async function eliminaPren(id) {
     if (!confirm("Eliminare questa prenotazione?")) return;
     const res = await fetch('/api/elimina-prenotazione', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, npass: userPass }) });
-    if (res.ok) mostraMie();
+    if (res.ok) {
+        mostraMie();
+    } else {
+        const err = await res.json();
+        alert(err.error || "Errore durante la cancellazione.");
+    }
 }
 
 async function cercaPass() {
@@ -120,9 +155,9 @@ async function aggiornaVeicoli() {
         return `<tr>
             <td style="font-weight:bold;">${x.npass}</td>
             <td>${dataIng}</td>
-            <td style="color:#22c55e; font-weight:bold;">${oraIng}</td>
-            <td style="color:${usc ? '#f59e0b' : '#94a3b8'};">${dataUsc}</td>
-            <td style="color:${usc ? '#f59e0b' : '#94a3b8'};">${oraUsc}</td>
+            <td style="color:#22c55e; font-weight:bold;">- ${oraIng}</td>
+            <td style="color:${usc ? '#f59e0b' : ''};">${dataUsc}</td>
+            <td style="color:${usc ? '#f59e0b' : ''};">${usc ? '- ' + oraUsc : ''}</td>
         </tr>`;
     }).join('') || "<tr><td colspan='5' style='text-align:center; color:#64748b; padding:16px;'>Nessun veicolo presente</td></tr>";
 }
@@ -139,7 +174,7 @@ async function mostraAdmin() {
     document.getElementById('tab-admin').innerHTML =
         `<tr>
             <th style="color:#64748b;">Data</th>
-            <th style="color:#64748b;">Liberi</th>
+            <th style="color:#64748b;">Liberi / 120</th>
             <th style="color:#64748b;">Occupati</th>
         </tr>` +
         dati.map(x => `<tr>
