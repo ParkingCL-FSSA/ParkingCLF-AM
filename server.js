@@ -16,7 +16,7 @@ const pool = new Pool({
 });
 
 // Configurazione Logo
-const LOGO_URL = "https://parkingclf-am.onrender.com/public/LogoLCF.png";
+const LOGO_URL = "https://parkingclf-am.onrender.com/public/LogoCLF.png";
 
 // Funzione per formattare sempre in data italiana (GG/MM/AAAA)
 const formattaDataIT = (data) => {
