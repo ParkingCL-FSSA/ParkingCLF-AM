@@ -155,11 +155,11 @@ async function aggiornaVeicoli() {
         return `<tr>
             <td style="font-weight:bold;">${x.npass}</td>
             <td>${dataIng}</td>
-            <td style="color:#22c55e; font-weight:bold;">- ${oraIng}</td>
-            <td style="color:${usc ? '#f59e0b' : ''};">${dataUsc}</td>
-            <td style="color:${usc ? '#f59e0b' : ''};">${usc ? '- ' + oraUsc : ''}</td>
+            <td style="color:black; font-weight:bold;">- ${oraIng}</td>
+            <td style="color:black;">${dataUsc}</td>
+            <td style="color:black;">${oraUsc}</td>
         </tr>`;
-    }).join('') || "<tr><td colspan='5' style='text-align:center; color:#64748b; padding:16px;'>Nessun veicolo presente</td></tr>";
+    }).join('') || "<tr><td colspan='5' style='text-align:center; color:black; padding:16px;'>Nessun veicolo presente</td></tr>";
 }
 
 async function mossa(tipo) {
