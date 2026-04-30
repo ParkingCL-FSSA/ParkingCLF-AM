@@ -155,9 +155,9 @@ async function aggiornaVeicoli() {
         return `<tr>
             <td style="font-weight:bold;">${x.npass}</td>
             <td>${dataIng}</td>
-            <td style="color:black; font-weight:bold;">- ${oraIng}</td>
+            <td style="color:black; font-weight:bold;">${oraIng}</td>
             <td style="color:black;">${dataUsc}</td>
-            <td style="color:black;">${oraUsc}</td>
+            <td style="color:black; font-weight:bold;">${oraUsc}</td>
         </tr>`;
     }).join('') || "<tr><td colspan='5' style='text-align:center; color:black; padding:16px;'>Nessun veicolo presente</td></tr>";
 }
@@ -174,7 +174,7 @@ async function mostraAdmin() {
     document.getElementById('tab-admin').innerHTML =
         `<tr>
             <th style="color:#64748b;">Data</th>
-            <th style="color:#64748b;">Liberi / 120</th>
+            <th style="color:#64748b;">Liberi</th>
             <th style="color:#64748b;">Occupati</th>
         </tr>` +
         dati.map(x => `<tr>
