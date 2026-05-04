@@ -1,20 +1,15 @@
 let userPass = ""; let selectedDays = []; let currentPren = null;
 let deferredPrompt;
+
 window.addEventListener('beforeinstallprompt', (e) => {
-    // Impedisce a Chrome di mostrare il banner automatico troppo presto
     e.preventDefault();
     deferredPrompt = e;
-    // Mostra un tuo tasto personalizzato (crealo nell'HTML con id="btnInstalla")
     const btnInstalla = document.getElementById('btnInstalla');
     if(btnInstalla) {
-        btnInstalla.style.display = 'block';
+        btnInstalla.style.display = 'block'; // Mostra il tasto solo se installabile
         btnInstalla.addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    console.log('App installata');
-                }
                 deferredPrompt = null;
                 btnInstalla.style.display = 'none';
             }
