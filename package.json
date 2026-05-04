@@ -1,7 +1,7 @@
 {
   "name": "parking-clf",
   "version": "1.0.0",
-  "description": "Sistema gestione parcheggio CLF",
+  "description": "Sistema Gestione Parcheggio CLF-AM",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
