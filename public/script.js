@@ -72,12 +72,16 @@ async function inviaPren() {
     if (selectedDays.length > 15) return alert("Massimo 15 giorni selezionabili!");
 
     const res = await fetch('/api/prenota', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ npass: userPass, giorni: selectedDays, email: email }) });
+    
     if (res.ok) {
         selectedDays.sort();
-        // FIX: usa fmtData() invece di new Date() per evitare lo sfasamento UTC
         document.getElementById('summary-details').innerHTML =
             `<b>Pass:</b> ${userPass}<br><b>Dal:</b> ${fmtData(selectedDays[0])}<br><b>Al:</b> ${fmtData(selectedDays[selectedDays.length - 1])}`;
         show('view-success');
+    } else {
+        // Gestisci errori di validazione dal server
+        const err = await res.json();
+        alert(err.error || "Errore durante la prenotazione.");
     }
 }
 
