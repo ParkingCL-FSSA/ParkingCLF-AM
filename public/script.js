@@ -16,7 +16,14 @@ window.addEventListener('beforeinstallprompt', (e) => {
         });
     }
 });
-
+document.getElementById('btnEsciApp').addEventListener('click', () => {
+    // Questo comando chiude la finestra dell'app installata
+    window.close();
+    // Se il browser blocca window.close(), reindirizziamo a una pagina neutra
+    setTimeout(() => {
+        window.location.href = "about:blank";
+    }, 100);
+});
 // FIX: helper che evita lo sfasamento UTC (new Date("YYYY-MM-DD") = mezzanotte UTC → giorno sbagliato in IT)
 function fmtData(isoStr) {
     if (!isoStr) return '--';
