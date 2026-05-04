@@ -17,12 +17,14 @@ window.addEventListener('beforeinstallprompt', (e) => {
     }
 });
 document.getElementById('btnEsciApp').addEventListener('click', () => {
-    // Questo comando chiude la finestra dell'app installata
-    window.close();
-    // Se il browser blocca window.close(), reindirizziamo a una pagina neutra
-    setTimeout(() => {
-        window.location.href = "about:blank";
-    }, 100);
+    // Chiude l'app se è aperta in modalità "standalone"
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+        window.close();
+    } else {
+        // Se è aperta nel browser normale, window.close spesso è bloccato, 
+        // quindi avvisiamo l'utente o puliamo la pagina
+        alert("Per uscire chiudi la scheda del browser o l'app.");
+    }
 });
 // FIX: helper che evita lo sfasamento UTC (new Date("YYYY-MM-DD") = mezzanotte UTC → giorno sbagliato in IT)
 function fmtData(isoStr) {
