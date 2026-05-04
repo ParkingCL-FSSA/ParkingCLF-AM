@@ -1,7 +1,7 @@
 {
   "name": "Parcheggio CLF",
   "short_name": "ParkingCLF",
-  "description": "Sistema gestione Parcheggio C.L. Fontanarossa",
+  "description": "Sistema Gestione Parcheggio C.L. Fontanarossa",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
