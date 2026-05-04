@@ -101,7 +101,7 @@ app.post('/api/valida-pass', async (req, res) => {
 app.post('/api/prenota', async (req, res) => {
     const { npass, giorni, email } = req.body;
 
-    // FIX 🔴: validazione input — evita crash se giorni non è un array
+    // Validazione input
     if (!npass || !email) return res.status(400).json({ error: "Dati mancanti" });
     if (!Array.isArray(giorni) || giorni.length === 0) return res.status(400).json({ error: "Giorni non validi" });
     if (giorni.length > 15) return res.status(400).json({ error: "Limite 15 giorni superato" });
@@ -112,6 +112,58 @@ app.post('/api/prenota', async (req, res) => {
         const dataFine = sorted[sorted.length - 1];
         const p = npass.trim().toUpperCase();
         const numGiorni = giorni.length;
+
+        // ✅ CHECK 1: Blocco doppia prenotazione (sovrapposizione periodi)
+        const overlap = await pool.query(
+            `SELECT id FROM prenotazioni 
+             WHERE UPPER(npass) = $1 
+               AND stato IN ('PRENOTATO', 'INGRESSO')
+               AND (
+                   (data_inizio <= $2 AND data_fine >= $2) OR
+                   (data_inizio <= $3 AND data_fine >= $3) OR
+                   (data_inizio >= $2 AND data_fine <= $3)
+               )`,
+            [p, dataInizio, dataFine]
+        );
+        if (overlap.rows.length > 0) {
+            return res.status(400).json({ 
+                error: "Hai già una prenotazione attiva in questo periodo. Cancellala prima di prenotare nuovamente." 
+            });
+        }
+
+        // ✅ CHECK 2: Limite 15 giorni cumulativi in finestra mobile di 30 giorni
+        // Contiamo i giorni già prenotati nei 30 giorni a partire da dataInizio
+        const fineFinestra = new Date(dataInizio);
+        fineFinestra.setDate(fineFinestra.getDate() + 29); // 30 giorni totali
+        const fineFinStr = fineFinestra.toISOString().split('T')[0];
+
+        const giorniEsistenti = await pool.query(
+            `SELECT data_inizio, data_fine FROM prenotazioni 
+             WHERE UPPER(npass) = $1 
+               AND stato IN ('PRENOTATO', 'INGRESSO')
+               AND data_inizio <= $2
+               AND data_fine >= $3`,
+            [p, fineFinStr, dataInizio]
+        );
+
+        // Calcola giorni totali già prenotati in questa finestra
+        let giorniOccupati = 0;
+        giorniEsistenti.rows.forEach(row => {
+            const inizio = new Date(row.data_inizio) > new Date(dataInizio) 
+                ? new Date(row.data_inizio) 
+                : new Date(dataInizio);
+            const fine = new Date(row.data_fine) < new Date(fineFinStr) 
+                ? new Date(row.data_fine) 
+                : new Date(fineFinStr);
+            const diff = Math.ceil((fine - inizio) / (1000 * 60 * 60 * 24)) + 1;
+            giorniOccupati += diff;
+        });
+
+        if (giorniOccupati + numGiorni > 15) {
+            return res.status(400).json({ 
+                error: `Limite superato: puoi prenotare massimo 15 giorni in una finestra di 30 giorni. Hai già ${giorniOccupati} giorni prenotati.` 
+            });
+        }
 
         await pool.query(
             'INSERT INTO prenotazioni (npass, data_inizio, data_fine, stato) VALUES ($1, $2, $3, $4)',
