@@ -355,20 +355,16 @@ app.post('/api/piantone/azione', async (req, res) => {
 app.get('/api/piantone/liberi', async (req, res) => {
     try {
         const oggi = new Date().toISOString().split('T')[0];
-
         const r = await pool.query(
             `SELECT COUNT(*) as count
              FROM prenotazioni
-             WHERE stato IN ('PRENOTATO','INGRESSO')
+             WHERE stato = 'INGRESSO'
              AND $1 BETWEEN data_inizio AND data_fine`,
             [oggi]
         );
-
-        const occupati = parseInt(r.rows[0].count);
-        const totaleLiberi = Math.max(0, 120 - occupati);
-
-        res.json({ totaleLiberi });
-
+        const dentro = parseInt(r.rows[0].count);
+        const totaleLiberi = Math.max(0, 120 - dentro);
+        res.json({ totaleLiberi, dentro });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
