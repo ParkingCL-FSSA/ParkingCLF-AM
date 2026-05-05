@@ -48,6 +48,39 @@ app.post('/api/login', (req, res) => {
   res.status(401).json({ error: 'Credenziali non valide' });
 });
 
+app.post('/api/valida-pass', async (req, res) => {
+  try {
+    let { npass } = req.body;
+
+    if (!npass) {
+      return res.status(400).json({ valid: false, error: 'Codice mancante' });
+    }
+
+    npass = npass.toUpperCase().trim();
+
+    const result = await pool.query(
+      `SELECT r.npass, r.ente
+       FROM registro_pass r
+       WHERE UPPER(r.npass) = $1`,
+      [npass]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ valid: false });
+    }
+
+    return res.json({
+      valid: true,
+      ruolo: 'utente',
+      ente: result.rows[0].ente
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ valid: false });
+  }
+});
+
 // --- PRENOTAZIONE ---
 app.post('/api/prenota', async (req, res) => {
   const client = await pool.connect();
