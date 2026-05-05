@@ -1,43 +1,63 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestione Parcheggio CLF</title>
+    <title>Gestione Parcheggio CL Fontanarossa</title>
     <style>
-        :root { --blue: #3b82f6; --green: #22c55e; --orange: #f59e0b; --red: #ef4444; --gray: #64748b; }
-        body { font-family: sans-serif; background: #f1f5f9; padding: 20px; }
+        :root { --blue: #3b82f6; --green: #22c55e; --orange: #f59e0b; --red: #ef4444; --gray: #64748b; --light: #f8fafc; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f1f5f9; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .card { background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 480px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
         .hidden { display: none; }
-        .view { background: white; padding: 20px; border-radius: 15px; max-width: 500px; margin: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-        th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: center; }
-        button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px; }
-        .btn-blue { background: var(--blue); color: white; }
+        input, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 16px; box-sizing: border-box; }
+        button { border: none; font-weight: bold; cursor: pointer; color: white; background: var(--blue); }
+        .btn-green { background: var(--green); } .btn-red { background: var(--red); } .btn-gray { background: var(--gray); }
+        #cal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-height: 250px; overflow-y: auto; margin: 15px 0; padding: 5px; border: 1px solid #eee; border-radius: 10px; }
+        .day-slot { padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 13px; }
+        .selected { background: var(--blue) !important; color: white !important; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
     </style>
 </head>
 <body>
-
-    <div id="view-login" class="view">
-        <h2>Ingresso Parcheggio</h2>
-        <input type="text" id="in-npass" placeholder="Inserisci Codice Pass">
-        <button class="btn-blue" onclick="doLogin()">ACCEDI</button>
-    </div>
-
-    <div id="view-admin" class="view hidden">
-        <h3>📊 Disponibilità Enti</h3>
-        <table id="tab-admin"></table>
-        <button onclick="location.reload()">LOGOUT</button>
-    </div>
-
-    <div id="view-piantone" class="view hidden">
-        <h3>🚧 Controllo Sbarra</h3>
-        <div id="status-parcheggio" style="background:#e0f2fe; padding:15px; border-radius:10px; color:#0369a1; font-weight:bold; text-align:center; margin-bottom:10px;">
-            <span id="total-free-display">Caricamento...</span>
+    <div class="card">
+        <div id="view-login">
+            <h2 style="color: var(--blue);">🅿️ CLF Fontanarossa</h2>
+            <input type="text" id="in-npass" placeholder="CODICE PASS" style="text-align: center; text-transform: uppercase;">
+            <button onclick="doLogin()">ENTRA</button>
         </div>
-        <button onclick="location.reload()">LOGOUT</button>
-    </div>
 
+        <div id="view-user" class="hidden">
+            <h3>📅 Prenota Posto</h3>
+            <div id="cal-grid"></div>
+            <input type="email" id="u-email" placeholder="Email per ricevere il PASS">
+            <button onclick="inviaPren()" class="btn-green">INVIA PRENOTAZIONE</button>
+            <button class="btn-gray" onclick="mostraMie()">Le mie prenotazioni</button>
+            <button class="btn-red" onclick="location.reload()">LOGOUT</button>
+        </div>
+
+        <div id="view-piantone" class="hidden">
+            <h3>Controllo Sbarra 🚧</h3>
+            <div id="status-parcheggio" style="margin-bottom:15px; padding:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; color:#166534; font-weight:bold; font-size:14px;">
+                <span id="total-free-display">Calcolo disponibilità...</span>
+            </div>
+            <input type="text" id="search-p" placeholder="CERCA CODICE" style="text-transform: uppercase;">
+            <button onclick="cercaPass()">Cerca</button>
+            <div id="panel-piantone" class="hidden">
+                <h4 id="lab-pass">PASS: ---</h4>
+                <button class="btn-green" onclick="mossa('E')">ENTRATA</button>
+                <button class="btn-gray" onclick="mossa('U')">USCITA</button>
+            </div>
+            <table id="lista-veicoli"></table>
+            <button class="btn-red" onclick="location.reload()">LOGOUT</button>
+        </div>
+
+        <div id="view-admin" class="hidden">
+            <h3>📊 Disponibilità Posti</h3>
+            <table id="tab-admin"></table>
+            <button class="btn-red" onclick="location.reload()">LOGOUT</button>
+        </div>
+    </div>
     <script src="script.js"></script>
 </body>
 </html>
