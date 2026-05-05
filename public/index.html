@@ -1,148 +1,41 @@
 <!DOCTYPE html>
-<html lang="it">
+<html>
 <head>
-    <meta name="google-site-verification" content="vDRg6d5eBw-8Dt3S5DiJxXB4w_pNs9qwMUM9SwIbWxs" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestione Parcheggio CL Fontanarossa </title>
-    <link rel="icon" type="image/png" href="LogoCLF.png">
-    <link rel="manifest" href="/manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="ParkingCLF">
-    <link rel="apple-touch-icon" href="LogoCLF.png">
+    <title>Gestione Parcheggio CLF</title>
     <style>
-        :root { --blue: #3b82f6; --green: #22c55e; --orange: #f59e0b; --red: #ef4444; --gray: #64748b; --light: #f8fafc; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f1f5f9; display: flex; justify-content: center; padding: 20px; margin: 0; }
-        .card { background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 480px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
+        :root { --blue: #3b82f6; --green: #22c55e; --orange: #f59e0b; --red: #ef4444; --gray: #64748b; }
+        body { font-family: sans-serif; background: #f1f5f9; padding: 20px; }
         .hidden { display: none; }
-        
-        input, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 16px; box-sizing: border-box; transition: 0.3s; }
-        button { border: none; font-weight: bold; cursor: pointer; color: white; background: var(--blue); }
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
-        
-        .btn-green { background: var(--green); } 
-        .btn-orange { background: var(--orange); } 
-        .btn-red { background: var(--red); } 
-        .btn-gray { background: var(--gray); }
-
-        /* Calendario 45gg */
-        #cal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-height: 250px; overflow-y: auto; margin: 15px 0; padding: 5px; border: 1px solid #eee; border-radius: 10px; }
-        .day-slot { padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 13px; background: white; }
-        .selected { background: var(--blue) !important; color: white !important; border-color: var(--blue); }
-
-        /* Box Successo (Riepilogo) */
-        .summary-box { background: var(--light); padding: 15px; border-radius: 12px; text-align: left; margin: 15px 0; border: 1px solid #e2e8f0; font-size: 14px; line-height: 1.6; }
-
-        /* Lista Prenotazioni con Cestino */
-        .pren-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border-radius: 12px; margin-bottom: 8px; border: 1px solid #e2e8f0; text-align: left; }
-        .btn-delete { color: var(--red); cursor: pointer; font-size: 20px; transition: 0.2s; }
-        .btn-delete:hover { transform: scale(1.2); }
-
-        /* Piantone & Admin */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        .view { background: white; padding: 20px; border-radius: 15px; max-width: 500px; margin: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: center; }
+        button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px; }
+        .btn-blue { background: var(--blue); color: white; }
     </style>
 </head>
 <body>
-    <div class="card">
-        
-        <div id="view-login">
-            <h2 style="color: var(--blue);">🅿️ CLF Fontanarossa</h2>
-            <p style="color: var(--gray); font-size: 14px;">Inserisci il tuo codice identificativo</p>
-            <input type="text" id="in-npass" placeholder="" style="text-align: center; text-transform: uppercase;">
-            <button onclick="doLogin()">ENTRA</button>
-        </div>
-        <button id="btnInstalla" style="display:none; background-color: #ffffff; color: #3b82f6; border: 2px solid #3b82f6; padding: 12px; border-radius: 10px; width: 100%; margin-bottom: 15px; font-weight: bold; cursor: pointer; font-size: 16px;">
-        📲 INSTALLA APP PARCHEGGIO
-        </button>
 
-        <div id="view-user" class="hidden">
-            <h3 id="user-title">📅 Prenota Posto</h3>
-            <p style="font-size: 12px; color: var(--gray);">Seleziona i giorni (Max 15)</p>
-            <div id="cal-grid"></div>
-            <input type="email" id="u-email" placeholder="Email* (PRIVATA) per ricevere il PASS">
-            <p style="font-size: 10px; color: var(--gray);">(*)Informativa: i dati forniti sono trattati solo per fini organizzativi. Il sistema non profila gli utenti e non cede dati a terzi</p>
-            <button onclick="inviaPren()" class="btn-green">INVIA PRENOTAZIONE</button>
-            <button class="btn-gray" onclick="mostraMie()">Le mie prenotazioni</button>
-            <button class="btn-red" style="margin-top: 20px;" onclick="location.reload()">LOGOUT</button>
-        </div>
-
-        <div id="view-my-list" class="hidden">
-            <h3>Gestione Prenotazioni</h3>
-            <div style="background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 10px; margin-bottom: 15px; font-size: 11px; color: #92400E; text-align: left;">
-                ⚠️ <strong>Non trovi la mail di conferma?</strong> Controlla la <strong>Posta indesiderata</strong> e segna come <strong>"Sicura"</strong>.
-            </div>
-            <div id="my-list-content"></div>
-            <button class="btn-gray" style="margin-top: 15px;" onclick="show('view-user')">Torna Indietro</button>
-        </div>
-
-        <div id="view-success" class="hidden">
-            <div style="font-size: 60px; color: var(--green);">✅</div>
-            <h3>Prenotazione Confermata!</h3>
-            <p>Abbiamo inviato il PASS PDF alla tua email.</p>
-            <div class="summary-box" id="summary-details"></div>
-            <div style="background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 12px; margin: 15px 0; font-size: 12px; color: #92400E; text-align: left;">
-                ⚠️ <strong>Non vedi la mail?</strong><br>
-                Controlla la <strong>Posta indesiderata</strong> e segnala la mail come <strong>"Sicura"</strong> o <strong>"Non Spam"</strong>.
-            </div>
-            <button onclick="location.reload()">Torna alla Home</button>
-        </div>
-
-        <div id="view-piantone" class="hidden">
-    <h3>Controllo Sbarra 🚧</h3>
-    
-    <!-- ✅ Nuovo Box Posti Liberi Totali -->
-    <div id="status-parcheggio" style="margin-bottom: 15px; padding: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; color: #166534; font-weight: bold; font-size: 14px;">
-        <span id="total-free-display">Calcolo disponibilità...</span>
+    <div id="view-login" class="view">
+        <h2>Ingresso Parcheggio</h2>
+        <input type="text" id="in-npass" placeholder="Inserisci Codice Pass">
+        <button class="btn-blue" onclick="doLogin()">ACCEDI</button>
     </div>
 
-    <div style="display: flex; gap: 8px;">
-        <input type="text" id="search-p" placeholder="CERCA Codice" style="text-transform: uppercase;">
-        <button onclick="cercaPass()" style="width: auto; padding: 0 20px;">Cerca</button>
-    </div>
-    
-    <div id="panel-piantone" class="hidden" style="margin-top: 15px; padding: 20px; background: #f8fafc; border-radius: 15px; border: 1px solid #e2e8f0;">
-        <h4 id="lab-pass" style="margin: 0; font-size: 18px;">PASS: ---</h4>
-        <p id="lab-periodo" style="font-size: 12px; color: var(--gray); margin: 5px 0 15px 0;">(Periodo: --/--/----)</p>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div>
-                <button class="btn-green" onclick="mossa('E')" style="height: 60px; font-size: 18px;">ENTRATA</button>
-                <div id="reg-e" style="font-size: 10px; color: var(--gray); margin-top: 5px;"></div>
-            </div>
-            <div>
-                <button class="btn-orange" onclick="mossa('U')" style="height: 60px; font-size: 18px;">USCITA</button>
-                <div id="reg-u" style="font-size: 10px; color: var(--gray); margin-top: 5px;"></div>
-            </div>
-        </div>
+    <div id="view-admin" class="view hidden">
+        <h3>📊 Disponibilità Enti</h3>
+        <table id="tab-admin"></table>
+        <button onclick="location.reload()">LOGOUT</button>
     </div>
 
-    <h4 style="margin-top: 25px; text-align: left;">🏎️ Veicoli Dentro</h4>
-    <table style="font-size: 14px; margin-bottom: 20px;">
-        <thead>
-            <tr>
-                <th style="color: var(--gray);">PASS</th>
-                <th style="color: var(--gray);">Data Ingresso</th>
-                <th style="color: var(--green);">ORA</th>
-                <th style="color: var(--gray);">Data Uscita</th>
-                <th style="color: var(--orange);">ORA</th>
-            </tr>
-        </thead>
-        <tbody id="lista-veicoli"></tbody>
-    </table>
-    
-    <button class="btn-gray" onclick="location.reload()">LOGOUT</button>
-</div>
-
-        <div id="view-admin" class="hidden">
-            <h3>📊 Disponibilità Posti</h3>
-            <table id="tab-admin"></table>
-            <button class="btn-red" style="margin-top: 20px;" onclick="location.reload()">LOGOUT</button>
+    <div id="view-piantone" class="view hidden">
+        <h3>🚧 Controllo Sbarra</h3>
+        <div id="status-parcheggio" style="background:#e0f2fe; padding:15px; border-radius:10px; color:#0369a1; font-weight:bold; text-align:center; margin-bottom:10px;">
+            <span id="total-free-display">Caricamento...</span>
         </div>
-        <button id="btnEsciApp" style="background-color: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; padding: 10px; border-radius: 8px; width: 100%; margin-top: 20px; font-weight: bold;">
-        🚪 ESCI DALL'APP
-        </button>
+        <button onclick="location.reload()">LOGOUT</button>
     </div>
 
     <script src="script.js"></script>
