@@ -44,12 +44,23 @@ async function doLogin() {
     const res = await fetch('/api/valida-pass', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ npass: userPass }) });
     const data = await res.json();
     if (data.valid) {
-        if (data.ruolo === 'piantone') { show('view-piantone'); aggiornaVeicoli(); }
+        if (data.ruolo === 'piantone') { 
+            show('view-piantone'); 
+            aggiornaVeicoli(); 
+            aggiornaPostiLiberiPiantone(); // Nuova chiamata
+        }
         else if (data.ruolo === 'admin') { show('view-admin'); mostraAdmin(); }
         else { show('view-user'); buildCal(); }
     } else alert("Accesso Negato");
 }
-
+// ✅ Nuova funzione per visualizzazione posti liberi totali al piantone
+async function aggiornaPostiLiberiPiantone() {
+    const res = await fetch(`/api/admin/cruscotto?npass=${userPass}`);
+    const dati = await res.json();
+    if (dati.length > 0) {
+        document.getElementById('total-free-display').innerText = `Posti totali liberi oggi: ${dati[0].totaleLiberi} / 120`;
+    }
+}
 function buildCal() {
     const grid = document.getElementById('cal-grid'); grid.innerHTML = ""; selectedDays = [];
     let d = new Date();
@@ -197,39 +208,26 @@ async function mossa(tipo) {
     cercaPass(); aggiornaVeicoli();
 }
 
-// Cruscotto admin con dettaglio ENTI
+// ✅ Cruscotto admin con dettaglio ENTI e Colori Critici
 async function mostraAdmin() {
     const res = await fetch(`/api/admin/cruscotto?npass=${userPass}`);
     const dati = await res.json();
-    
-    if (!dati || dati.length === 0) return;
+    if (!dati?.length) return;
 
-    // Estrai lista enti dal primo record
     const enti = Object.keys(dati[0].enti || {}).sort();
-
-    // Costruisci intestazione tabella
-    let header = `<tr>
-        <th style="color:#64748b;">Data</th>
-        <th style="color:#64748b;">Totale Liberi</th>`;
-    enti.forEach(ente => {
-        header += `<th style="color:#64748b; font-size:11px;">${ente} (Liberi)</th>`;
-    });
+    let header = `<tr><th>Data</th><th style="color:var(--blue);">TOT LIBERI</th>`;
+    enti.forEach(e => header += `<th>${e}</th>`);
     header += `</tr>`;
 
-    // Costruisci righe
     const rows = dati.map(x => {
-        let row = `<tr>
-            <td>${fmtData(x.data)}</td>
-            <td style="color:#22c55e; font-weight:bold;">${x.totaleLiberi} / 120</td>`;
-        
+        let row = `<tr><td>${fmtData(x.data)}</td><td style="font-weight:bold; color:var(--green);">${x.totaleLiberi}/120</td>`;
         enti.forEach(ente => {
             const info = x.enti[ente] || { liberi: 0, totale: 0 };
-            const colore = info.liberi === 0 ? '#ef4444' : info.liberi < 3 ? '#f59e0b' : '#64748b';
-            row += `<td style="color:${colore}; font-size:11px;">${info.liberi}/${info.totale}</td>`;
+            // Rosso se 0, Arancione se < 3
+            const col = info.liberi === 0 ? 'var(--red)' : info.liberi < 3 ? 'var(--orange)' : 'var(--gray)';
+            row += `<td style="color:${col}; font-weight:bold;">${info.liberi}/${info.totale}</td>`;
         });
-        
-        row += `</tr>`;
-        return row;
+        return row + `</tr>`;
     }).join('');
 
     document.getElementById('tab-admin').innerHTML = header + rows;
