@@ -1,20 +1,69 @@
-:root { --blue: #3b82f6; --green: #22c55e; --orange: #f59e0b; --red: #ef4444; --gray: #64748b; --light: #f8fafc; }
-body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f1f5f9; display: flex; justify-content: center; padding: 20px; margin: 0; }
-.card { background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 480px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
-.hidden { display: none; }
-input, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 16px; box-sizing: border-box; transition: 0.3s; }
-button { border: none; font-weight: bold; cursor: pointer; color: white; background: var(--blue); }
-button:hover { opacity: 0.9; transform: translateY(-1px); }
-.btn-green { background: var(--green); }
-.btn-orange { background: var(--orange); }
-.btn-red { background: var(--red); }
-.btn-gray { background: var(--gray); }
+body { 
+    background-color: #f0f7ff; /* Azzurrino chiaro di sfondo */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
 
-#cal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-height: 250px; overflow-y: auto; margin: 15px 0; padding: 5px; border: 1px solid #eee; border-radius: 10px; }
-.day-slot { padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 13px; background: white; }
-.selected { background: var(--blue) !important; color: white !important; }
+.container { width: 100%; max-width: 500px; }
 
-.summary-box { background: var(--light); padding: 15px; border-radius: 12px; text-align: left; margin: 15px 0; border: 1px solid #e2e8f0; font-size: 14px; line-height: 1.6; }
+.card { 
+    background: white; 
+    padding: 25px; 
+    border-radius: 20px; 
+    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1); 
+    border: 1px solid #e0eefe;
+    margin-bottom: 20px;
+}
 
-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+h1 { color: #1e40af; text-align: center; font-size: 24px; margin-bottom: 30px; }
+h1::before { content: "🅿️ "; } /* Simbolo Parcheggio */
+
+#calendar-grid { 
+    display: grid; 
+    grid-template-columns: repeat(4, 1fr); 
+    gap: 12px; 
+    margin: 20px 0; 
+}
+
+.day-slot { 
+    padding: 12px 5px; 
+    border: 2px solid #f1f5f9; 
+    border-radius: 12px; 
+    text-align: center; 
+    cursor: pointer; 
+    font-weight: 600;
+    color: #64748b;
+    transition: all 0.2s;
+}
+
+.day-slot.selected { 
+    background: #3b82f6; 
+    color: white; 
+    border-color: #2563eb; 
+    transform: scale(1.05);
+}
+
+button { 
+    width: 100%; 
+    padding: 15px; 
+    background: #3b82f6; 
+    color: white; 
+    border: none; 
+    border-radius: 12px; 
+    font-weight: bold; 
+    cursor: pointer;
+    font-size: 16px;
+}
+
+input { 
+    width: 100%; 
+    padding: 12px; 
+    margin: 10px 0; 
+    border: 1px solid #cbd5e1; 
+    border-radius: 10px; 
+    box-sizing: border-box;
+}
+
+.summary-item { margin: 10px 0; padding: 10px; background: #f8fafc; border-radius: 8px; }
