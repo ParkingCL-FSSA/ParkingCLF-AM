@@ -52,27 +52,27 @@ app.post('/api/valida-pass', async (req, res) => {
   try {
     let { npass } = req.body;
 
-    if (!npass) {
-      return res.status(400).json({ valid: false, error: 'Codice mancante' });
-    }
+    if (!npass) return res.status(400).json({ valid: false });
 
     npass = npass.toUpperCase().trim();
 
     const result = await pool.query(
-      `SELECT r.npass, r.ente
-       FROM registro_pass r
-       WHERE UPPER(r.npass) = $1`,
+      `SELECT npass, ente, ruolo
+       FROM registro_pass
+       WHERE UPPER(npass) = $1`,
       [npass]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(401).json({ valid: false });
+    if (!result.rows.length) {
+      return res.json({ valid: false });
     }
+
+    const user = result.rows[0];
 
     return res.json({
       valid: true,
-      ruolo: 'utente',
-      ente: result.rows[0].ente
+      ruolo: user.ruolo || 'utente',
+      ente: user.ente
     });
 
   } catch (err) {
@@ -169,4 +169,7 @@ io.on('connection', () => {
   console.log('Client connesso');
 });
 
-server.listen(process.env.PORT);
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log("Server attivo su porta " + PORT);
+});
