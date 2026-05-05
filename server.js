@@ -97,115 +97,61 @@ app.post('/api/valida-pass', async (req, res) => {
     }
 });
 
-// --- 2. PRENOTAZIONE ---
+// --- 2. PRENOTAZIONE (LOGICA AGGIORNATA) ---
 app.post('/api/prenota', async (req, res) => {
     const { npass, giorni, email } = req.body;
-
-    // Validazione input
-    if (!npass || !email) return res.status(400).json({ error: "Dati mancanti" });
-    if (!Array.isArray(giorni) || giorni.length === 0) return res.status(400).json({ error: "Giorni non validi" });
-    if (giorni.length > 15) return res.status(400).json({ error: "Limite 15 giorni superato" });
+    if (!npass || !email || !giorni?.length) return res.status(400).json({ error: "Dati mancanti" });
 
     try {
         const sorted = [...giorni].sort();
         const dataInizio = sorted[0];
-        const dataFine = sorted[sorted.length - 1];
         const p = npass.trim().toUpperCase();
-        const numGiorni = giorni.length;
 
-        // ✅ CHECK 1: Blocco doppia prenotazione (sovrapposizione periodi)
-        const overlap = await pool.query(
-            `SELECT id FROM prenotazioni 
-             WHERE UPPER(npass) = $1 
-               AND stato IN ('PRENOTATO', 'INGRESSO')
-               AND (
-                   (data_inizio <= $2 AND data_fine >= $2) OR
-                   (data_inizio <= $3 AND data_fine >= $3) OR
-                   (data_inizio >= $2 AND data_fine <= $3)
-               )`,
-            [p, dataInizio, dataFine]
-        );
-        if (overlap.rows.length > 0) {
-            return res.status(400).json({ 
-                error: "Hai già una prenotazione attiva in questo periodo. Cancellala prima di prenotare nuovamente." 
-            });
-        }
-
-        // ✅ CHECK 2: Limite 15 giorni cumulativi in finestra mobile di 30 giorni
-        // Contiamo i giorni già prenotati nei 30 giorni a partire da dataInizio
+        // ✅ CHECK 2: Limite 15gg cumulativi in finestra mobile di 30gg
         const fineFinestra = new Date(dataInizio);
-        fineFinestra.setDate(fineFinestra.getDate() + 29); // 30 giorni totali
+        fineFinestra.setDate(fineFinestra.getDate() + 29);
         const fineFinStr = fineFinestra.toISOString().split('T')[0];
 
         const giorniEsistenti = await pool.query(
             `SELECT data_inizio, data_fine FROM prenotazioni 
-             WHERE UPPER(npass) = $1 
-               AND stato IN ('PRENOTATO', 'INGRESSO')
-               AND data_inizio <= $2
-               AND data_fine >= $3`,
+             WHERE UPPER(npass) = $1 AND stato IN ('PRENOTATO', 'INGRESSO')
+             AND data_inizio <= $2 AND data_fine >= $3`,
             [p, fineFinStr, dataInizio]
         );
 
-        // Calcola giorni totali già prenotati in questa finestra
         let giorniOccupati = 0;
         giorniEsistenti.rows.forEach(row => {
-            const inizio = new Date(row.data_inizio) > new Date(dataInizio) 
-                ? new Date(row.data_inizio) 
-                : new Date(dataInizio);
-            const fine = new Date(row.data_fine) < new Date(fineFinStr) 
-                ? new Date(row.data_fine) 
-                : new Date(fineFinStr);
+            const inizio = new Date(row.data_inizio) > new Date(dataInizio) ? new Date(row.data_inizio) : new Date(dataInizio);
+            const fine = new Date(row.data_fine) < new Date(fineFinStr) ? new Date(row.data_fine) : new Date(fineFinStr);
             const diff = Math.ceil((fine - inizio) / (1000 * 60 * 60 * 24)) + 1;
             giorniOccupati += diff;
         });
 
-        if (giorniOccupati + numGiorni > 15) {
-            return res.status(400).json({ 
-                error: `Limite superato: puoi prenotare massimo 15 giorni in una finestra di 30 giorni. Hai già ${giorniOccupati} giorni prenotati.` 
-            });
+        if (giorniOccupati + giorni.length > 15) {
+            return res.status(400).json({ error: `Limite superato: massimo 15gg in 30gg. Hai già ${giorniOccupati}gg prenotati.` });
         }
 
-        // ✅ CHECK 3: Verifica quote ENTE per ogni giorno richiesto
-        // Recupera ENTE dell'utente e posti disponibili per quell'ente
+        // ✅ CHECK 3: Controllo quote ENTE (Legge Ente dal registro_pass)
         const userInfo = await pool.query(
-            `SELECT r.ente, a.posti 
-             FROM registro_pass r
-             LEFT JOIN assegnazioni a ON r.ente = a.ente
-             WHERE UPPER(r.npass) = $1`,
-            [p]
+            `SELECT r.ente, a.posti FROM registro_pass r 
+             LEFT JOIN assegnazioni a ON r.ente = a.ente WHERE UPPER(r.npass) = $1`, [p]
         );
+        
+        if (userInfo.rows.length === 0 || !userInfo.rows[0].ente) return res.status(400).json({ error: "Configurazione utente non valida." });
+        const { ente: userEnte, posti: postiEnte } = userInfo.rows[0];
 
-        if (userInfo.rows.length === 0 || !userInfo.rows[0].ente) {
-            return res.status(400).json({ error: "Configurazione utente non valida" });
-        }
-
-        const userEnte = userInfo.rows[0].ente;
-        const postiEnte = userInfo.rows[0].posti || 0;
-
-        // Per ogni giorno richiesto, conta quante prenotazioni dell'ENTE esistono già
         for (const giorno of sorted) {
             const occupatiEnte = await pool.query(
-                `SELECT COUNT(*) as count
-                 FROM prenotazioni p
+                `SELECT COUNT(*) as count FROM prenotazioni p
                  JOIN registro_pass r ON UPPER(p.npass) = UPPER(r.npass)
-                 WHERE r.ente = $1
-                   AND p.stato NOT IN ('SCADUTO')
-                   AND $2 BETWEEN p.data_inizio AND p.data_fine`,
-                [userEnte, giorno]
+                 WHERE r.ente = $1 AND p.stato IN ('PRENOTATO', 'INGRESSO')
+                 AND $2 BETWEEN p.data_inizio AND p.data_fine`, [userEnte, giorno]
             );
-
-            const count = parseInt(occupatiEnte.rows[0].count);
-            if (count >= postiEnte) {
-                return res.status(400).json({ 
-                    error: "Non è possibile prenotare nelle giornate selezionate. Posti esauriti per questa prenotazione." 
-                });
+            if (parseInt(occupatiEnte.rows[0].count) >= postiEnte) {
+                // Messaggio generico all'utente
+                return res.status(400).json({ error: "Posti esauriti per le date selezionate." });
             }
         }
-
-        await pool.query(
-            'INSERT INTO prenotazioni (npass, data_inizio, data_fine, stato) VALUES ($1, $2, $3, $4)',
-            [p, dataInizio, dataFine, 'PRENOTATO']
-        );
         await pool.query('UPDATE registro_pass SET ult_pren = NOW() WHERE UPPER(npass) = $1', [p])
             .catch(e => console.log(e));
 
