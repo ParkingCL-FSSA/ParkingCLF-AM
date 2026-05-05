@@ -43,14 +43,15 @@ async function doLogin() {
     if (!userPass) return;
     const res = await fetch('/api/valida-pass', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ npass: userPass }) });
     const data = await res.json();
-   if(data.valid){
-    if(data.ruolo === "admin"){
-        show('view-admin');
-    } else if(data.ruolo === "piantone"){
-        show('view-piantone');
-    } else {
-        show('view-user');
-    }
+    if (data.valid) {
+        if (data.ruolo === 'piantone') { 
+            show('view-piantone'); 
+            aggiornaVeicoli(); 
+            aggiornaPostiLiberiPiantone(); // Nuova chiamata
+        }
+        else if (data.ruolo === 'admin') { show('view-admin'); mostraAdmin(); }
+        else { show('view-user'); buildCal(); }
+    } else alert("Accesso Negato");
 }
 // ✅ Nuova funzione per visualizzazione posti liberi totali al piantone
 async function aggiornaPostiLiberiPiantone() {
@@ -82,10 +83,7 @@ async function inviaPren() {
     if (selectedDays.length > 15) return alert("Massimo 15 giorni selezionabili!");
 
     const res = await fetch('/api/prenota', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ npass: userPass, giorni: selectedDays, email: email }) });
-    if (!giorni || giorni.length === 0) {
-    alert("Seleziona almeno un giorno");
-    return;
-}
+    
     if (res.ok) {
         selectedDays.sort();
         document.getElementById('summary-details').innerHTML =
@@ -233,38 +231,4 @@ async function mostraAdmin() {
     }).join('');
 
     document.getElementById('tab-admin').innerHTML = header + rows;
-}
-
-
-// ===== SAFETY PATCHES =====
-
-// Email validation guard
-function isValidEmail(email){
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-// Patch inviaPren if exists
-if (typeof inviaPren === "function") {
-    const oldInviaPren = inviaPren;
-    inviaPren = function(){
-        const email = document.getElementById("u-email")?.value || "";
-        if(!isValidEmail(email)){
-            alert("Inserisci una email valida");
-            return;
-        }
-        return oldInviaPren.apply(this, arguments);
-    }
-}
-
-// Prevent empty login
-if (typeof doLogin === "function") {
-    const oldLogin = doLogin;
-    doLogin = function(){
-        const code = document.getElementById("in-npass")?.value || "";
-        if(code.trim().length < 2){
-            alert("Codice non valido");
-            return;
-        }
-        return oldLogin.apply(this, arguments);
-    }
 }
