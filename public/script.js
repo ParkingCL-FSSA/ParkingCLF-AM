@@ -232,3 +232,37 @@ async function mostraAdmin() {
 
     document.getElementById('tab-admin').innerHTML = header + rows;
 }
+
+
+// ===== SAFETY PATCHES =====
+
+// Email validation guard
+function isValidEmail(email){
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// Patch inviaPren if exists
+if (typeof inviaPren === "function") {
+    const oldInviaPren = inviaPren;
+    inviaPren = function(){
+        const email = document.getElementById("u-email")?.value || "";
+        if(!isValidEmail(email)){
+            alert("Inserisci una email valida");
+            return;
+        }
+        return oldInviaPren.apply(this, arguments);
+    }
+}
+
+// Prevent empty login
+if (typeof doLogin === "function") {
+    const oldLogin = doLogin;
+    doLogin = function(){
+        const code = document.getElementById("in-npass")?.value || "";
+        if(code.trim().length < 2){
+            alert("Codice non valido");
+            return;
+        }
+        return oldLogin.apply(this, arguments);
+    }
+}
