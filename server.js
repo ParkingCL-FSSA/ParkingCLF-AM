@@ -351,7 +351,28 @@ app.post('/api/piantone/azione', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+// --- 7B. PIANTONE LIBERI ---
+app.get('/api/piantone/liberi', async (req, res) => {
+    try {
+        const oggi = new Date().toISOString().split('T')[0];
 
+        const r = await pool.query(
+            `SELECT COUNT(*) as count
+             FROM prenotazioni
+             WHERE stato IN ('PRENOTATO','INGRESSO')
+             AND $1 BETWEEN data_inizio AND data_fine`,
+            [oggi]
+        );
+
+        const occupati = parseInt(r.rows[0].count);
+        const totaleLiberi = Math.max(0, 120 - occupati);
+
+        res.json({ totaleLiberi });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 // --- 8. ADMIN CRUSCOTTO OTTIMIZZATO ---
 app.get('/api/admin/cruscotto', async (req, res) => {
     const npass = req.query.npass;
