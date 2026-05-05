@@ -58,8 +58,9 @@ async function doLogin() {
 async function aggiornaPostiLiberiPiantone() {
     const res = await fetch('/api/piantone/liberi');
     const dati = await res.json();
-   document.getElementById('total-free-display').innerText =
-    `Liberi: ${dati.totaleLiberi} | Dentro: ${dati.dentro}`;
+    document.getElementById('total-free-display').innerHTML =
+    `<b style="color:green">Liberi: ${dati.totaleLiberi}</b> 
+     | <b>Dentro: ${dati.dentro}</b>`;
 }
 function buildCal() {
     const grid = document.getElementById('cal-grid'); grid.innerHTML = ""; selectedDays = [];
