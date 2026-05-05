@@ -47,19 +47,19 @@ async function doLogin() {
         if (data.ruolo === 'piantone') { 
             show('view-piantone'); 
             aggiornaVeicoli(); 
-            aggiornaPostiLiberiPiantone(); // Nuova chiamata
-        }
+            aggiornaPostiLiberiPiantone();
+            setInterval(aggiornaPostiLiberiPiantone, 10000); // ogni 10 sec
+}
         else if (data.ruolo === 'admin') { show('view-admin'); mostraAdmin(); }
         else { show('view-user'); buildCal(); }
     } else alert("Accesso Negato");
 }
 // ✅ Nuova funzione per visualizzazione posti liberi totali al piantone
 async function aggiornaPostiLiberiPiantone() {
-    const res = await fetch(`/api/admin/cruscotto?npass=${userPass}`);
+    const res = await fetch('/api/piantone/liberi');
     const dati = await res.json();
-    if (dati.length > 0) {
-        document.getElementById('total-free-display').innerText = `Posti totali liberi oggi: ${dati[0].totaleLiberi} / 120`;
-    }
+    document.getElementById('total-free-display').innerText =
+        `Posti totali liberi oggi: ${dati.totaleLiberi} / 120`;
 }
 function buildCal() {
     const grid = document.getElementById('cal-grid'); grid.innerHTML = ""; selectedDays = [];
@@ -76,7 +76,6 @@ function buildCal() {
         grid.appendChild(slot); d.setDate(d.getDate() + 1);
     }
 }
-
 async function inviaPren() {
     const email = document.getElementById('u-email').value;
     if (!selectedDays.length || !email) return alert("Dati mancanti!");
@@ -95,7 +94,6 @@ async function inviaPren() {
         alert(err.error || "Errore durante la prenotazione.");
     }
 }
-
 // FIX: mostra storico (USCITO, SCADUTO) con stile diverso e senza cestino
 async function mostraMie() {
     show('view-my-list');
@@ -223,8 +221,8 @@ async function mostraAdmin() {
         let row = `<tr><td>${fmtData(x.data)}</td><td style="font-weight:bold; color:var(--green);">${x.totaleLiberi}/120</td>`;
         enti.forEach(ente => {
             const info = x.enti[ente] || { liberi: 0, totale: 0 };
-            // Rosso se 0, Arancione se < 3
-            const col = info.liberi === 0 ? 'var(--red)' : info.liberi < 3 ? 'var(--orange)' : 'var(--gray)';
+            // Rosso se 0, Arancione se < 4
+            const col = info.liberi === 0 ? 'var(--red)' : info.liberi < 4 ? 'var(--orange)' : 'var(--gray)';
             row += `<td style="color:${col}; font-weight:bold;">${info.liberi}/${info.totale}</td>`;
         });
         return row + `</tr>`;
