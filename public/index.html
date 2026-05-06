@@ -63,7 +63,7 @@
             <div id="cal-grid"></div>
             <input type="email" id="u-email" placeholder="Email* (PRIVATA) per ricevere il PASS">
             <p style="font-size: 10px; color: var(--gray);">(*)Informativa: i dati forniti sono trattati solo per fini organizzativi. Il sistema non profila gli utenti e non cede dati a terzi</p>
-            <button onclick="inviaPren()" class="btn-green">INVIA PRENOTAZIONE</button>
+            <button onclick="inviaPren()" class="btn-">INVIA PRENOTAZIONE</button>
             <button class="btn-gray" onclick="mostraMie()">Le mie prenotazioni</button>
             <button class="btn-red" style="margin-top: 20px;" onclick="location.reload()">LOGOUT</button>
         </div>
@@ -78,7 +78,7 @@
         </div>
 
         <div id="view-success" class="hidden">
-            <div style="font-size: 60px; color: var(--green);">✅</div>
+            <div style="font-size: 60px; color: var(--);">✅</div>
             <h3>Prenotazione Confermata!</h3>
             <p>Abbiamo inviato il PASS PDF alla tua email.</p>
             <div class="summary-box" id="summary-details"></div>
@@ -108,11 +108,11 @@
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
             <div>
-                <button class="btn-green" onclick="mossa('E')" style="height: 60px; font-size: 18px;">ENTRATA</button>
+                <button id="btn-ingresso" class="btn-green" onclick="mossa('E')" style="height: 60px; font-size: 18px;">ENTRATA</button>
                 <div id="reg-e" style="font-size: 10px; color: var(--gray); margin-top: 5px;"></div>
             </div>
             <div>
-                <button class="btn-orange" onclick="mossa('U')" style="height: 60px; font-size: 18px;">USCITA</button>
+                <button id="btn-uscita" class="btn-orange" onclick="mossa('U')" style="height: 60px; font-size: 18px;">USCITA</button>
                 <div id="reg-u" style="font-size: 10px; color: var(--gray); margin-top: 5px;"></div>
             </div>
         </div>
