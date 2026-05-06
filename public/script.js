@@ -285,22 +285,24 @@ async function aggiornaVeicoli() {
     }
 
     // 🔥 FILTRO + ORDINAMENTO
-    const lista = dati
-        .filter(x => {
-            const scaduto = x.stato === 'INGRESSO' && oggi > x.data_fine;
-            const dentro = x.stato === 'INGRESSO' || (x.stato === 'SCADUTO' && !x.orario_uscita);
+    const lista = dati.filter(x => {
+    const scaduto = x.stato === 'INGRESSO' && oggi > x.data_fine;
+    const dentro = x.stato === 'INGRESSO';
 
-            if (filtroPiantone === 'attivi') return dentro;
-            if (filtroPiantone === 'scaduti') return scaduto;
-            return true;
-        })
+    if (filtroPiantone === 'attivi') return dentro;
+    if (filtroPiantone === 'scaduti') return scaduto;
+    return true;
+    });
         .sort((a, b) => {
             const scadA = a.stato === 'INGRESSO' && oggi > a.data_fine;
             const scadB = b.stato === 'INGRESSO' && oggi > b.data_fine;
 
             return scadB - scadA; // 🔴 scaduti sopra
         });
-
+console.log("DATI:", dati);
+console.log("FILTRO:", filtroPiantone);
+console.log("LISTA DOPO FILTRO:", lista);
+    
     // 🧾 RENDER
     document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
         const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
