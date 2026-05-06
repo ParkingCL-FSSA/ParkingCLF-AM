@@ -4,7 +4,7 @@
   "description": "Sistema Gestione Parcheggio CLF-AM",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+  "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -12,5 +12,7 @@
     "cors": "^2.8.5",
     "axios": "^1.6.0",
     "pdfkit": "^0.15.0"
+    "helmet": "^8.1.0",
+    "express-rate-limit": "^7.5.0"
   }
 }
