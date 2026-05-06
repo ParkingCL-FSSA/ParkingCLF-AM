@@ -335,7 +335,7 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
 // --- 7. PIANTONE AZIONE ---
 app.post('/api/piantone/azione', async (req, res) => {
     const { id, azione, npass } = req.body;
-    
+
     if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
         return res.status(403).json({ error: "Accesso non autorizzato" });
     }
@@ -344,7 +344,7 @@ app.post('/api/piantone/azione', async (req, res) => {
     }
     try {
         const ora = new Date();
-        // 🚗 INGRESSO
+
         if (azione === 'ingresso') {
             await pool.query(
                 `UPDATE prenotazioni 
@@ -352,7 +352,22 @@ app.post('/api/piantone/azione', async (req, res) => {
                  WHERE id = $2`,
                 [ora, id]
             );
+        } 
+        else if (azione === 'uscita') {
+            await pool.query(
+                `UPDATE prenotazioni 
+                 SET stato = 'USCITO', orario_uscita = $1 
+                 WHERE id = $2`,
+                [ora, id]
+            );
         }
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Errore azione piantone:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
         // 🚪 USCITA (SEMPRE CONSENTITA, anche se scaduto)
         else if (azione === 'uscita') {
             await pool.query(
@@ -464,6 +479,7 @@ app.get('/api/admin/ritardi', async (req, res) => {
         res.status(500).json({ error: e.message });
     }
 });
-app.listen(process.env.PORT || 3000, () => {
-    console.log(`Server avviato sulla porta ${process.env.PORT || 3000}`);
+
+app.listen(process.env.PORT || 3000, '0.0.0.0', () => {
+    console.log(`Server avviato`);
 });
