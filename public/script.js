@@ -180,45 +180,64 @@ async function eliminaPren(id) {
 async function cercaPass() {
     const p = document.getElementById('search-p').value.trim().toUpperCase();
     if (!p) return;
+
     const res = await fetch(`/api/piantone/cerca/${p}?auth=${userPass}`);
     const data = await res.json();
 
     if (data.trovato) {
         currentPren = data.prenotazione;
+
+        const btnEntrata = document.querySelector('.btn-green');
+        const btnUscita = document.querySelector('.btn-orange');
+
+        // RESET
+        btnEntrata.disabled = false;
+        btnUscita.disabled = false;
+
+        // LOGICA STATI
+        if (currentPren.stato === 'PRENOTATO') {
+            btnEntrata.disabled = false;
+            btnUscita.disabled = true;
+        }
+
+        if (currentPren.stato === 'INGRESSO') {
+            btnEntrata.disabled = true;
+            btnUscita.disabled = false;
+        }
+        // 🎨 COLORI DINAMICI BOTTONI
+        const oggi = new Date().toISOString().split('T')[0];
+        const scaduto = currentPren.stato === 'INGRESSO' && oggi > currentPren.data_fine;
+        
+        if (scaduto) {
+            btnEntrata.style.background = '#9ca3af'; // grigio
+            btnUscita.style.background = '#ef4444'; // rosso alert
+            btnUscita.innerText = 'USCITA (SCADUTO)';
+        } else {
+            // reset colori originali
+            btnEntrata.style.background = '';
+            btnUscita.style.background = '';
+            btnUscita.innerText = 'USCITA';
+        }
+        // ⚠️ SCADUTO MA DENTRO → USCITA SEMPRE POSSIBILE
+        if (currentPren.stato === 'INGRESSO' && oggi > currentPren.data_fine) {
+            btnUscita.disabled = false;
+        }
+
+        // UI
         document.getElementById('panel-piantone').classList.remove('hidden');
         document.getElementById('lab-pass').innerHTML = `PASS: ${currentPren.npass}`;
-
-        // FIX: usa fmtData() per evitare sfasamento UTC
         document.getElementById('lab-periodo').innerHTML =
             `(Periodo: ${fmtData(currentPren.data_inizio)} - ${fmtData(currentPren.data_fine)})`;
 
         document.getElementById('reg-e').innerHTML = currentPren.orario_ingresso
             ? `Registrato il ${new Date(currentPren.orario_ingresso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}` : "";
+
         document.getElementById('reg-u').innerHTML = currentPren.orario_uscita
             ? `Registrato il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}` : "";
+
     } else {
         alert("Nessuna prenotazione trovata per questo PASS.");
         document.getElementById('panel-piantone').classList.add('hidden');
-    }
-    // 🔓 SBLOCCO PULSANTI SEMPRE
-        document.getElementById('btn-ingresso').disabled = false;
-        document.getElementById('btn-uscita').disabled = false;
-
-    // 🎯 LOGICA CORRETTA STATI
-    if (currentPren.stato === 'PRENOTATO') {
-        document.getElementById('btn-ingresso').disabled = false;
-        document.getElementById('btn-uscita').disabled = true;
-    }
-    if (currentPren.stato === 'INGRESSO') {
-        document.getElementById('btn-ingresso').disabled = true;
-        document.getElementById('btn-uscita').disabled = false;
-    }
-    
-    // ⚠️ SCADUTO MA DENTRO → USCITA SEMPRE POSSIBILE
-    const oggi = new Date().toISOString().split('T')[0];
-
-    if (currentPren.stato === 'INGRESSO' && oggi > currentPren.data_fine) {
-        document.getElementById('btn-uscita').disabled = false;
     }
 }
 
@@ -229,18 +248,63 @@ async function aggiornaVeicoli() {
     const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
     const dati = await res.json();
     const oggi = new Date().toISOString().split('T')[0];
-    
+
     let countDentro = 0;
     let countScaduti = 0;
-    
+
     dati.forEach(x => {
         const dentro = x.stato === 'INGRESSO';
         const scaduto = dentro && oggi > x.data_fine;
-    
+
         if (dentro) countDentro++;
         if (scaduto) countScaduti++;
     });
-    document.getElementById('lista-veicoli').innerHTML = dati.map(x => {
+
+    // 🎯 LABEL DINAMICA
+    let label = "";
+    if (filtroPiantone === 'attivi') label = "Dentro";
+    else if (filtroPiantone === 'scaduti') label = "Scaduti";
+    else label = "Totale";
+
+    const badge = document.getElementById('badge-contatori');
+
+    badge.innerHTML = `
+        🚗 <b>${label}:</b> ${
+            filtroPiantone === 'attivi' ? countDentro :
+            filtroPiantone === 'scaduti' ? countScaduti :
+            dati.length
+        }
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        ⚠️ <b id="badge-scaduti" style="color:${countScaduti > 0 ? 'red' : 'black'}">
+            Scaduti: ${countScaduti}
+        </b>
+    `;
+
+    // 🔥 LAMPEGGIANTE (solo se ci sono scaduti)
+    if (countScaduti > 0) {
+        const el = document.getElementById('badge-scaduti');
+        el.style.animation = 'blink 1s infinite';
+    }
+
+    // 🔥 FILTRO + ORDINAMENTO
+    const lista = dati
+        .filter(x => {
+            const scaduto = x.stato === 'INGRESSO' && oggi > x.data_fine;
+            const dentro = x.stato === 'INGRESSO';
+
+            if (filtroPiantone === 'attivi') return dentro;
+            if (filtroPiantone === 'scaduti') return scaduto;
+            return true;
+        })
+        .sort((a, b) => {
+            const scadA = a.stato === 'INGRESSO' && oggi > a.data_fine;
+            const scadB = b.stato === 'INGRESSO' && oggi > b.data_fine;
+
+            return scadB - scadA; // 🔴 scaduti sopra
+        });
+
+    // 🧾 RENDER
+    document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
         const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
         const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
 
@@ -249,29 +313,8 @@ async function aggiornaVeicoli() {
         const dataUsc = usc ? usc.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '';
         const oraUsc  = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '';
 
-        const oggi = new Date().toISOString().split('T')[0];
         const scaduto = x.stato === 'INGRESSO' && oggi > x.data_fine;
-        const dentro = x.stato === 'INGRESSO';
-        
-        if (filtroPiantone === 'attivi' && !dentro) return '';
-        if (filtroPiantone === 'scaduti' && !scaduto) return '';
-        let label = "";
 
-        if (filtroPiantone === 'attivi') label = "Dentro";
-        else if (filtroPiantone === 'scaduti') label = "Scaduti";
-        else label = "Totale";
-        
-        document.getElementById('badge-contatori').innerHTML = `
-            🚗 <b>${label}:</b> ${
-                filtroPiantone === 'attivi' ? countDentro :
-                filtroPiantone === 'scaduti' ? countScaduti :
-                dati.length
-            }
-            &nbsp;&nbsp;|&nbsp;&nbsp;
-            ⚠️ <b style="color:${countScaduti > 0 ? 'red' : 'black'}">
-                Scaduti: ${countScaduti}
-            </b>
-        `;
         return `<tr style="${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}">
             <td style="font-weight:bold;">${x.npass}</td>
             <td>${dataIng}</td>
@@ -281,18 +324,18 @@ async function aggiornaVeicoli() {
         </tr>`;
     }).join('') || "<tr><td colspan='5' style='text-align:center; color:black; padding:16px;'>Nessun veicolo presente</td></tr>";
 }
+    async function mossa(tipo) {
+    let azione = tipo;
 
-// async function mossa(tipo) {
-  //  await fetch('/api/piantone/azione', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: currentPren.id, azione: tipo, npass: userPass }) });
-  //  cercaPass(); aggiornaVeicoli();
-// }
-async function mossa(tipo) {
+    if (tipo === 'E') azione = 'ingresso';
+    if (tipo === 'U') azione = 'uscita';
+
     await fetch('/api/piantone/azione', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             id: currentPren.id,
-            azione: tipo,
+            azione: azione,
             npass: userPass
         })
     });
