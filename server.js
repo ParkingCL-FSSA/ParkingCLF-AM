@@ -335,29 +335,39 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
 // --- 7. PIANTONE AZIONE ---
 app.post('/api/piantone/azione', async (req, res) => {
     const { id, azione, npass } = req.body;
+    
     if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
         return res.status(403).json({ error: "Accesso non autorizzato" });
     }
-    if (!id || !azione) return res.status(400).json({ error: "Dati mancanti" });
+    if (!id || !azione) {
+        return res.status(400).json({ error: "Dati mancanti" });
+    }
     try {
         const ora = new Date();
-        if (azione === 'uscita') {
+        // 🚗 INGRESSO
+        if (azione === 'ingresso') {
             await pool.query(
-            `UPDATE prenotazioni
-             SET stato='USCITO', orario_uscita=NOW()
-             WHERE id=$1`, [id]);
-    }
-    const scaduto = x.stato === 'INGRESSO' && oggi > x.data_fine;
-        if (azione === 'E') {
-            await pool.query(`UPDATE prenotazioni SET stato = 'INGRESSO', orario_ingresso = $1 WHERE id = $2`, [ora, id]);
-        } else {
-            await pool.query(`UPDATE prenotazioni SET stato = 'USCITO', orario_uscita = $1, data_fine = CURRENT_DATE WHERE id = $2`, [ora, id]);
+                `UPDATE prenotazioni 
+                 SET stato = 'INGRESSO', orario_ingresso = $1 
+                 WHERE id = $2`,
+                [ora, id]
+            );
+        }
+        // 🚪 USCITA (SEMPRE CONSENTITA, anche se scaduto)
+        else if (azione === 'uscita') {
+            await pool.query(
+                `UPDATE prenotazioni 
+                 SET stato = 'USCITO', orario_uscita = $1 
+                 WHERE id = $2`,
+                [ora, id]
+            );
         }
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
+
 // --- 7B. PIANTONE LIBERI ---
 app.get('/api/piantone/liberi', async (req, res) => {
     try {
