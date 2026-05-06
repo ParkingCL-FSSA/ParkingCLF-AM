@@ -102,7 +102,6 @@ async function doLogin() {
 } else {
     show('view-user');
     buildCal();
-} else alert("Accesso Negato");
 }
 // ✅ Nuova funzione per visualizzazione posti liberi totali al piantone
 async function aggiornaPostiLiberiPiantone() {
