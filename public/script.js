@@ -70,11 +70,13 @@ async function doLogin() {
     if (!userPass) return;
     const res = await fetch('/api/valida-pass', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ npass: userPass }) });
     const data = await res.json();
+    
     if (data.valid) {
         if (data.ruolo === 'piantone') { 
             show('view-piantone'); 
             aggiornaVeicoli(); 
             aggiornaPostiLiberiPiantone();
+               caricaStorico(); // 👈 AGGIUNGI QUESTO
             setInterval(aggiornaPostiLiberiPiantone, 10000); // ogni 10 sec
 }
         else if (data.ruolo === 'admin') { show('view-admin'); mostraAdmin(); }
