@@ -323,10 +323,12 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
     }
     try {
         const r = await pool.query(
-            'SELECT * FROM prenotazioni WHERE UPPER(npass) = $1 
-            ORDER BY data_inizio ASC LIMIT 1',
-            [req.params.npass.toUpperCase()]
-        );
+       `SELECT * FROM prenotazioni
+        WHERE UPPER(npass) = $1 
+        ORDER BY data_inizio ASC 
+        LIMIT 1`,
+        [req.params.npass.toUpperCase()]
+);
         res.json(r.rows.length > 0 ? { trovato: true, prenotazione: r.rows[0] } : { trovato: false });
     } catch (err) {
         res.status(500).json({ error: err.message });
