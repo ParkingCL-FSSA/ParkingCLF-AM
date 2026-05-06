@@ -200,14 +200,26 @@ async function cercaPass() {
         alert("Nessuna prenotazione trovata per questo PASS.");
         document.getElementById('panel-piantone').classList.add('hidden');
     }
+    // 🔓 SBLOCCO PULSANTI SEMPRE
+        document.getElementById('btn-ingresso').disabled = false;
+        document.getElementById('btn-uscita').disabled = false;
+
+    // 🎯 LOGICA CORRETTA STATI
+    if (currentPren.stato === 'PRENOTATO') {
+        document.getElementById('btn-ingresso').disabled = false;
+        document.getElementById('btn-uscita').disabled = true;
+    }
+    if (currentPren.stato === 'INGRESSO') {
+        document.getElementById('btn-ingresso').disabled = true;
+        document.getElementById('btn-uscita').disabled = false;
+    }
+    
+    // ⚠️ SCADUTO MA DENTRO → USCITA SEMPRE POSSIBILE
     const oggi = new Date().toISOString().split('T')[0];
 
     if (currentPren.stato === 'INGRESSO' && oggi > currentPren.data_fine) {
-        document.getElementById('lab-periodo').innerHTML += 
-        `<div style="color:red; font-weight:bold;">
-            ⚠️ USCITA CONSENTITA (prenotazione scaduta)
-        </div>`;
-}
+        document.getElementById('btn-uscita').disabled = false;
+    }
 }
 
 // FIX: tabella a 4 colonne (PASS | Data Accesso | Ora Ingresso | Data e Ora Uscita)
