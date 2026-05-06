@@ -82,25 +82,27 @@ async function doLogin() {
         return;
     }
 
-    if (data.ruolo === 'piantone') {
-        show('view-piantone');
-        aggiornaVeicoli();
-        aggiornaPostiLiberiPiantone();
-        caricaStorico();
-        setInterval(aggiornaPostiLiberiPiantone, 10000);
+   if (data.ruolo === 'piantone') {
+    show('view-piantone');
+    aggiornaVeicoli();
+    aggiornaPostiLiberiPiantone();
+    caricaStorico();
+    setInterval(aggiornaPostiLiberiPiantone, 10000);
 
-        // 🔊 BEEP fix corretto (solo una volta)
-        document.body.addEventListener('click', () => {
-            beep.play().then(() => {
-                beep.pause();
-                beep.currentTime = 0;
-            }).catch(()=>{});
-        }, { once: true });
+    document.body.addEventListener('click', () => {
+        beep.play().then(() => {
+            beep.pause();
+            beep.currentTime = 0;
+        }).catch(()=>{});
+    }, { once: true });
 
-    } 
-    else if (data.ruolo === 'admin') { show('view-admin'); mostraAdmin(); }
-        else { show('view-user'); buildCal(); }
-    } else alert("Accesso Negato");
+} else if (data.ruolo === 'admin') {
+    show('view-admin');
+    mostraAdmin();
+} else {
+    show('view-user');
+    buildCal();
+} else alert("Accesso Negato");
 }
 // ✅ Nuova funzione per visualizzazione posti liberi totali al piantone
 async function aggiornaPostiLiberiPiantone() {
