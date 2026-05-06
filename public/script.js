@@ -204,10 +204,10 @@ async function cercaPass() {
 
     if (currentPren.stato === 'INGRESSO' && oggi > currentPren.data_fine) {
         document.getElementById('lab-periodo').innerHTML += 
-        `<div style="color:red; font-weight:bold; margin-top:6px;">
-            ⚠️ PRENOTAZIONE SCADUTA
+        `<div style="color:red; font-weight:bold;">
+            ⚠️ USCITA CONSENTITA (prenotazione scaduta)
         </div>`;
-    }
+}
 }
 
 // FIX: tabella a 4 colonne (PASS | Data Accesso | Ora Ingresso | Data e Ora Uscita)
@@ -270,11 +270,23 @@ async function aggiornaVeicoli() {
     }).join('') || "<tr><td colspan='5' style='text-align:center; color:black; padding:16px;'>Nessun veicolo presente</td></tr>";
 }
 
+// async function mossa(tipo) {
+  //  await fetch('/api/piantone/azione', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: currentPren.id, azione: tipo, npass: userPass }) });
+  //  cercaPass(); aggiornaVeicoli();
+// }
 async function mossa(tipo) {
-    await fetch('/api/piantone/azione', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: currentPren.id, azione: tipo, npass: userPass }) });
-    cercaPass(); aggiornaVeicoli();
+    await fetch('/api/piantone/azione', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            id: currentPren.id,
+            azione: tipo,
+            npass: userPass
+        })
+    });
+    cercaPass();
+    aggiornaVeicoli();
 }
-
 // ✅ Cruscotto admin con dettaglio ENTI e Colori Critici
 async function mostraAdmin() {
     const res = await fetch(`/api/admin/cruscotto?npass=${userPass}`);
