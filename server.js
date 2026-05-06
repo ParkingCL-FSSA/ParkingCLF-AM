@@ -439,7 +439,21 @@ app.get('/api/admin/cruscotto', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+app.get('/api/admin/ritardi', async (req, res) => {
+    try {
+        const r = await pool.query(`
+            SELECT npass, data_fine, orario_uscita,
+                   (CURRENT_DATE - data_fine) as giorni_ritardo
+            FROM prenotazioni
+            WHERE stato = 'INGRESSO'
+            AND CURRENT_DATE > data_fine
+        `);
 
+        res.json(r.rows);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
 app.listen(process.env.PORT || 3000, () => {
     console.log(`Server avviato sulla porta ${process.env.PORT || 3000}`);
 });
