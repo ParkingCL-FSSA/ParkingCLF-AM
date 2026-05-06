@@ -358,7 +358,7 @@ app.post('/api/piantone/azione', async (req, res) => {
             await pool.query(
                 `UPDATE prenotazioni 
                  SET stato = 'USCITO', orario_uscita = $1 
-                 WHERE id = $2`,
+                 WHERE id = $2 AND stato != 'USCITO',
                 [ora, id]
             );
         }
