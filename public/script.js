@@ -257,11 +257,11 @@ async function aggiornaVeicoli() {
     let countScaduti = 0;
 
     dati.forEach(x => {
-        const dentro = x.stato === 'INGRESSO';
-        const scaduto = dentro && oggi > x.data_fine;
+        const isInside = x.stato === 'INGRESSO';
+        const isExpiredInside = isInside && oggi > x.data_fine;
 
-        if (dentro) countDentro++;
-        if (scaduto) countScaduti++;
+        if (isInside || isExpiredInside) countDentro++;
+        if (isExpiredInside) countScaduti++;
     });
 
     // 🎯 LABEL DINAMICA
@@ -272,17 +272,11 @@ async function aggiornaVeicoli() {
 
     const badge = document.getElementById('badge-contatori');
 
-    badge.innerHTML = `
-        🚗 <b>${label}:</b> ${
-            filtroPiantone === 'attivi' ? countDentro :
-            filtroPiantone === 'scaduti' ? countScaduti :
-            dati.length
-        }
+        badge.innerHTML = `
+        🚗 <b>Dentro:</b> ${countDentro}
         &nbsp;&nbsp;|&nbsp;&nbsp;
-        ⚠️ <b id="badge-scaduti" style="color:${countScaduti > 0 ? 'red' : 'black'}">
-            Scaduti: ${countScaduti}
-        </b>
-    `;
+        🅿️ <b>Liberi:</b> ${120 - countDentro}
+        `;
 
     // 🔥 LAMPEGGIANTE (solo se ci sono scaduti)
     if (countScaduti > 0) {
@@ -294,7 +288,7 @@ async function aggiornaVeicoli() {
     const lista = dati
         .filter(x => {
             const scaduto = x.stato === 'INGRESSO' && oggi > x.data_fine;
-            const dentro = x.stato === 'INGRESSO';
+            const dentro = x.stato === 'INGRESSO' || (x.stato === 'SCADUTO' && !x.orario_uscita);
 
             if (filtroPiantone === 'attivi') return dentro;
             if (filtroPiantone === 'scaduti') return scaduto;
