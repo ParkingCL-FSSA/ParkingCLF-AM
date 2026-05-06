@@ -520,12 +520,6 @@ app.get('/api/piantone/storico', async (req, res) => {
         res.status(500).json({ error: "Errore interno" });
     }
 });
-document.body.addEventListener('click', () => {
-    beep.play().then(() => {
-        beep.pause();
-        beep.currentTime = 0;
-    }).catch(()=>{});
-}, { once: true });
 
 app.listen(process.env.PORT || 3000, '0.0.0.0', () => {
     console.log(`Server avviato`);
