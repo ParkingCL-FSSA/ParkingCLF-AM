@@ -299,6 +299,16 @@ async function mossa(tipo) {
     cercaPass();
     aggiornaVeicoli();
 }
+async function mostraRitardi() {
+    const res = await fetch('/api/admin/ritardi');
+    const dati = await res.json();
+
+    alert(
+        dati.map(x =>
+            `${x.npass} → ritardo ${x.giorni_ritardo} giorni`
+        ).join('\n') || "Nessun ritardo"
+    );
+}
 // ✅ Cruscotto admin con dettaglio ENTI e Colori Critici
 async function mostraAdmin() {
     const res = await fetch(`/api/admin/cruscotto?npass=${userPass}`);
