@@ -352,9 +352,11 @@ app.post('/api/piantone/azione', async (req, res) => {
                 "UPDATE prenotazioni SET stato = 'INGRESSO', orario_ingresso = $1 WHERE id = $2",
                 [ora, id]
             );
-        } else if (azione === 'uscita') {
+        } 
+        else if (azione === 'uscita') {
+            // ✅ USCITA SEMPRE CONSENTITA (anche se scaduto)
             await pool.query(
-                "UPDATE prenotazioni SET stato = 'USCITO', orario_uscita = $1 WHERE id = $2",
+                "UPDATE prenotazioni SET stato = 'USCITO', orario_uscita = $1 WHERE id = $2 AND stato != 'USCITO'",
                 [ora, id]
             );
         }
@@ -363,21 +365,6 @@ app.post('/api/piantone/azione', async (req, res) => {
 
     } catch (err) {
         console.error("Errore piantone:", err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-        // 🚪 USCITA (SEMPRE CONSENTITA, anche se scaduto)
-        else if (azione === 'uscita') {
-            await pool.query(
-                `UPDATE prenotazioni 
-                 SET stato = 'USCITO', orario_uscita = $1 
-                 WHERE id = $2 AND stato != 'USCITO',
-                [ora, id]
-            );
-        }
-        res.json({ success: true });
-    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
