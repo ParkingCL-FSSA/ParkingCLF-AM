@@ -134,7 +134,7 @@ async function mostraMie() {
         'PRENOTATO': '#1e40af',
         'INGRESSO':  '#15803d',
         'USCITO':    '#b45309',
-        'SCADUTO':   '#94a3b8'
+        'SCADUTO':   '#ef4444'//Rosso
     };
     const statoEmoji = {
         'PRENOTATO': '📅',
