@@ -1,5 +1,5 @@
 let userPass = ""; let selectedDays = []; let currentPren = null;
-let deferredPrompt;
+let deferredPrompt; let soloScaduti = false;
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -36,6 +36,15 @@ function fmtData(isoStr) {
 function show(id) {
     document.querySelectorAll('.card > div').forEach(d => d.classList.add('hidden'));
     document.getElementById(id).classList.remove('hidden');
+}
+
+function toggleScaduti() {
+    soloScaduti = !soloScaduti;
+
+    document.querySelector('button[onclick="toggleScaduti()"]').innerText =
+        soloScaduti ? "Mostra tutti" : "Mostra solo scaduti";
+
+    aggiornaVeicoli();
 }
 
 async function doLogin() {
@@ -175,10 +184,19 @@ async function cercaPass() {
         alert("Nessuna prenotazione trovata per questo PASS.");
         document.getElementById('panel-piantone').classList.add('hidden');
     }
+    const oggi = new Date().toISOString().split('T')[0];
+
+    if (currentPren.stato === 'INGRESSO' && oggi > currentPren.data_fine) {
+        document.getElementById('lab-periodo').innerHTML += 
+        `<div style="color:red; font-weight:bold; margin-top:6px;">
+            ⚠️ PRENOTAZIONE SCADUTA
+        </div>`;
+    }
 }
 
 // FIX: tabella a 4 colonne (PASS | Data Accesso | Ora Ingresso | Data e Ora Uscita)
 // con gestione null su orario_ingresso e orario_uscita
+
 async function aggiornaVeicoli() {
     const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
     const dati = await res.json();
@@ -192,12 +210,16 @@ async function aggiornaVeicoli() {
         const dataUsc = usc ? usc.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '';
         const oraUsc  = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '';
 
-        return `<tr>
+        const oggi = new Date().toISOString().split('T')[0];
+        const scaduto = x.stato === 'INGRESSO' && oggi > x.data_fine;
+        if (soloScaduti && !scaduto) return '';
+        
+        return `<tr style="${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}">
             <td style="font-weight:bold;">${x.npass}</td>
             <td>${dataIng}</td>
-            <td style="color:black; font-weight:bold;">${oraIng}</td>
-            <td style="color:black;">${dataUsc}</td>
-            <td style="color:black; font-weight:bold;">${oraUsc}</td>
+            <td style="font-weight:bold;">${oraIng}</td>
+            <td>${scaduto ? 'SCADUTA' : dataUsc}</td>
+            <td style="font-weight:bold;">${scaduto ? '' : oraUsc}</td>
         </tr>`;
     }).join('') || "<tr><td colspan='5' style='text-align:center; color:black; padding:16px;'>Nessun veicolo presente</td></tr>";
 }
