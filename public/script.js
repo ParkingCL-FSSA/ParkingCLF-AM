@@ -76,9 +76,15 @@ async function doLogin() {
             show('view-piantone'); 
             aggiornaVeicoli(); 
             aggiornaPostiLiberiPiantone();
-               caricaStorico(); // 👈 AGGIUNGI QUESTO
+            caricaStorico(); // 👈 AGGIUNGI QUESTO
             setInterval(aggiornaPostiLiberiPiantone, 10000); // ogni 10 sec
-}
+        document.body.addEventListener('click', () => {
+            beep.play().then(() => {
+            beep.pause();
+            beep.currentTime = 0;
+            }).catch(()=>{});
+        }, { once: true });
+    }
         else if (data.ruolo === 'admin') { show('view-admin'); mostraAdmin(); }
         else { show('view-user'); buildCal(); }
     } else alert("Accesso Negato");
