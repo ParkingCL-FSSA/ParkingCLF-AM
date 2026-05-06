@@ -1,5 +1,9 @@
-let userPass = ""; let selectedDays = []; let currentPren = null;
-let deferredPrompt; let soloScaduti = false;
+let userPass = ""; let selectedDays = []; 
+let deferredPrompt; let currentPren = null;
+let filtroPiantone = 'attivi'; 
+// attivi = dentro (default)
+// scaduti = solo scaduti
+// tutti = tutto
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -39,11 +43,23 @@ function show(id) {
 }
 
 function toggleScaduti() {
-    soloScaduti = !soloScaduti;
-
-    document.querySelector('button[onclick="toggleScaduti()"]').innerText =
-        soloScaduti ? "Mostra tutti" : "Mostra solo scaduti";
-
+    if (filtroPiantone === 'attivi') {
+        filtroPiantone = 'scaduti';
+    } else if (filtroPiantone === 'scaduti') {
+        filtroPiantone = 'tutti';
+    } else {
+        filtroPiantone = 'attivi';
+    }
+    const btn = document.getElementById('btn-filtro');
+    if (filtroPiantone === 'attivi') {
+        btn.innerText = "Mostra solo scaduti";
+    } 
+    else if (filtroPiantone === 'scaduti') {
+        btn.innerText = "Mostra tutti";
+    } 
+    else {
+        btn.innerText = "Mostra entrate";
+    }
     aggiornaVeicoli();
 }
 
@@ -200,7 +216,18 @@ async function cercaPass() {
 async function aggiornaVeicoli() {
     const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
     const dati = await res.json();
-
+    const oggi = new Date().toISOString().split('T')[0];
+    
+    let countDentro = 0;
+    let countScaduti = 0;
+    
+    dati.forEach(x => {
+        const dentro = x.stato === 'INGRESSO';
+        const scaduto = dentro && oggi > x.data_fine;
+    
+        if (dentro) countDentro++;
+        if (scaduto) countScaduti++;
+    });
     document.getElementById('lista-veicoli').innerHTML = dati.map(x => {
         const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
         const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
@@ -212,8 +239,27 @@ async function aggiornaVeicoli() {
 
         const oggi = new Date().toISOString().split('T')[0];
         const scaduto = x.stato === 'INGRESSO' && oggi > x.data_fine;
-        if (soloScaduti && !scaduto) return '';
+        const dentro = x.stato === 'INGRESSO';
         
+        if (filtroPiantone === 'attivi' && !dentro) return '';
+        if (filtroPiantone === 'scaduti' && !scaduto) return '';
+        let label = "";
+
+        if (filtroPiantone === 'attivi') label = "Dentro";
+        else if (filtroPiantone === 'scaduti') label = "Scaduti";
+        else label = "Totale";
+        
+        document.getElementById('badge-contatori').innerHTML = `
+            🚗 <b>${label}:</b> ${
+                filtroPiantone === 'attivi' ? countDentro :
+                filtroPiantone === 'scaduti' ? countScaduti :
+                dati.length
+            }
+            &nbsp;&nbsp;|&nbsp;&nbsp;
+            ⚠️ <b style="color:${countScaduti > 0 ? 'red' : 'black'}">
+                Scaduti: ${countScaduti}
+            </b>
+        `;
         return `<tr style="${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}">
             <td style="font-weight:bold;">${x.npass}</td>
             <td>${dataIng}</td>
