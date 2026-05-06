@@ -340,6 +340,7 @@ app.post('/api/piantone/azione', async (req, res) => {
     }
     if (!id || !azione) return res.status(400).json({ error: "Dati mancanti" });
     try {
+        const ora = new Date();
         if (azione === 'uscita') {
             await pool.query(
             `UPDATE prenotazioni
@@ -347,7 +348,6 @@ app.post('/api/piantone/azione', async (req, res) => {
              WHERE id=$1`, [id]);
     }
     const scaduto = x.stato === 'INGRESSO' && oggi > x.data_fine;
-    const ora = new Date();
         if (azione === 'E') {
             await pool.query(`UPDATE prenotazioni SET stato = 'INGRESSO', orario_ingresso = $1 WHERE id = $2`, [ora, id]);
         } else {
