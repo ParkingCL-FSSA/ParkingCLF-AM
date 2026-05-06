@@ -1,6 +1,6 @@
 let userPass = ""; let selectedDays = []; 
 let deferredPrompt; let currentPren = null;
-let filtroPiantone = 'attivi'; 
+let filtroPiantone = 'attivi'; let ultimoAggiornato = null;
 // attivi = dentro (default)
 // scaduti = solo scaduti
 // tutti = tutto
@@ -30,6 +30,8 @@ document.getElementById('btnEsciApp').addEventListener('click', () => {
         alert("Per uscire chiudi la scheda del browser o l'app.");
     }
 });
+const beep = new Audio('https://www.soundjay.com/buttons/sounds/beep-07.mp3');
+
 // FIX: helper che evita lo sfasamento UTC (new Date("YYYY-MM-DD") = mezzanotte UTC → giorno sbagliato in IT)
 function fmtData(isoStr) {
     if (!isoStr) return '--';
@@ -314,8 +316,12 @@ async function aggiornaVeicoli() {
         const oraUsc  = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '';
 
         const scaduto = x.stato === 'INGRESSO' && oggi > x.data_fine;
+        const evidenzia = x.npass === ultimoAggiornato;
 
-        return `<tr style="${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}">
+            return `<tr style="
+                ${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
+                ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
+            ">
             <td style="font-weight:bold;">${x.npass}</td>
             <td>${dataIng}</td>
             <td style="font-weight:bold;">${oraIng}</td>
@@ -324,23 +330,60 @@ async function aggiornaVeicoli() {
         </tr>`;
     }).join('') || "<tr><td colspan='5' style='text-align:center; color:black; padding:16px;'>Nessun veicolo presente</td></tr>";
 }
-    async function mossa(tipo) {
-    let azione = tipo;
 
+let loadingAzione = false;
+
+async function mossa(tipo) {
+    if (loadingAzione) return; // 🚫 blocco doppio click
+
+    let azione = tipo;
     if (tipo === 'E') azione = 'ingresso';
     if (tipo === 'U') azione = 'uscita';
 
-    await fetch('/api/piantone/azione', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            id: currentPren.id,
-            azione: azione,
-            npass: userPass
-        })
-    });
-    cercaPass();
-    aggiornaVeicoli();
+    const btnIngresso = document.getElementById('btn-ingresso');
+    const btnUscita = document.getElementById('btn-uscita');
+
+    // 🔒 blocco UI
+    btnIngresso.disabled = true;
+    btnUscita.disabled = true;
+
+    loadingAzione = true;
+
+    try {
+        const res = await fetch('/api/piantone/azione', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: currentPren.id,
+                azione: azione,
+                npass: userPass
+            })
+        });
+
+        const data = await res.json();
+
+        if (!data.success) {
+            alert("Errore operazione");
+        }
+        if (data.success) {
+            beep.play(); // 🔊 suono
+            ultimoAggiornato = currentPren.npass; // salva chi hai mosso
+        }
+        // 🔄 aggiorna UI
+        await cercaPass();
+        await aggiornaVeicoli();
+        await caricaStorico();
+        
+    } catch (err) {
+        alert("Errore di rete");
+        console.error(err);
+    } finally {
+        loadingAzione = false;
+
+        // 🔓 sblocco (ma poi cercaPass rimette stato corretto)
+        btnIngresso.disabled = false;
+        btnUscita.disabled = false;
+    }
 }
 async function mostraRitardi() {
     const res = await fetch('/api/admin/ritardi');
@@ -375,4 +418,18 @@ async function mostraAdmin() {
     }).join('');
 
     document.getElementById('tab-admin').innerHTML = header + rows;
+}
+
+async function caricaStorico() {
+    const res = await fetch(`/api/piantone/storico?npass=${userPass}`);
+    const dati = await res.json();
+
+    document.getElementById('storico').innerHTML = dati.map(x => {
+        return `
+        <div style="padding:6px; border-bottom:1px solid #ddd;">
+            🚗 <b>${x.npass}</b> -
+            IN: ${x.orario_ingresso ? new Date(x.orario_ingresso).toLocaleString('it-IT') : '--'}
+            OUT: ${x.orario_uscita ? new Date(x.orario_uscita).toLocaleString('it-IT') : '--'}
+        </div>`;
+    }).join('');
 }
