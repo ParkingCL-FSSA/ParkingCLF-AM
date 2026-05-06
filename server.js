@@ -349,16 +349,12 @@ app.post('/api/piantone/azione', async (req, res) => {
 
         if (azione === 'ingresso') {
             await pool.query(
-                `UPDATE prenotazioni 
-                 SET stato = 'INGRESSO', orario_ingresso = $1 
-                 WHERE id = $2`,
+                "UPDATE prenotazioni SET stato = 'INGRESSO', orario_ingresso = $1 WHERE id = $2",
                 [ora, id]
             );
         } else if (azione === 'uscita') {
             await pool.query(
-                `UPDATE prenotazioni 
-                 SET stato = 'USCITO', orario_uscita = $1 
-                 WHERE id = $2`,
+                "UPDATE prenotazioni SET stato = 'USCITO', orario_uscita = $1 WHERE id = $2",
                 [ora, id]
             );
         }
