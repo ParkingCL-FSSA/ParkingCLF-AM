@@ -143,7 +143,7 @@ async function mostraMie() {
         'SCADUTO':   '⏰'
     };
 
-    const cancellabile = (stato) => stato === 'PRENOTATO' || stato === 'SCADUTO';
+    const cancellabile = (stato) => stato === 'PRENOTATO' //|| stato === 'SCADUTO';
 
     document.getElementById('my-list-content').innerHTML = dati.map(p => {
         const colore = statoColore[p.stato] || '#64748b';
