@@ -355,15 +355,22 @@ app.post('/api/piantone/azione', async (req, res) => {
             );
         } 
         else if (azione === 'uscita') {
-            // ✅ USCITA SEMPRE CONSENTITA (anche se scaduto)
-            await pool.query(
-                "UPDATE prenotazioni SET stato = 'USCITO', orario_uscita = $1 WHERE id = $2 AND stato != 'USCITO'",
-                [ora, id]
-            );
+            const r = await pool.query(
+            "UPDATE prenotazioni SET stato = 'USCITO', orario_uscita = $1 WHERE id = $2 AND stato != 'USCITO' RETURNING id",
+            [ora, id]
+        );
+    
+        if (r.rowCount > 0) {
+            return res.json({ success: true });
+        } else {
+            return res.json({ success: false });
         }
-
-        res.json({ success: true });
-
+            if (data.success) {
+            beep.currentTime = 0;
+            beep.play();
+            ultimoAggiornato = currentPren.npass;
+        }
+    }
     } catch (err) {
         console.error("Errore piantone:", err);
         res.status(500).json({ error: err.message });
