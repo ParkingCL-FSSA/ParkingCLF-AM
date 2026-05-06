@@ -90,19 +90,28 @@ async function inviaMailBrevoAPI(toEmail, subject, htmlContent, pdfBuffer = null
 
 // --- 1. LOGIN ---
 app.post('/api/valida-pass', async (req, res) => {
-    const p = clean(npass);
     const { npass } = req.body;
     if (!npass) return res.json({ valid: false });
+
     try {
         const p = clean(npass);
-        const result = await pool.query('SELECT ruolo FROM registro_pass WHERE UPPER(npass) = $1', [p]);
+
+        const result = await pool.query(
+            'SELECT ruolo FROM registro_pass WHERE UPPER(npass) = $1',
+            [p]
+        );
+
         if (result.rows.length > 0) {
-            await pool.query('UPDATE registro_pass SET ult_accesso = NOW() WHERE UPPER(npass) = $1', [p])
-                .catch(e => console.log(e));
-            res.json({ valid: true, ruolo: result.rows[0].ruolo });
-        } else {
-            res.json({ valid: false });
+            await pool.query(
+                'UPDATE registro_pass SET ult_accesso = NOW() WHERE UPPER(npass) = $1',
+                [p]
+            );
+
+            return res.json({ valid: true, ruolo: result.rows[0].ruolo });
         }
+
+        res.json({ valid: false });
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Errore interno" });
