@@ -465,7 +465,27 @@ app.get('/api/admin/ritardi', async (req, res) => {
         res.status(500).json({ error: e.message });
     }
 });
+app.get('/api/piantone/storico', async (req, res) => {
+    const npass = req.query.npass;
 
+    if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
+        return res.status(403).json({ error: "Accesso non autorizzato" });
+    }
+
+    try {
+        const r = await pool.query(`
+            SELECT npass, orario_ingresso, orario_uscita, stato
+            FROM prenotazioni
+            WHERE orario_ingresso IS NOT NULL
+            ORDER BY orario_ingresso DESC
+            LIMIT 30
+        `);
+
+        res.json(r.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 app.listen(process.env.PORT || 3000, '0.0.0.0', () => {
     console.log(`Server avviato`);
 });
