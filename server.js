@@ -339,9 +339,11 @@ app.post('/api/piantone/azione', async (req, res) => {
     if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
         return res.status(403).json({ error: "Accesso non autorizzato" });
     }
+
     if (!id || !azione) {
         return res.status(400).json({ error: "Dati mancanti" });
     }
+
     try {
         const ora = new Date();
 
@@ -352,8 +354,7 @@ app.post('/api/piantone/azione', async (req, res) => {
                  WHERE id = $2`,
                 [ora, id]
             );
-        } 
-        else if (azione === 'uscita') {
+        } else if (azione === 'uscita') {
             await pool.query(
                 `UPDATE prenotazioni 
                  SET stato = 'USCITO', orario_uscita = $1 
@@ -361,9 +362,11 @@ app.post('/api/piantone/azione', async (req, res) => {
                 [ora, id]
             );
         }
+
         res.json({ success: true });
+
     } catch (err) {
-        console.error("Errore azione piantone:", err);
+        console.error("Errore piantone:", err);
         res.status(500).json({ error: err.message });
     }
 });
