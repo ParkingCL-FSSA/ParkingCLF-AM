@@ -6,16 +6,35 @@ const axios = require('axios');
 const PDFDocument = require('pdfkit');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: ['https://parkingclf-am.onrender.com/']
+}));
+const helmet = require('helmet');
+app.use(helmet());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+const rateLimit = require('express-rate-limit');
+const limiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minuto
+    max: 60, // max 60 richieste/minuto per IP
+    message: "Troppe richieste, rallenta."
+});
+
+app.use(limiter);
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
 
+pool.on('error', (err) => {
+    console.error('💥 ERRORE DB:', err);
+});
+
 const LOGO_URL = "https://parkingclf-am.onrender.com/LogoCLF.png";
+function clean(input) {
+    return input.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+}
 
 // ⏰ JOB SCADENZA
 async function scadenzaPrenotazioni() {
@@ -43,7 +62,7 @@ async function verificaRuolo(npass, ruoloRichiesto) {
     if (!npass) return false;
     const result = await pool.query(
         'SELECT ruolo FROM registro_pass WHERE UPPER(npass) = $1',
-        [npass.trim().toUpperCase()]
+        [clean(npass)]
     );
     if (result.rows.length === 0) return false;
     const ruoli = Array.isArray(ruoloRichiesto) ? ruoloRichiesto : [ruoloRichiesto];
@@ -71,10 +90,11 @@ async function inviaMailBrevoAPI(toEmail, subject, htmlContent, pdfBuffer = null
 
 // --- 1. LOGIN ---
 app.post('/api/valida-pass', async (req, res) => {
+    const p = clean(npass);
     const { npass } = req.body;
     if (!npass) return res.json({ valid: false });
     try {
-        const p = npass.trim().toUpperCase();
+        const p = clean(npass);
         const result = await pool.query('SELECT ruolo FROM registro_pass WHERE UPPER(npass) = $1', [p]);
         if (result.rows.length > 0) {
             await pool.query('UPDATE registro_pass SET ult_accesso = NOW() WHERE UPPER(npass) = $1', [p])
@@ -84,14 +104,16 @@ app.post('/api/valida-pass', async (req, res) => {
             res.json({ valid: false });
         }
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(err);
+        res.status(500).json({ error: "Errore interno" });
     }
 });
 
 // --- 2. PRENOTAZIONE CON CONTROLLO QUOTE ENTE CORRETTO ---
 app.post('/api/prenota', async (req, res) => {
     const { npass, giorni, email } = req.body;
-
+    const p = clean(npass);
+    
     if (!npass || !email) return res.status(400).json({ error: "Dati mancanti" });
     if (!Array.isArray(giorni) || giorni.length === 0) return res.status(400).json({ error: "Giorni non validi" });
     if (giorni.length > 15) return res.status(400).json({ error: "Limite 15 giorni superato" });
@@ -100,7 +122,7 @@ app.post('/api/prenota', async (req, res) => {
         const sorted = [...giorni].sort();
         const dataInizio = sorted[0];
         const dataFine = sorted[sorted.length - 1];
-        const p = npass.trim().toUpperCase();
+        const p = clean(npass);
         const numGiorni = giorni.length;
 
         // CHECK 1: Sovrapposizione
@@ -262,7 +284,8 @@ app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
         );
         res.json(r.rows);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(err);
+        res.status(500).json({ error: "Errore interno" });
     }
 });
 
@@ -295,7 +318,8 @@ app.post('/api/elimina-prenotazione', async (req, res) => {
 
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(err);
+        res.status(500).json({ error: "Errore interno" });
     }
 });
 
@@ -311,7 +335,8 @@ app.get('/api/veicoli-dentro', async (req, res) => {
         );
         res.json(r.rows);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(err);
+        res.status(500).json({ error: "Errore interno" });
     }
 });
 
@@ -331,14 +356,16 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
 );
         res.json(r.rows.length > 0 ? { trovato: true, prenotazione: r.rows[0] } : { trovato: false });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(err);
+        res.status(500).json({ error: "Errore interno" });
     }
 });
 
 // --- 7. PIANTONE AZIONE ---
 app.post('/api/piantone/azione', async (req, res) => {
     const { id, azione, npass } = req.body;
-
+    const p = clean(npass);
+    
     if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
         return res.status(403).json({ error: "Accesso non autorizzato" });
     }
@@ -367,11 +394,6 @@ app.post('/api/piantone/azione', async (req, res) => {
         } else {
             return res.json({ success: false });
         }
-            if (data.success) {
-            beep.currentTime = 0;
-            beep.play();
-            ultimoAggiornato = currentPren.npass;
-        }
     }
     } catch (err) {
         console.error("Errore piantone:", err);
@@ -394,7 +416,8 @@ app.get('/api/piantone/liberi', async (req, res) => {
         const totaleLiberi = Math.max(0, 120 - dentro);
         res.json({ totaleLiberi, dentro });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(err);
+        res.status(500).json({ error: "Errore interno" });
     }
 });
 // --- 8. ADMIN CRUSCOTTO OTTIMIZZATO ---
@@ -493,9 +516,17 @@ app.get('/api/piantone/storico', async (req, res) => {
 
         res.json(r.rows);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(err);
+        res.status(500).json({ error: "Errore interno" });
     }
 });
+document.body.addEventListener('click', () => {
+    beep.play().then(() => {
+        beep.pause();
+        beep.currentTime = 0;
+    }).catch(()=>{});
+}, { once: true });
+
 app.listen(process.env.PORT || 3000, '0.0.0.0', () => {
     console.log(`Server avviato`);
 });
