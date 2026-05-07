@@ -30,7 +30,7 @@ document.getElementById('btnEsciApp').addEventListener('click', () => {
         alert("Per uscire chiudi la scheda del browser o l'app.");
     }
 });
-const beep = new Audio('https://www.soundjay.com/buttons/sounds/beep-07.mp3');
+//const beep = new Audio('https://www.soundjay.com/buttons/sounds/beep-07.mp3');
 
 // FIX: helper che evita lo sfasamento UTC (new Date("YYYY-MM-DD") = mezzanotte UTC → giorno sbagliato in IT)
 function fmtData(isoStr) {
@@ -88,13 +88,16 @@ async function doLogin() {
     aggiornaPostiLiberiPiantone();
     caricaStorico();
     setInterval(aggiornaPostiLiberiPiantone, 10000);
-
-    document.body.addEventListener('click', () => {
-        beep.play().then(() => {
-            beep.pause();
-            beep.currentTime = 0;
-        }).catch(()=>{});
-    }, { once: true });
+console.log("LOGIN OK", data);       
+const data = await res.json();
+console.log("RUOLO:", data.ruolo);    
+       
+  //  document.body.addEventListener('click', () => {
+     //   beep.play().then(() => {
+     //       beep.pause();
+      //      beep.currentTime = 0;
+     //   }).catch(()=>{});
+  //  }, { once: true });
 
 } else if (data.ruolo === 'admin') {
     show('view-admin');
