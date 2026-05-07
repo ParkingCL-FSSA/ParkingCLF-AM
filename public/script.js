@@ -67,6 +67,9 @@ function toggleScaduti() {
     else if (filtroPiantone === 'scaduti') {
         filtroPiantone = 'storico';
     }
+    else if (filtroPiantone === 'storico') {
+        filtroPiantone = 'tutti';
+    }
     else {
         filtroPiantone = 'attivi';
     }
@@ -74,13 +77,16 @@ function toggleScaduti() {
     const btn = document.getElementById('btn-filtro');
 
     if (filtroPiantone === 'attivi') {
-        btn.innerText = "Mostra solo scaduti";
+        btn.innerText = "Mostra scaduti";
     }
     else if (filtroPiantone === 'scaduti') {
         btn.innerText = "Mostra storico";
     }
+    else if (filtroPiantone === 'storico') {
+        btn.innerText = "Mostra tutti";
+    }
     else {
-        btn.innerText = "Mostra entrate";
+        btn.innerText = "Mostra attivi";
     }
 
     aggiornaVeicoli();
@@ -180,9 +186,13 @@ async function inviaPren() {
     
     if (res.ok) {
         selectedDays.sort();
+        const totaleGiorni = selectedDays.length;
         document.getElementById('summary-details').innerHTML =
             `<b>Pass:</b> ${userPass}<br><b>Dal:</b> ${fmtData(selectedDays[0])}<br><b>Al:</b> ${fmtData(selectedDays[selectedDays.length - 1])}`;
         show('view-success');
+        setTimeout(() => {
+            mostraMie();
+        }, 2500);
     } else {
         // Gestisci errori di validazione dal server
         const err = await res.json();
@@ -239,7 +249,11 @@ async function mostraMie() {
                     🔒
                 </div>
               `;
-
+            const giorni =
+                Math.ceil(
+                    (new Date(p.data_fine) - new Date(p.data_inizio))
+                    / (1000 * 60 * 60 * 24)
+                ) + 1;
         return `
         <div style="
             display:flex;
@@ -294,7 +308,6 @@ async function eliminaPren(id) {
 async function cercaPass() {
     const p = document.getElementById('search-p').value.trim().toUpperCase();
     if (!p) return;
-
     const res = await fetch(`/api/piantone/cerca/${p}?auth=${userPass}&view=${filtroPiantone}`);
     const data = await res.json();
 
@@ -501,16 +514,20 @@ async function aggiornaVeicoli() {
 
         const storico =
             x.stato === 'USCITO';
-
+        
+        const uscitoScaduto =
+            x.stato === 'USCITO' &&
+            x.data_fine < oggi;
+        
         const evidenzia =
             x.npass === ultimoAggiornato;
 
-        return `
-        <tr style="
-            ${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
-            ${storico ? 'background:#f1f5f9; color:#475569;' : ''}
-            ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
-        ">
+           return `<tr style="
+        ${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
+        ${uscitoScaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
+        ${storico ? 'background:#f1f5f9;' : ''}
+        ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
+    ">
 
             <td style="font-weight:bold;">
                 ${x.npass}
@@ -573,7 +590,6 @@ async function mossa(tipo) {
     // 🔒 blocco UI
     btnIngresso.disabled = true;
     btnUscita.disabled = true;
-
     loadingAzione = true;
 
     try {
@@ -590,8 +606,8 @@ async function mossa(tipo) {
         const data = await res.json();
 
                 if (!data.success) {
-        
-            alert("Errore operazione");
+    alert(data.error || "Errore operazione");
+    return;
         
         } else {
         
@@ -606,10 +622,18 @@ async function mossa(tipo) {
         }
         
         // 🔄 aggiorna UI
-        await cercaPass();
         await aggiornaVeicoli();
-       // await caricaStorico();
-        
+        await caricaStorico();
+
+        // se è uscita chiudi pannello
+        if (tipo === 'U') {
+            document.getElementById('panel-piantone').classList.add('hidden');
+            document.getElementById('search-p').value = '';
+            currentPren = null;
+        } else {
+            await cercaPass();
+        }
+                
     } catch (err) {
         alert("Errore di rete");
         console.error(err);
