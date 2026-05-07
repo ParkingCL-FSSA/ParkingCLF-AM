@@ -21,6 +21,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
     }
 });
 const btnEsci = document.getElementById('btnEsciApp');
+const beep = new Audio('https://www.soundjay.com/buttons/sounds/beep-07.mp3');
 
 if (btnEsci) {
     btnEsci.addEventListener('click', () => {
@@ -36,7 +37,6 @@ if (btnEsci) {
 
     });
 }
-//const beep = new Audio('https://www.soundjay.com/buttons/sounds/beep-07.mp3');
 
 // FIX: helper che evita lo sfasamento UTC (new Date("YYYY-MM-DD") = mezzanotte UTC → giorno sbagliato in IT)
 function fmtData(isoStr) {
@@ -46,8 +46,20 @@ function fmtData(isoStr) {
 }
 
 function show(id) {
-    document.querySelectorAll('.card > div').forEach(d => d.classList.add('hidden'));
-    document.getElementById(id).classList.remove('hidden');
+
+    console.log("SHOW:", id);
+
+    document
+        .querySelectorAll('[id^="view-"]')
+        .forEach(d => d.classList.add('hidden'));
+
+    const el = document.getElementById(id);
+
+    if (el) {
+        el.classList.remove('hidden');
+    } else {
+        console.error("VIEW NON TROVATA:", id);
+    }
 }
 
 function toggleScaduti() {
