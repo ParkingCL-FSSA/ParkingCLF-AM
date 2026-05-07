@@ -69,7 +69,7 @@
             <div id="cal-grid"></div>
             <input type="email" id="u-email" placeholder="Email* (PRIVATA) per ricevere il PASS">
             <p style="font-size: 10px; color: var(--gray);">(*)Informativa: i dati forniti sono trattati solo per fini organizzativi. Il sistema non profila gli utenti e non cede dati a terzi</p>
-            <button onclick="inviaPren()" class="btn-">INVIA PRENOTAZIONE</button>
+            <button onclick="inviaPren()" class="btn-green">INVIA PRENOTAZIONE</button>
             <button class="btn-gray" onclick="mostraMie()">Le mie prenotazioni</button>
             <button class="btn-red" style="margin-top: 20px;" onclick="location.reload()">LOGOUT</button>
         </div>
@@ -84,7 +84,7 @@
         </div>
 
         <div id="view-success" class="hidden">
-            <div style="font-size: 60px; color: var(--);">✅</div>
+            <div style="font-size: 60px; color: var(--green);">✅</div>
             <h3>Prenotazione Confermata!</h3>
             <p>Abbiamo inviato il PASS PDF alla tua email.</p>
             <div class="summary-box" id="summary-details"></div>
@@ -140,10 +140,13 @@
         <tbody id="lista-veicoli"></tbody>
     </table>
     
+    <div id="storico" style="margin-top:20px;"></div>
+
     <button class="btn-gray" onclick="location.reload()">LOGOUT</button>
-</div>
-<div id="storico" style="margin-top:20px;"></div>
-        <div id="view-admin" class="hidden">
+    </div>
+
+    <div id="view-admin" class="hidden">
+    
             <h3>📊 Disponibilità Posti</h3>
             <table id="tab-admin"></table>
             <button onclick="mostraRitardi()">Report Ritardi</button>
