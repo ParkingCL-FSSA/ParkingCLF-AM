@@ -21,7 +21,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
     }
 });
 const btnEsci = document.getElementById('btnEsciApp');
-const beep = new Audio('https://www.soundjay.com/buttons/sounds/beep-07.mp3');
+const beep = new Audio('/beep_u.mp3');
 
 if (btnEsci) {
     btnEsci.addEventListener('click', () => {
@@ -494,12 +494,45 @@ async function caricaStorico() {
         </div>`;
     }).join('');
 }
-document.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', () => {
 
-    const btnLogin = document.getElementById('btn-login');
+    // LOGIN
+    document.getElementById('btn-login')?.addEventListener('click', doLogin);
 
-    if (btnLogin) {
-        btnLogin.addEventListener('click', doLogin);
-    }
+    // USER
+    document.getElementById('btn-prenota')?.addEventListener('click', inviaPren);
+    document.getElementById('btn-mie')?.addEventListener('click', mostraMie);
+
+    document.getElementById('btn-back-user')?.addEventListener('click', () => {
+        show('view-user');
+    });
+
+    document.getElementById('btn-logout-user')?.addEventListener('click', () => {
+        location.reload();
+    });
+
+    // PIANTONE
+    document.getElementById('btn-cerca')?.addEventListener('click', cercaPass);
+
+    document.getElementById('btn-ingresso')?.addEventListener('click', () => {
+        mossa('E');
+    });
+
+    document.getElementById('btn-uscita')?.addEventListener('click', () => {
+        mossa('U');
+    });
+
+    document.getElementById('btn-filtro')?.addEventListener('click', toggleScaduti);
+
+    document.getElementById('btn-logout-piantone')?.addEventListener('click', () => {
+        location.reload();
+    });
+
+    // ADMIN
+    document.getElementById('btn-ritardi')?.addEventListener('click', mostraRitardi);
+
+    document.getElementById('btn-logout-admin')?.addEventListener('click', () => {
+        location.reload();
+    });
 
 });
