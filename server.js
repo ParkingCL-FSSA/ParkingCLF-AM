@@ -372,7 +372,7 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
          WHERE
             UPPER(npass) = $1
             AND (
-                stato = 'INGRESSO'
+                stato = 'ENTRATO'
                 OR (
                     stato = 'PRENOTATO'
                     AND data_fine >= $2
@@ -385,7 +385,7 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
 
          ORDER BY
             CASE
-                WHEN stato = 'INGRESSO' THEN 1
+                WHEN stato = 'ENTRATO' THEN 1
                 WHEN stato = 'SCADUTO' THEN 2
                 WHEN stato = 'PRENOTATO' THEN 3
                 ELSE 99
@@ -420,46 +420,128 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
     }
 });
 
-// --- 7. PIANTONE AZIONE ---
 app.post('/api/piantone/azione', async (req, res) => {
+
     const { id, azione, npass } = req.body;
-    const p = clean(npass);
-    
+
     if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
-        return res.status(403).json({ error: "Accesso non autorizzato" });
+        return res.status(403).json({
+            error: "Accesso non autorizzato"
+        });
     }
 
     if (!id || !azione) {
-        return res.status(400).json({ error: "Dati mancanti" });
+        return res.status(400).json({
+            error: "Dati mancanti"
+        });
     }
 
     try {
+
         const ora = new Date();
 
+        // 🔍 recupera prenotazione reale
+        const prenRes = await pool.query(
+            "SELECT * FROM prenotazioni WHERE id = $1",
+            [id]
+        );
+
+        if (prenRes.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: "Prenotazione non trovata"
+            });
+        }
+
+        const pren = prenRes.rows[0];
+
+        // 🚫 uscita senza ingresso
+        if (
+            azione === 'uscita' &&
+            !pren.orario_ingresso
+        ) {
+            return res.status(400).json({
+                success: false,
+                error: "Auto mai entrata"
+            });
+        }
+
+        // 🚫 doppio ingresso
+        if (
+            azione === 'ingresso' &&
+            pren.orario_ingresso
+        ) {
+            return res.status(400).json({
+                success: false,
+                error: "Ingresso già registrato"
+            });
+        }
+
+        // 🚫 doppia uscita
+        if (
+            azione === 'uscita' &&
+            pren.orario_uscita
+        ) {
+            return res.status(400).json({
+                success: false,
+                error: "Uscita già registrata"
+            });
+        }
+
+        // ✅ INGRESSO
         if (azione === 'ingresso') {
+
             await pool.query(
-                "UPDATE prenotazioni SET stato = 'ENTRATO', orario_ingresso = $1 WHERE id = $2",
+                `
+                UPDATE prenotazioni
+                SET
+                    stato = 'ENTRATO',
+                    orario_ingresso = $1
+                WHERE id = $2
+                `,
                 [ora, id]
             );
-        } 
-        else if (azione === 'uscita') {
-            const r = await pool.query(
-            "UPDATE prenotazioni SET stato = 'USCITO', orario_uscita = $1 WHERE id = $2 AND stato != 'USCITO' RETURNING id",
-            [ora, id]
-        );
-    
-        if (r.rowCount > 0) {
-            return res.json({ success: true });
-        } else {
-            return res.json({ success: false });
+
+            return res.json({
+                success: true
+            });
         }
-    }
+
+        // ✅ USCITA
+        if (azione === 'uscita') {
+
+            await pool.query(
+                `
+                UPDATE prenotazioni
+                SET
+                    stato = 'USCITO',
+                    orario_uscita = $1
+                WHERE id = $2
+                `,
+                [ora, id]
+            );
+
+            return res.json({
+                success: true
+            });
+        }
+
+        // 🚫 azione non valida
+        return res.status(400).json({
+            success: false,
+            error: "Azione non valida"
+        });
+
     } catch (err) {
+
         console.error("Errore piantone:", err);
-        res.status(500).json({ error: err.message });
+
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
     }
 });
-
 // --- 7B. PIANTONE LIBERI ---
 app.get('/api/piantone/liberi', async (req, res) => {
     try {
