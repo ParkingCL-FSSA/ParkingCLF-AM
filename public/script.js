@@ -59,23 +59,29 @@ function show(id) {
 }
 
 function toggleScaduti() {
+
     if (filtroPiantone === 'attivi') {
         filtroPiantone = 'scaduti';
-    } else if (filtroPiantone === 'scaduti') {
-        filtroPiantone = 'tutti';
-    } else {
+    }
+    else if (filtroPiantone === 'scaduti') {
+        filtroPiantone = 'storico';
+    }
+    else {
         filtroPiantone = 'attivi';
     }
+
     const btn = document.getElementById('btn-filtro');
+
     if (filtroPiantone === 'attivi') {
         btn.innerText = "Mostra solo scaduti";
-    } 
+    }
     else if (filtroPiantone === 'scaduti') {
-        btn.innerText = "Mostra tutti";
-    } 
+        btn.innerText = "Mostra storico";
+    }
     else {
         btn.innerText = "Mostra entrate";
     }
+
     aggiornaVeicoli();
 }
 
@@ -116,7 +122,7 @@ async function doLogin() {
 
             try { aggiornaVeicoli(); } catch(e){ console.log(e); }
             try { aggiornaPostiLiberiPiantone(); } catch(e){ console.log(e); }
-            try { caricaStorico(); } catch(e){ console.log(e); }
+           // try { caricaStorico(); } catch(e){ console.log(e); }
 
         }
         else if (data.ruolo === 'admin') {
@@ -201,8 +207,9 @@ async function mostraMie() {
         'SCADUTO':   '⏰'
     };
 
-    const cancellabile = (stato) => stato === 'PRENOTATO' //|| stato === 'SCADUTO';
-
+    const cancellabile = (p) => p.stato === 'PRENOTATO' && !p.orario_ingresso;
+    const cestino = cancellabile(p)
+    
     document.getElementById('my-list-content').innerHTML = dati.map(p => {
         const colore = statoColore[p.stato] || '#64748b';
         const emoji  = statoEmoji[p.stato]  || '📅';
@@ -243,7 +250,7 @@ async function cercaPass() {
     const p = document.getElementById('search-p').value.trim().toUpperCase();
     if (!p) return;
 
-    const res = await fetch(`/api/piantone/cerca/${p}?auth=${userPass}`);
+    const res = await fetch(`/api/piantone/cerca/${p}?auth=${userPass}&view=${filtroPiantone}`);
     const data = await res.json();
 
     if (data.trovato) {
@@ -330,19 +337,22 @@ async function aggiornaVeicoli() {
 
     const badge = document.getElementById('badge-contatori');
 
-        badge.innerHTML = `
-        🚗 <b>Dentro:</b> ${countDentro}
-        &nbsp;&nbsp;|&nbsp;&nbsp;
-        🅿️ <b>Liberi:</b> ${120 - countDentro}
-        `;
+    badge.innerHTML = `
+    🚗 <b>Dentro:</b> ${countDentro}
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    🅿️ <b>Liberi:</b> ${120 - countDentro}
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    <span id="badge-scaduti">
+    ⏰ <b>Scaduti:</b> ${countScaduti}
+    </span>
+    `;
 
     // 🔥 LAMPEGGIANTE (solo se ci sono scaduti)
-   if (countScaduti > 0) {
-        const el = document.getElementById('badge-contatori');
-        if (el) el.style.animation = 'blink 1s infinite';
-    } else {
-        const el = document.getElementById('badge-contatori');
-        if (el) el.style.animation = '';
+    const scadutiEl = document.getElementById('badge-scaduti');
+    
+    if (countScaduti > 0) {
+        scadutiEl.style.color = '#ef4444';
+        scadutiEl.style.animation = 'blink 1s infinite';
     }
 
     // 🔥 FILTRO + ORDINAMENTO
@@ -350,11 +360,21 @@ async function aggiornaVeicoli() {
     .filter(x => {
         const scaduto = x.stato === 'INGRESSO' && oggi > x.data_fine;
         const dentro = x.stato === 'INGRESSO' || (x.stato === 'SCADUTO' && !x.orario_uscita);
-
-        if (filtroPiantone === 'attivi') return dentro;
-        if (filtroPiantone === 'scaduti') return scaduto;
-        return true;
-    })
+        const storico = x.stato === 'USCITO';
+        
+        if (filtroPiantone === 'attivi') {
+            return x.stato === 'PRENOTATO'
+                || x.stato === 'INGRESSO'
+                || scaduto;
+        }
+        if (filtroPiantone === 'scaduti') {
+            return scaduto;
+        }
+        if (filtroPiantone === 'storico') {
+            return storico;
+        }
+        return false;
+            })
     .sort((a, b) => {
         const scadA = a.stato === 'INGRESSO' && oggi > a.data_fine;
         const scadB = b.stato === 'INGRESSO' && oggi > b.data_fine;
@@ -365,6 +385,8 @@ async function aggiornaVeicoli() {
 console.log("DATI:", dati);
 console.log("FILTRO:", filtroPiantone);
 console.log("LISTA DOPO FILTRO:", lista);
+
+    const bloccato = p.stato === 'SCADUTO' && !p.orario_ingresso;
     
     // 🧾 RENDER
     document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
@@ -379,8 +401,15 @@ console.log("LISTA DOPO FILTRO:", lista);
         const scaduto = x.stato === 'INGRESSO' && oggi > x.data_fine;
         const evidenzia = x.npass === ultimoAggiornato;
 
+            const storico = x.stato === 'USCITO';
+            const prenotato = x.stato === 'PRENOTATO';
+            const cestino = cancellabile(p)
+            ? `🗑️`
+            : `<div style="font-size:18px; color:#cbd5e1;">🔒</div>`;
+        
             return `<tr style="
                 ${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
+                ${storico ? 'background:#f1f5f9; color:#475569;' : ''}
                 ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
             ">
             <td style="font-weight:bold;">${x.npass}</td>
