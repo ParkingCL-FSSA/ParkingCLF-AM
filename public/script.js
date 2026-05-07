@@ -47,8 +47,6 @@ function fmtData(isoStr) {
 
 function show(id) {
 
-    console.log("SHOW:", id);
-
     document
         .querySelectorAll('[id^="view-"]')
         .forEach(d => d.classList.add('hidden'));
@@ -57,8 +55,6 @@ function show(id) {
 
     if (el) {
         el.classList.remove('hidden');
-    } else {
-        console.error("VIEW NON TROVATA:", id);
     }
 }
 
