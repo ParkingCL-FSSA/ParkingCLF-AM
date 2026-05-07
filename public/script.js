@@ -266,7 +266,6 @@ async function mostraMie() {
             border:1px solid ${isStorico ? '#e2e8f0' : '#bfdbfe'};
             opacity:${isStorico ? '0.75' : '1'};
         ">
-
             <div>
                 <div style="font-size:13px;">
                     ${emoji}
@@ -280,6 +279,9 @@ async function mostraMie() {
                     margin-top:4px;
                     color:${colore};
                 ">
+                <div style="font-size:11px; color:#64748b;">
+                    Totale giorni: ${giorni}
+                </div>
                     Stato: ${p.stato}
                 </div>
             </div>
