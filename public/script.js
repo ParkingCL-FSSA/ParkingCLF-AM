@@ -21,7 +21,8 @@ window.addEventListener('beforeinstallprompt', (e) => {
     }
 });
 const btnEsci = document.getElementById('btnEsciApp');
-const beep = new Audio('/beep_u.mp3');
+const beepIngresso = new Audio('/beep_i.mp3');
+const beepUscita = new Audio('/beep_u.mp3');
 
 if (btnEsci) {
     btnEsci.addEventListener('click', () => {
@@ -454,11 +455,16 @@ async function mossa(tipo) {
 
         if (!data.success) {
             alert("Errore operazione");
-        }
+     
         if (data.success) {
-            beep.play(); // 🔊 suono
-            ultimoAggiornato = currentPren.npass; // salva chi hai mosso
+         // 🔊 suono
+        if (tipo === 'E') {
+            beepIngresso.play();
+        } else {
+            beepUscita.play();
         }
+    ultimoAggiornato = currentPren.npass;
+}
         // 🔄 aggiorna UI
         await cercaPass();
         await aggiornaVeicoli();
