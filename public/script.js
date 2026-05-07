@@ -198,14 +198,14 @@ async function mostraMie() {
 
     const statoColore = {
         'PRENOTATO': '#1e40af',
-        'INGRESSO':  '#15803d',
+        'ENTRATO':  '#15803d',
         'USCITO':    '#b45309',
         'SCADUTO':   '#ef4444'
     };
 
     const statoEmoji = {
         'PRENOTATO': '📅',
-        'INGRESSO':  '🚗',
+        'ENTRATO':  '🚗',
         'USCITO':    '✅',
         'SCADUTO':   '⏰'
     };
@@ -314,13 +314,13 @@ async function cercaPass() {
             btnUscita.disabled = true;
         }
 
-        if (currentPren.stato === 'INGRESSO') {
+        if (currentPren.stato === 'ENTRATO') {
             btnEntrata.disabled = true;
             btnUscita.disabled = false;
         }
         // 🎨 COLORI DINAMICI BOTTONI
         const oggi = new Date().toISOString().split('T')[0];
-        const scaduto = currentPren.stato === 'INGRESSO' && oggi > currentPren.data_fine;
+        const scaduto = currentPren.stato === 'ENTRATO' && oggi > currentPren.data_fine;
         
         if (scaduto) {
             btnEntrata.style.background = '#9ca3af'; // grigio
@@ -333,7 +333,7 @@ async function cercaPass() {
             btnUscita.innerText = 'USCITA';
         }
         // ⚠️ SCADUTO MA DENTRO → USCITA SEMPRE POSSIBILE
-        if (currentPren.stato === 'INGRESSO' && oggi > currentPren.data_fine) {
+        if (currentPren.stato === 'ENTRATO' && oggi > currentPren.data_fine) {
             btnUscita.disabled = false;
         }
 
@@ -377,11 +377,11 @@ async function aggiornaVeicoli() {
 
         const dentro =
             prenotatoOggi ||
-            x.stato === 'INGRESSO' ||
+            x.stato === 'ENTRATO' ||
             (x.stato === 'SCADUTO' && !x.orario_uscita);
 
         const scaduto =
-            x.stato === 'INGRESSO' &&
+            x.stato === 'ENTRATO' &&
             oggi > x.data_fine;
 
         if (dentro) countDentro++;
@@ -422,12 +422,12 @@ async function aggiornaVeicoli() {
                 oggi <= x.data_fine;
 
             const scaduto =
-                x.stato === 'INGRESSO' &&
+                x.stato === 'ENTRATO' &&
                 oggi > x.data_fine;
 
             const dentro =
                 prenotatoOggi ||
-                x.stato === 'INGRESSO' ||
+                x.stato === 'ENTRATO' ||
                 (x.stato === 'SCADUTO' && !x.orario_uscita);
 
             if (filtroPiantone === 'attivi')
@@ -445,11 +445,11 @@ async function aggiornaVeicoli() {
         .sort((a, b) => {
 
             const scadA =
-                a.stato === 'INGRESSO' &&
+                a.stato === 'ENTRATO' &&
                 oggi > a.data_fine;
 
             const scadB =
-                b.stato === 'INGRESSO' &&
+                b.stato === 'ENTRATO' &&
                 oggi > b.data_fine;
 
             return scadB - scadA;
@@ -493,7 +493,7 @@ async function aggiornaVeicoli() {
             : '';
 
         const scaduto =
-            x.stato === 'INGRESSO' &&
+            x.stato === 'ENTRATO' &&
             oggi > x.data_fine;
 
         const storico =
