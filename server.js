@@ -138,7 +138,7 @@ app.post('/api/prenota', async (req, res) => {
         const overlap = await pool.query(
             `SELECT id FROM prenotazioni 
              WHERE UPPER(npass) = $1 
-               AND stato IN ('PRENOTATO', 'INGRESSO')
+               AND stato IN ('PRENOTATO', 'ENTRATO')
                AND (
                    (data_inizio <= $2 AND data_fine >= $2) OR
                    (data_inizio <= $3 AND data_fine >= $3) OR
@@ -160,7 +160,7 @@ app.post('/api/prenota', async (req, res) => {
         const giorniEsistenti = await pool.query(
             `SELECT data_inizio, data_fine FROM prenotazioni 
              WHERE UPPER(npass) = $1 
-               AND stato IN ('PRENOTATO', 'INGRESSO')
+               AND stato IN ('PRENOTATO', 'ENTRATO')
                AND data_inizio <= $2
                AND data_fine >= $3`,
             [p, fineFinStr, dataInizio]
@@ -214,7 +214,7 @@ app.post('/api/prenota', async (req, res) => {
                  JOIN registro_pass r ON UPPER(p.npass) = UPPER(r.npass)
                  WHERE r.ente = $1
                    AND UPPER(p.npass) != $2
-                   AND p.stato IN ('PRENOTATO', 'INGRESSO')
+                   AND p.stato IN ('PRENOTATO', 'ENTRATO')
                    AND $3 BETWEEN p.data_inizio AND p.data_fine`,
                 [userEnte, p, giorno]
             );
@@ -311,7 +311,7 @@ app.post('/api/elimina-prenotazione', async (req, res) => {
         if (info.rows.length === 0) return res.status(404).json({ error: "Prenotazione non trovata" });
 
         const { data_inizio, data_fine, stato } = info.rows[0];
-        if (stato === 'INGRESSO' || stato === 'USCITO') {
+        if (stato === 'ENTRATO' || stato === 'USCITO') {
             return res.status(400).json({ error: "Non cancellabile: veicolo già registrato." });
         }
 
@@ -340,7 +340,7 @@ app.get('/api/veicoli-dentro', async (req, res) => {
     }
     try {
         const r = await pool.query(
-            "SELECT npass, data_fine, orario_ingresso, orario_uscita, stato FROM prenotazioni WHERE stato IN ('INGRESSO', 'USCITO') ORDER BY COALESCE(orario_uscita, orario_ingresso) DESC LIMIT 20"
+            "SELECT npass, data_fine, orario_ingresso, orario_uscita, stato FROM prenotazioni WHERE stato IN ('ENTRATO', 'USCITO') ORDER BY COALESCE(orario_uscita, orario_ingresso) DESC LIMIT 20"
         );
         res.json(r.rows);
     } catch (err) {
@@ -366,7 +366,7 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
         filtroSQL = `
             AND (
                 stato = 'PRENOTATO'
-                OR stato = 'INGRESSO'
+                OR stato = 'ENTRATO'
                 OR (stato='SCADUTO' AND orario_uscita IS NULL)
             )
         `;
@@ -423,7 +423,7 @@ app.post('/api/piantone/azione', async (req, res) => {
 
         if (azione === 'ingresso') {
             await pool.query(
-                "UPDATE prenotazioni SET stato = 'INGRESSO', orario_ingresso = $1 WHERE id = $2",
+                "UPDATE prenotazioni SET stato = 'ENTRATO', orario_ingresso = $1 WHERE id = $2",
                 [ora, id]
             );
         } 
@@ -452,7 +452,7 @@ app.get('/api/piantone/liberi', async (req, res) => {
         const r = await pool.query(
             `SELECT COUNT(*) as count
              FROM prenotazioni
-             WHERE stato = 'INGRESSO'
+             WHERE stato = 'ENTRATO'
              AND $1 BETWEEN data_inizio AND data_fine`,
             [oggi]
         );
@@ -482,7 +482,7 @@ app.get('/api/admin/cruscotto', async (req, res) => {
                 SELECT p.npass, p.data_inizio, p.data_fine, r.ente
                 FROM prenotazioni p
                 JOIN registro_pass r ON UPPER(p.npass) = UPPER(r.npass)
-                WHERE p.stato IN ('PRENOTATO', 'INGRESSO')
+                WHERE p.stato IN ('PRENOTATO', 'ENTRATO')
             )
             SELECT 
                 g.giorno,
@@ -533,7 +533,7 @@ app.get('/api/admin/ritardi', async (req, res) => {
             SELECT npass, data_fine, orario_uscita,
                    (CURRENT_DATE - data_fine) as giorni_ritardo
             FROM prenotazioni
-            WHERE stato = 'INGRESSO'
+            WHERE stato = 'ENTRATO'
             AND CURRENT_DATE > data_fine
         `);
 
