@@ -217,9 +217,11 @@ async function mostraMie() {
         const colore = statoColore[p.stato] || '#64748b';
         const emoji  = statoEmoji[p.stato]  || '📅';
         const isStorico = p.stato === 'USCITO' || p.stato === 'SCADUTO';
-        const cestino = cancellabile(p.stato)
-            ? `<div style="color:red; cursor:pointer; font-size:20px;" onclick="eliminaPren(${p.id})">🗑️</div>`
-            : `<div style="font-size:18px; color:#cbd5e1;" title="Non cancellabile">🔒</div>`;
+        const bloccato = p.stato === 'SCADUTO' && !p.orario_ingresso;
+        const cestino = cancellabile(p)
+        ? `<div style="color:red; cursor:pointer; font-size:20px;"
+            onclick="eliminaPren(${p.id})">🗑️</div>`
+        : `<div style="font-size:18px; color:#cbd5e1;">🔒</div>`;
 
         return `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:12px;
@@ -389,7 +391,7 @@ console.log("DATI:", dati);
 console.log("FILTRO:", filtroPiantone);
 console.log("LISTA DOPO FILTRO:", lista);
 
-    const bloccato = p.stato === 'SCADUTO' && !p.orario_ingresso;
+ 
     
     // 🧾 RENDER
     document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
