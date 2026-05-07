@@ -388,7 +388,6 @@ async function aggiornaVeicoli() {
 
     const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
     const dati = await res.json();
-
     const oggi = new Date().toISOString().split('T')[0];
 
     let countDentro = 0;
@@ -413,10 +412,50 @@ async function aggiornaVeicoli() {
         if (dentro) countDentro++;
         if (scaduto) countScaduti++;
     });
-
+    
+        let label = "";
+        let colore = "#334155";
+        let sfondo = "#f8fafc";
+        
+        if (filtroPiantone === 'attivi') {
+        
+            label = "📋 ATTIVI";
+            colore = "#2563eb";
+            sfondo = "#dbeafe";
+        
+        }
+        else if (filtroPiantone === 'scaduti') {
+        
+            label = "⏰ SCADUTI";
+            colore = "#dc2626";
+            sfondo = "#fee2e2";
+        
+        }
+        else if (filtroPiantone === 'storico') {
+        
+            label = "🕘 STORICO";
+            colore = "#475569";
+            sfondo = "#e2e8f0";
+        
+        }
+        else {
+        
+            label = "📑 TUTTI";
+            colore = "#7c3aed";
+            sfondo = "#ede9fe";
+        }
     // BADGE
     const badge = document.getElementById('badge-contatori');
-
+    const statoTabella = document.getElementById('stato-tabella');
+    
+    if (statoTabella) {
+    
+        statoTabella.innerHTML = label;
+    
+        statoTabella.style.color = colore;
+        statoTabella.style.background = sfondo;
+        statoTabella.style.borderColor = colore;
+    }
     badge.innerHTML = `
         🚗 <b>Dentro:</b> ${countDentro}
         &nbsp;&nbsp;|&nbsp;&nbsp;
