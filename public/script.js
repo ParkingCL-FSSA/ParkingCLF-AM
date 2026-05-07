@@ -178,7 +178,13 @@ function buildCal() {
     }
 }
 async function inviaPren() {
-    const email = document.getElementById('u-email').value;
+  
+    const email = document.getElementById('u-email').value.trim().toLowerCase();
+    // 🚫 blocco mail difesa
+    if (email.includes('@') && email.endsWith('.difesa.it')) {
+        alert('Inserisci la tua mail privata');
+        return;
+    }
     if (!selectedDays.length || !email) return alert("Dati mancanti!");
     if (selectedDays.length > 15) return alert("Massimo 15 giorni selezionabili!");
 
