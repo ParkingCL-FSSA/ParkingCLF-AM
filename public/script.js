@@ -95,50 +95,50 @@ function toggleScaduti() {
 async function doLogin() {
 
     try {
+    
+            userPass = document
+                .getElementById('in-npass')
+                .value
+                .trim()
+                .toUpperCase();
+    
+            if (!userPass) return;
+    
+            const res = await fetch('/api/valida-pass', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    npass: userPass
+                })
+            });
+    
+            const data = await res.json();
+    
+            console.log("LOGIN:", data);
+    
+            if (!data.valid) {
+                alert("Accesso Negato");
+                return;
+            }
+    
+            if (data.ruolo === 'piantone') {
+    
+                show('view-piantone');
+    
+                try { aggiornaVeicoli(); } catch(e){ console.log(e); }
+                try { aggiornaPostiLiberiPiantone(); } catch(e){ console.log(e); }
+               // try { caricaStorico(); } catch(e){ console.log(e); }
+    
+            }
+            else if (data.ruolo === 'admin') { 
+                document.querySelector('.card').classList.add('admin-wide');
+                show('view-admin'); 
+                try { mostraAdmin(); } catch(e){ console.log(e); }
+            }
 
-        userPass = document
-            .getElementById('in-npass')
-            .value
-            .trim()
-            .toUpperCase();
-
-        if (!userPass) return;
-
-        const res = await fetch('/api/valida-pass', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                npass: userPass
-            })
-        });
-
-        const data = await res.json();
-
-        console.log("LOGIN:", data);
-
-        if (!data.valid) {
-            alert("Accesso Negato");
-            return;
-        }
-
-        if (data.ruolo === 'piantone') {
-
-            show('view-piantone');
-
-            try { aggiornaVeicoli(); } catch(e){ console.log(e); }
-            try { aggiornaPostiLiberiPiantone(); } catch(e){ console.log(e); }
-           // try { caricaStorico(); } catch(e){ console.log(e); }
-
-        }
-        else if (data.ruolo === 'admin') {
-
-            show('view-admin');
-
-            try { mostraAdmin(); } catch(e){ console.log(e); }
-
-        }
+     }
         else {
 
             show('view-user');
