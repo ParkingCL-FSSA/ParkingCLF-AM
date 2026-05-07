@@ -494,3 +494,12 @@ async function caricaStorico() {
         </div>`;
     }).join('');
 }
+document.addEventListener('DOMContentLoaded', () => {
+
+    const btnLogin = document.getElementById('btn-login');
+
+    if (btnLogin) {
+        btnLogin.addEventListener('click', doLogin);
+    }
+
+});
