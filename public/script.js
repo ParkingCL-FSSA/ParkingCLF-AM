@@ -453,22 +453,26 @@ async function mossa(tipo) {
 
         const data = await res.json();
 
-        if (!data.success) {
+                if (!data.success) {
+        
             alert("Errore operazione");
-     
-        if (data.success) {
-         // 🔊 suono
-        if (tipo === 'E') {
-            beepIngresso.play();
+        
         } else {
-            beepUscita.play();
+        
+            // 🔊 suoni diversi
+            if (tipo === 'E') {
+                beepIngresso.play();
+            } else {
+                beepUscita.play();
+            }
+        
+            ultimoAggiornato = currentPren.npass;
         }
-    ultimoAggiornato = currentPren.npass;
-}
+        
         // 🔄 aggiorna UI
         await cercaPass();
         await aggiornaVeicoli();
-        await caricaStorico();
+       // await caricaStorico();
         
     } catch (err) {
         alert("Errore di rete");
