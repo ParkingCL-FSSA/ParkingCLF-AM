@@ -138,7 +138,6 @@ async function doLogin() {
                 try { mostraAdmin(); } catch(e){ console.log(e); }
             }
 
-     }
         else {
 
             show('view-user');
