@@ -273,25 +273,27 @@ async function mostraMie() {
             opacity:${isStorico ? '0.75' : '1'};
         ">
             <div>
-                <div style="font-size:13px;">
-                    ${emoji}
-                    Dal ${fmtData(p.data_inizio)}
-                    al ${fmtData(p.data_fine)}
-                </div>
-
-                <div style="
-                    font-weight:bold;
-                    font-size:12px;
-                    margin-top:4px;
-                    color:${colore};
-                ">
-                <div style="font-size:11px; color:#64748b;">
-                    Totale giorni: ${giorni}
-                </div>
-                    Stato: ${p.stato}
-                </div>
+            <div style="font-size:13px;">
+                ${emoji} Dal ${fmtData(p.data_inizio)} al ${fmtData(p.data_fine)}
             </div>
-
+        
+            <div style="
+                display:flex;
+                gap:12px;
+                margin-top:4px;
+                font-size:11px;
+                align-items:center;
+                flex-wrap:wrap;
+            ">
+                <span style="font-weight:bold; color:${colore};">
+                    Stato: ${p.stato}
+                </span>
+        
+                <span style="color:#64748b;">
+                    Totale giorni: ${giorni}
+                </span>
+            </div>
+        </div>
             ${cestino}
 
         </div>`;
