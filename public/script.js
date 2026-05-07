@@ -20,16 +20,22 @@ window.addEventListener('beforeinstallprompt', (e) => {
         });
     }
 });
-document.getElementById('btnEsciApp').addEventListener('click', () => {
-    // Chiude l'app se è aperta in modalità "standalone"
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
-        window.close();
-    } else {
-        // Se è aperta nel browser normale, window.close spesso è bloccato, 
-        // quindi avvisiamo l'utente o puliamo la pagina
-        alert("Per uscire chiudi la scheda del browser o l'app.");
-    }
-});
+const btnEsci = document.getElementById('btnEsciApp');
+
+if (btnEsci) {
+    btnEsci.addEventListener('click', () => {
+
+        if (
+            window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true
+        ) {
+            window.close();
+        } else {
+            alert("Per uscire chiudi la scheda del browser o l'app.");
+        }
+
+    });
+}
 //const beep = new Audio('https://www.soundjay.com/buttons/sounds/beep-07.mp3');
 
 // FIX: helper che evita lo sfasamento UTC (new Date("YYYY-MM-DD") = mezzanotte UTC → giorno sbagliato in IT)
@@ -66,45 +72,66 @@ function toggleScaduti() {
 }
 
 async function doLogin() {
-    userPass = document.getElementById('in-npass').value.trim().toUpperCase();
-    if (!userPass) return;
 
-    const res = await fetch('/api/valida-pass', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ npass: userPass })
-    });
+    try {
 
-    const data = await res.json();
+        userPass = document
+            .getElementById('in-npass')
+            .value
+            .trim()
+            .toUpperCase();
 
-    if (!data.valid) {
-        alert("Accesso Negato");
-        return;
+        if (!userPass) return;
+
+        const res = await fetch('/api/valida-pass', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                npass: userPass
+            })
+        });
+
+        const data = await res.json();
+
+        console.log("LOGIN:", data);
+
+        if (!data.valid) {
+            alert("Accesso Negato");
+            return;
+        }
+
+        if (data.ruolo === 'piantone') {
+
+            show('view-piantone');
+
+            try { aggiornaVeicoli(); } catch(e){ console.log(e); }
+            try { aggiornaPostiLiberiPiantone(); } catch(e){ console.log(e); }
+            try { caricaStorico(); } catch(e){ console.log(e); }
+
+        }
+        else if (data.ruolo === 'admin') {
+
+            show('view-admin');
+
+            try { mostraAdmin(); } catch(e){ console.log(e); }
+
+        }
+        else {
+
+            show('view-user');
+
+            try { buildCal(); } catch(e){ console.log(e); }
+
+        }
+
+    } catch (err) {
+
+        console.error("ERRORE LOGIN:", err);
+        alert("Errore login");
+
     }
-
-   if (data.ruolo === 'piantone') {
-    show('view-piantone');
-    aggiornaVeicoli();
-    aggiornaPostiLiberiPiantone();
-    caricaStorico();
-    setInterval(aggiornaPostiLiberiPiantone, 10000);
-console.log("LOGIN OK", data);       
-const data = await res.json();
-console.log("RUOLO:", data.ruolo);    
-       
-  //  document.body.addEventListener('click', () => {
-     //   beep.play().then(() => {
-     //       beep.pause();
-      //      beep.currentTime = 0;
-     //   }).catch(()=>{});
-  //  }, { once: true });
-
-} else if (data.ruolo === 'admin') {
-    show('view-admin');
-    mostraAdmin();
-} else {
-    show('view-user');
-    buildCal();
 }
 // ✅ Nuova funzione per visualizzazione posti liberi totali al piantone
 async function aggiornaPostiLiberiPiantone() {
