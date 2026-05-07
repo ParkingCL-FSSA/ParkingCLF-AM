@@ -189,9 +189,10 @@ async function inviaPren() {
         alert(err.error || "Errore durante la prenotazione.");
     }
 }
-// FIX: mostra storico (USCITO, SCADUTO) con stile diverso e senza cestino
 async function mostraMie() {
+
     show('view-my-list');
+
     const res = await fetch(`/api/mie-prenotazioni/${userPass}`);
     const dati = await res.json();
 
@@ -199,8 +200,9 @@ async function mostraMie() {
         'PRENOTATO': '#1e40af',
         'INGRESSO':  '#15803d',
         'USCITO':    '#b45309',
-        'SCADUTO':   '#ef4444'//Rosso
+        'SCADUTO':   '#ef4444'
     };
+
     const statoEmoji = {
         'PRENOTATO': '📅',
         'INGRESSO':  '🚗',
@@ -208,38 +210,76 @@ async function mostraMie() {
         'SCADUTO':   '⏰'
     };
 
-  const cancellabile = (p) =>
-    p.stato === 'PRENOTATO'
-    && !p.orario_ingresso;
-    const cestino = cancellabile(p)
-    
+    // cancellabile SOLO se prenotato e mai entrato
+    const cancellabile = (p) => {
+        return p.stato === 'PRENOTATO' && !p.orario_ingresso;
+    };
+
     document.getElementById('my-list-content').innerHTML = dati.map(p => {
+
         const colore = statoColore[p.stato] || '#64748b';
         const emoji  = statoEmoji[p.stato]  || '📅';
-        const isStorico = p.stato === 'USCITO' || p.stato === 'SCADUTO';
-        const bloccato = p.stato === 'SCADUTO' && !p.orario_ingresso;
+
+        const isStorico =
+            p.stato === 'USCITO' ||
+            p.stato === 'SCADUTO';
+
         const cestino = cancellabile(p)
-        ? `<div style="color:red; cursor:pointer; font-size:20px;"
-            onclick="eliminaPren(${p.id})">🗑️</div>`
-        : `<div style="font-size:18px; color:#cbd5e1;">🔒</div>`;
+            ? `
+                <div
+                    style="color:red; cursor:pointer; font-size:20px;"
+                    onclick="eliminaPren(${p.id})">
+                    🗑️
+                </div>
+              `
+            : `
+                <div
+                    style="font-size:18px; color:#cbd5e1;"
+                    title="Prenotazione non eliminabile">
+                    🔒
+                </div>
+              `;
 
         return `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px;
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:12px;
             background:${isStorico ? '#f8fafc' : 'white'};
-            border-radius:12px; margin-bottom:8px;
+            border-radius:12px;
+            margin-bottom:8px;
             border:1px solid ${isStorico ? '#e2e8f0' : '#bfdbfe'};
-            opacity:${isStorico ? '0.75' : '1'};">
+            opacity:${isStorico ? '0.75' : '1'};
+        ">
+
             <div>
-                <div style="font-size:13px;">${emoji} Dal ${fmtData(p.data_inizio)} al ${fmtData(p.data_fine)}</div>
-                <div style="font-weight:bold; font-size:12px; margin-top:4px; color:${colore};">
+                <div style="font-size:13px;">
+                    ${emoji}
+                    Dal ${fmtData(p.data_inizio)}
+                    al ${fmtData(p.data_fine)}
+                </div>
+
+                <div style="
+                    font-weight:bold;
+                    font-size:12px;
+                    margin-top:4px;
+                    color:${colore};
+                ">
                     Stato: ${p.stato}
                 </div>
             </div>
-            ${cestino}
-        </div>`;
-    }).join('') || "<p style='color:#64748b; text-align:center;'>Nessuna prenotazione.</p>";
-}
 
+            ${cestino}
+
+        </div>`;
+
+    }).join('') || `
+        <p style="color:#64748b; text-align:center;">
+            Nessuna prenotazione.
+        </p>
+    `;
+}
 async function eliminaPren(id) {
     if (!confirm("Eliminare questa prenotazione?")) return;
     const res = await fetch('/api/elimina-prenotazione', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, npass: userPass }) });
@@ -319,113 +359,191 @@ async function cercaPass() {
 // con gestione null su orario_ingresso e orario_uscita
 
 async function aggiornaVeicoli() {
+
     const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
     const dati = await res.json();
+
     const oggi = new Date().toISOString().split('T')[0];
 
     let countDentro = 0;
     let countScaduti = 0;
 
     dati.forEach(x => {
-        const isInside = x.stato === 'INGRESSO';
-        const isExpiredInside = isInside && oggi > x.data_fine;
 
-        if (isInside || isExpiredInside) countDentro++;
-        if (isExpiredInside) countScaduti++;
+        const prenotatoOggi =
+            x.stato === 'PRENOTATO' &&
+            oggi >= x.data_inizio &&
+            oggi <= x.data_fine;
+
+        const dentro =
+            prenotatoOggi ||
+            x.stato === 'INGRESSO' ||
+            (x.stato === 'SCADUTO' && !x.orario_uscita);
+
+        const scaduto =
+            x.stato === 'INGRESSO' &&
+            oggi > x.data_fine;
+
+        if (dentro) countDentro++;
+        if (scaduto) countScaduti++;
     });
 
-    // 🎯 LABEL DINAMICA
-    let label = "";
-    if (filtroPiantone === 'attivi') label = "Dentro";
-    else if (filtroPiantone === 'scaduti') label = "Scaduti";
-    else label = "Totale";
-
+    // BADGE
     const badge = document.getElementById('badge-contatori');
 
     badge.innerHTML = `
-    🚗 <b>Dentro:</b> ${countDentro}
-    &nbsp;&nbsp;|&nbsp;&nbsp;
-    🅿️ <b>Liberi:</b> ${120 - countDentro}
-    &nbsp;&nbsp;|&nbsp;&nbsp;
-    <span id="badge-scaduti">
-    ⏰ <b>Scaduti:</b> ${countScaduti}
-    </span>
+        🚗 <b>Dentro:</b> ${countDentro}
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        🅿️ <b>Liberi:</b> ${120 - countDentro}
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        <span id="badge-scaduti">
+            ⏰ <b>Scaduti:</b> ${countScaduti}
+        </span>
     `;
 
-    // 🔥 LAMPEGGIANTE (solo se ci sono scaduti)
-    const scadutiEl = document.getElementById('badge-scaduti');
-    
+    // LAMPEGGIO SOLO SCADUTI
+    const elScaduti = document.getElementById('badge-scaduti');
+
     if (countScaduti > 0) {
-        scadutiEl.style.color = '#ef4444';
-        scadutiEl.style.animation = 'blink 1s infinite';
+        elScaduti.style.animation = 'blink 1s infinite';
+        elScaduti.style.color = '#ef4444';
+    } else {
+        elScaduti.style.animation = '';
+        elScaduti.style.color = '';
     }
 
-    // 🔥 FILTRO + ORDINAMENTO
+    // FILTRI
     const lista = dati
-    .filter(x => {
-        const scaduto = x.stato === 'INGRESSO' && oggi > x.data_fine;
-        const dentro = x.stato === 'INGRESSO' || (x.stato === 'SCADUTO' && !x.orario_uscita);
-        const storico = x.stato === 'USCITO';
-        
-        if (filtroPiantone === 'attivi') {
-            return x.stato === 'PRENOTATO'
-                || x.stato === 'INGRESSO'
-                || scaduto;
-        }
-        if (filtroPiantone === 'scaduti') {
-            return scaduto;
-        }
-        if (filtroPiantone === 'storico') {
-            return storico;
-        }
-        return false;
-            })
-    .sort((a, b) => {
-        const scadA = a.stato === 'INGRESSO' && oggi > a.data_fine;
-        const scadB = b.stato === 'INGRESSO' && oggi > b.data_fine;
+        .filter(x => {
 
-        return scadB - scadA;
-    });
+            const prenotatoOggi =
+                x.stato === 'PRENOTATO' &&
+                oggi >= x.data_inizio &&
+                oggi <= x.data_fine;
 
-console.log("DATI:", dati);
-console.log("FILTRO:", filtroPiantone);
-console.log("LISTA DOPO FILTRO:", lista);
+            const scaduto =
+                x.stato === 'INGRESSO' &&
+                oggi > x.data_fine;
 
- 
-    
-    // 🧾 RENDER
+            const dentro =
+                prenotatoOggi ||
+                x.stato === 'INGRESSO' ||
+                (x.stato === 'SCADUTO' && !x.orario_uscita);
+
+            if (filtroPiantone === 'attivi')
+                return dentro;
+
+            if (filtroPiantone === 'scaduti')
+                return scaduto;
+
+            if (filtroPiantone === 'storico')
+                return x.stato === 'USCITO';
+
+            return true;
+        })
+
+        .sort((a, b) => {
+
+            const scadA =
+                a.stato === 'INGRESSO' &&
+                oggi > a.data_fine;
+
+            const scadB =
+                b.stato === 'INGRESSO' &&
+                oggi > b.data_fine;
+
+            return scadB - scadA;
+        });
+
+    console.log("DATI:", dati);
+    console.log("FILTRO:", filtroPiantone);
+    console.log("LISTA DOPO FILTRO:", lista);
+
+    // RENDER
     document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
-        const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
-        const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
 
-        const dataIng = ing ? ing.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '--';
-        const oraIng  = ing ? ing.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
-        const dataUsc = usc ? usc.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '';
-        const oraUsc  = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '';
+        const ing = x.orario_ingresso
+            ? new Date(x.orario_ingresso)
+            : null;
 
-        const scaduto = x.stato === 'INGRESSO' && oggi > x.data_fine;
-        const evidenzia = x.npass === ultimoAggiornato;
+        const usc = x.orario_uscita
+            ? new Date(x.orario_uscita)
+            : null;
 
-            const storico = x.stato === 'USCITO';
-            const prenotato = x.stato === 'PRENOTATO';
-            const cestino = cancellabile(p)
-            ? `🗑️`
-            : `<div style="font-size:18px; color:#cbd5e1;">🔒</div>`;
-        
-            return `<tr style="
-                ${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
-                ${storico ? 'background:#f1f5f9; color:#475569;' : ''}
-                ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
-            ">
-            <td style="font-weight:bold;">${x.npass}</td>
-            <td>${dataIng}</td>
-            <td style="font-weight:bold;">${oraIng}</td>
-            <td>${scaduto ? 'SCADUTA' : dataUsc}</td>
-            <td style="font-weight:bold;">${scaduto ? '' : oraUsc}</td>
+        const dataIng = ing
+            ? ing.toLocaleDateString('it-IT')
+            : '--';
+
+        const oraIng = ing
+            ? ing.toLocaleTimeString('it-IT', {
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+            : '--';
+
+        const dataUsc = usc
+            ? usc.toLocaleDateString('it-IT')
+            : '';
+
+        const oraUsc = usc
+            ? usc.toLocaleTimeString('it-IT', {
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+            : '';
+
+        const scaduto =
+            x.stato === 'INGRESSO' &&
+            oggi > x.data_fine;
+
+        const storico =
+            x.stato === 'USCITO';
+
+        const evidenzia =
+            x.npass === ultimoAggiornato;
+
+        return `
+        <tr style="
+            ${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
+            ${storico ? 'background:#f1f5f9; color:#475569;' : ''}
+            ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
+        ">
+
+            <td style="font-weight:bold;">
+                ${x.npass}
+            </td>
+
+            <td>
+                ${dataIng}
+            </td>
+
+            <td style="font-weight:bold;">
+                ${oraIng}
+            </td>
+
+            <td>
+                ${scaduto ? 'SCADUTA' : dataUsc}
+            </td>
+
+            <td style="font-weight:bold;">
+                ${scaduto ? '' : oraUsc}
+            </td>
+
         </tr>`;
-    }).join('') || "<tr><td colspan='5' style='text-align:center; color:black; padding:16px;'>Nessun veicolo presente</td></tr>";
-}
 
+    }).join('') || `
+        <tr>
+            <td colspan="5"
+                style="
+                    text-align:center;
+                    color:black;
+                    padding:16px;
+                ">
+                Nessun veicolo presente
+            </td>
+        </tr>
+    `;
+}
 let loadingAzione = false;
 
 async function mossa(tipo) {
