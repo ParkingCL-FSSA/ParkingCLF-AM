@@ -351,22 +351,57 @@ app.get('/api/veicoli-dentro', async (req, res) => {
 
 // --- 6. PIANTONE CERCA ---
 app.get('/api/piantone/cerca/:npass', async (req, res) => {
+
     const authPass = req.query.auth;
-    if (!await verificaRuolo(authPass, ['piantone', 'admin'])) {
-        return res.status(403).json({ error: "Accesso non autorizzato" });
+    const view = req.query.view || 'attivi';
+
+    let filtroSQL = "";
+
+    if (view === 'storico') {
+
+        filtroSQL = "AND stato = 'USCITO'";
+
+    } else {
+
+        filtroSQL = `
+            AND (
+                stato = 'PRENOTATO'
+                OR stato = 'INGRESSO'
+                OR (stato='SCADUTO' AND orario_uscita IS NULL)
+            )
+        `;
     }
+
+    if (!await verificaRuolo(authPass, ['piantone', 'admin'])) {
+        return res.status(403).json({
+            error: "Accesso non autorizzato"
+        });
+    }
+
     try {
+
         const r = await pool.query(
-       `SELECT * FROM prenotazioni
-        WHERE UPPER(npass) = $1 
-        ORDER BY data_inizio ASC 
-        LIMIT 1`,
-        [req.params.npass.toUpperCase()]
-);
-        res.json(r.rows.length > 0 ? { trovato: true, prenotazione: r.rows[0] } : { trovato: false });
+            `SELECT * FROM prenotazioni
+             WHERE UPPER(npass) = $1
+             ${filtroSQL}
+             ORDER BY data_inizio ASC
+             LIMIT 1`,
+            [req.params.npass.toUpperCase()]
+        );
+
+        res.json(
+            r.rows.length > 0
+                ? { trovato: true, prenotazione: r.rows[0] }
+                : { trovato: false }
+        );
+
     } catch (err) {
+
         console.error(err);
-        res.status(500).json({ error: "Errore interno" });
+
+        res.status(500).json({
+            error: "Errore interno"
+        });
     }
 });
 
