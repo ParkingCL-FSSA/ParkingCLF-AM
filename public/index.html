@@ -70,8 +70,8 @@
             <input type="email" id="u-email" placeholder="Email* (PRIVATA) per ricevere il PASS">
             <p style="font-size: 10px; color: var(--gray);">(*)Informativa: i dati forniti sono trattati solo per fini organizzativi. Il sistema non profila gli utenti e non cede dati a terzi</p>
             <button id="btn-prenota" class="btn-green">INVIA PRENOTAZIONE</button>
-            <button class="btn-gray" onclick="mostraMie()">Le mie prenotazioni</button>
-            <button class="btn-red" style="margin-top: 20px;" onclick="location.reload()">LOGOUT</button>
+            <button class="btn-gray" id="btn-mie">Le mie prenotazioni</button>
+            <button class="btn-red" style="margin-top: 20px;" id="btn-logout-user">LOGOUT</button>
         </div>
 
         <div id="view-my-list" class="hidden">
@@ -80,7 +80,7 @@
                 ⚠️ <strong>Non trovi la mail di conferma?</strong> Controlla la <strong>Posta indesiderata</strong> e segna come <strong>"Sicura"</strong>.
             </div>
             <div id="my-list-content"></div>
-            <button class="btn-gray" style="margin-top: 15px;" onclick="show('view-user')">Torna Indietro</button>
+            <button class="btn-gray" style="margin-top: 15px;" id="btn-back-user">Torna Indietro</button>
         </div>
 
         <div id="view-success" class="hidden">
@@ -92,7 +92,7 @@
                 ⚠️ <strong>Non vedi la mail?</strong><br>
                 Controlla la <strong>Posta indesiderata</strong> e segnala la mail come <strong>"Sicura"</strong> o <strong>"Non Spam"</strong>.
             </div>
-            <button onclick="location.reload()">Torna alla Home</button>
+             <button class="btn-gray" style="margin-top: 15px;" id="btn-back-user">Torna alla Home</button>
         </div>
 
         <div id="view-piantone" class="hidden">
@@ -105,7 +105,7 @@
 
     <div style="display: flex; gap: 8px;">
         <input type="text" id="search-p" placeholder="CERCA Codice" style="text-transform: uppercase;">
-        <button onclick="cercaPass()" style="width: auto; padding: 0 20px;">Cerca</button>
+        <button id="btn-cerca" style="width: auto; padding: 0 20px;">Cerca</button>
     </div>
     
     <div id="panel-piantone" class="hidden" style="margin-top: 15px; padding: 20px; background: #f8fafc; border-radius: 15px; border: 1px solid #e2e8f0;">
@@ -114,18 +114,18 @@
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
             <div>
-                <button id="btn-ingresso" class="btn-green" onclick="mossa('E')" style="height: 60px; font-size: 18px;">ENTRATA</button>
+                <button id="btn-ingresso" class="btn-green" style="height: 60px; font-size: 18px;">ENTRATA</button>
                 <div id="reg-e" style="font-size: 10px; color: var(--gray); margin-top: 5px;"></div>
             </div>
             <div>
-                <button id="btn-uscita" class="btn-orange" onclick="mossa('U')" style="height: 60px; font-size: 18px;">USCITA</button>
+                <button id="btn-uscita" class="btn-orange" style="height: 60px; font-size: 18px;">USCITA</button>
                 <div id="reg-u" style="font-size: 10px; color: var(--gray); margin-top: 5px;"></div>
             </div>
         </div>
     </div>
 
     <h4 style="margin-top: 25px; text-align: left;">🏎️ Veicoli Dentro</h4>
-            <button id="btn-filtro" onclick="toggleScaduti()">Mostra solo scaduti</button>
+            <button id="btn-filtro">Mostra solo scaduti</button>
                 <div id="badge-contatori" style="margin:10px 0; font-size:14px;"></div>
     <table style="font-size: 14px; margin-bottom: 20px;">
         <thead>
@@ -142,15 +142,15 @@
     
     <div id="storico" style="margin-top:20px;"></div>
 
-    <button class="btn-gray" onclick="location.reload()">LOGOUT</button>
+    <button class="btn-gray" id="btn-logout-piantone">LOGOUT</button>
     </div>
 
     <div id="view-admin" class="hidden">
     
             <h3>📊 Disponibilità Posti</h3>
             <table id="tab-admin"></table>
-            <button onclick="mostraRitardi()">Report Ritardi</button>
-            <button class="btn-red" style="margin-top: 20px;" onclick="location.reload()">LOGOUT</button>
+            <button id="btn-ritardi">Report Ritardi</button>
+            <button class="btn-red" style="margin-top: 20px;" id="btn-logout-admin">LOGOUT</button>
         </div>
         <button id="btnEsciApp" style="background-color: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; padding: 10px; border-radius: 8px; width: 100%; margin-top: 20px; font-weight: bold;">
         🚪 ESCI DALL'APP
