@@ -309,7 +309,10 @@ async function cercaPass() {
         btnUscita.disabled = false;
 
         // LOGICA STATI
-        if (currentPren.stato === 'PRENOTATO') {
+        if (
+            currentPren.stato === 'PRENOTATO' ||
+            !currentPren.orario_ingresso
+        ) {
             btnEntrata.disabled = false;
             btnUscita.disabled = true;
         }
@@ -544,15 +547,26 @@ async function aggiornaVeicoli() {
         </tr>
     `;
 }
-let loadingAzione = false;
+
 
 async function mossa(tipo) {
+    let loadingAzione = false;
     if (loadingAzione) return; // 🚫 blocco doppio click
 
     let azione = tipo;
     if (tipo === 'E') azione = 'ingresso';
     if (tipo === 'U') azione = 'uscita';
-
+    // 🚫 uscita senza ingresso
+    if (
+        tipo === 'U' &&
+        (
+            currentPren.stato === 'PRENOTATO' ||
+            !currentPren.orario_ingresso
+        )
+    ) {
+        alert("Auto ancora non entrata");
+        return;
+    }
     const btnIngresso = document.getElementById('btn-ingresso');
     const btnUscita = document.getElementById('btn-uscita');
 
