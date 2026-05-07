@@ -299,9 +299,12 @@ async function aggiornaVeicoli() {
         `;
 
     // 🔥 LAMPEGGIANTE (solo se ci sono scaduti)
-    if (countScaduti > 0) {
-        const el = document.getElementById('badge-scaduti');
-        el.style.animation = 'blink 1s infinite';
+   if (countScaduti > 0) {
+        const el = document.getElementById('badge-contatori');
+        if (el) el.style.animation = 'blink 1s infinite';
+    } else {
+        const el = document.getElementById('badge-contatori');
+        if (el) el.style.animation = '';
     }
 
     // 🔥 FILTRO + ORDINAMENTO
