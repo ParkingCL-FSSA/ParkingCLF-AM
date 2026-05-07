@@ -353,24 +353,6 @@ app.get('/api/veicoli-dentro', async (req, res) => {
 app.get('/api/piantone/cerca/:npass', async (req, res) => {
 
     const authPass = req.query.auth;
-    const view = req.query.view || 'attivi';
-
-    let filtroSQL = "";
-
-    if (view === 'storico') {
-
-        filtroSQL = "AND stato = 'USCITO'";
-
-    } else {
-
-        filtroSQL = `
-            AND (
-                stato = 'PRENOTATO'
-                OR stato = 'ENTRATO'
-                OR (stato='SCADUTO' AND orario_uscita IS NULL)
-            )
-        `;
-    }
 
     if (!await verificaRuolo(authPass, ['piantone', 'admin'])) {
         return res.status(403).json({
@@ -380,20 +362,53 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
 
     try {
 
-        const r = await pool.query(
-            `SELECT * FROM prenotazioni
-             WHERE UPPER(npass) = $1
-             ${filtroSQL}
-             ORDER BY data_inizio ASC
-             LIMIT 1`,
-            [req.params.npass.toUpperCase()]
-        );
+        const oggi = new Date().toISOString().split('T')[0];
 
-        res.json(
-            r.rows.length > 0
-                ? { trovato: true, prenotazione: r.rows[0] }
-                : { trovato: false }
-        );
+        // 🔥 cerca SOLO prenotazioni attive
+        const r = await pool.query(
+
+        `SELECT *
+         FROM prenotazioni
+         WHERE
+            UPPER(npass) = $1
+            AND (
+                stato = 'INGRESSO'
+                OR (
+                    stato = 'PRENOTATO'
+                    AND data_fine >= $2
+                )
+                OR (
+                    stato = 'SCADUTO'
+                    AND orario_uscita IS NULL
+                )
+            )
+
+         ORDER BY
+            CASE
+                WHEN stato = 'INGRESSO' THEN 1
+                WHEN stato = 'SCADUTO' THEN 2
+                WHEN stato = 'PRENOTATO' THEN 3
+                ELSE 99
+            END,
+            data_inizio ASC
+
+         LIMIT 1`,
+
+        [
+            req.params.npass.toUpperCase(),
+            oggi
+        ]);
+
+        if (r.rows.length === 0) {
+            return res.json({
+                trovato: false
+            });
+        }
+
+        res.json({
+            trovato: true,
+            prenotazione: r.rows[0]
+        });
 
     } catch (err) {
 
