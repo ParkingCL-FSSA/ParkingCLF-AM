@@ -208,7 +208,9 @@ async function mostraMie() {
         'SCADUTO':   '⏰'
     };
 
-    const cancellabile = (p) => p.stato === 'PRENOTATO' && !p.orario_ingresso;
+  const cancellabile = (p) =>
+    p.stato === 'PRENOTATO'
+    && !p.orario_ingresso;
     const cestino = cancellabile(p)
     
     document.getElementById('my-list-content').innerHTML = dati.map(p => {
