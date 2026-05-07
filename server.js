@@ -353,6 +353,7 @@ app.get('/api/veicoli-dentro', async (req, res) => {
 app.get('/api/piantone/cerca/:npass', async (req, res) => {
 
     const authPass = req.query.auth;
+    const view = req.query.view || 'attivi';
 
     if (!await verificaRuolo(authPass, ['piantone', 'admin'])) {
         return res.status(403).json({
@@ -364,35 +365,82 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
 
         const oggi = new Date().toISOString().split('T')[0];
 
-        // 🔥 cerca SOLO prenotazioni attive
+        let filtroSQL = "";
+
+        // 🔥 SOLO STORICO
+        if (view === 'storico') {
+
+            filtroSQL = `
+                AND stato = 'USCITO'
+            `;
+        }
+
+        // 🔥 TUTTO
+        else if (view === 'tutti') {
+
+            filtroSQL = `
+                AND (
+                    stato = 'PRENOTATO'
+                    OR stato = 'ENTRATO'
+                    OR stato = 'USCITO'
+                    OR (
+                        stato = 'SCADUTO'
+                        AND orario_uscita IS NULL
+                    )
+                )
+            `;
+        }
+
+        // 🔥 SOLO SCADUTI
+        else if (view === 'scaduti') {
+
+            filtroSQL = `
+                AND stato = 'ENTRATO'
+                AND CURRENT_DATE > data_fine
+            `;
+        }
+
+        // 🔥 ATTIVI
+        else {
+
+            filtroSQL = `
+                AND (
+                    (
+                        stato = 'PRENOTATO'
+                        AND data_fine >= $2
+                    )
+                    OR stato = 'ENTRATO'
+                    OR (
+                        stato = 'SCADUTO'
+                        AND orario_uscita IS NULL
+                    )
+                )
+            `;
+        }
+
         const r = await pool.query(
 
-        `SELECT *
-         FROM prenotazioni
-         WHERE
-            UPPER(npass) = $1
-            AND (
-                stato = 'ENTRATO'
-                OR (
-                    stato = 'PRENOTATO'
-                    AND data_fine >= $2
-                )
-                OR (
-                    stato = 'SCADUTO'
-                    AND orario_uscita IS NULL
-                )
-            )
+        `
+        SELECT *
+        FROM prenotazioni
 
-         ORDER BY
+        WHERE
+            UPPER(npass) = $1
+            ${filtroSQL}
+
+        ORDER BY
             CASE
                 WHEN stato = 'ENTRATO' THEN 1
-                WHEN stato = 'SCADUTO' THEN 2
-                WHEN stato = 'PRENOTATO' THEN 3
+                WHEN stato = 'PRENOTATO' THEN 2
+                WHEN stato = 'SCADUTO' THEN 3
+                WHEN stato = 'USCITO' THEN 4
                 ELSE 99
             END,
-            data_inizio ASC
 
-         LIMIT 1`,
+            data_inizio DESC
+
+        LIMIT 1
+        `,
 
         [
             req.params.npass.toUpperCase(),
@@ -400,6 +448,7 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
         ]);
 
         if (r.rows.length === 0) {
+
             return res.json({
                 trovato: false
             });
@@ -419,7 +468,6 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
         });
     }
 });
-
 app.post('/api/piantone/azione', async (req, res) => {
 
     const { id, azione, npass } = req.body;
