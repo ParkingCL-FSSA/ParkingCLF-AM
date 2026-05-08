@@ -304,7 +304,7 @@ app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
         res.status(500).json({ error: "Errore interno" });
     }
 });
-
+}
 // --- 4. ELIMINA ---
 app.post('/api/elimina-prenotazione', async (req, res) => {
     const { id, npass } = req.body;
