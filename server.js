@@ -304,7 +304,7 @@ app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
         res.status(500).json({ error: "Errore interno" });
     }
 });
-}
+
 // --- 4. ELIMINA ---
 app.post('/api/elimina-prenotazione', async (req, res) => {
     const { id, npass } = req.body;
@@ -318,14 +318,18 @@ app.post('/api/elimina-prenotazione', async (req, res) => {
         if (info.rows.length === 0) return res.status(404).json({ error: "Prenotazione non trovata" });
 
         const { data_inizio, data_fine, stato } = info.rows[0];
-        if (
+       if (
             stato !== 'PRENOTATO'
         ) {
             return res.status(400).json({
                 error: "Prenotazione non cancellabile."
             });
-    
-        await pool.query('DELETE FROM prenotazioni WHERE id = $1 AND UPPER(npass) = $2', [id, p]);
+        }
+        
+        await pool.query(
+            'DELETE FROM prenotazioni WHERE id = $1 AND UPPER(npass) = $2',
+            [id, p]
+        );
 
         const htmlDisdetta = `
             <div style="text-align:center; font-family:sans-serif; border:2px solid red; padding:20px; border-radius:10px; max-width:400px; margin:auto;">
