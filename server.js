@@ -152,38 +152,72 @@ app.post('/api/prenota', async (req, res) => {
             });
         }
 
-        // CHECK 2: Limite 15gg/30gg
-        const fineFinestra = new Date(dataInizio);
-        fineFinestra.setDate(fineFinestra.getDate() + 29);
-        const fineFinStr = fineFinestra.toISOString().split('T')[0];
+// CHECK 2: massimo 15 giorni cumulativi in 45 giorni
 
-        const giorniEsistenti = await pool.query(
-            `SELECT data_inizio, data_fine FROM prenotazioni 
-             WHERE UPPER(npass) = $1 
-               AND stato IN ('PRENOTATO', 'ENTRATO')
-               AND data_inizio <= $2
-               AND data_fine >= $3`,
-            [p, fineFinStr, dataInizio]
+const inizioNuova = new Date(dataInizio);
+const fineNuova = new Date(dataFine);
+
+// finestra mobile di 45 giorni
+const finestraStart = new Date(inizioNuova);
+finestraStart.setDate(finestraStart.getDate() - 44);
+
+const finestraEnd = new Date(inizioNuova);
+finestraEnd.setDate(finestraEnd.getDate() + 44);
+
+const finestraStartStr = finestraStart.toISOString().split('T')[0];
+const finestraEndStr = finestraEnd.toISOString().split('T')[0];
+
+// recupera tutte le prenotazioni che toccano la finestra
+const prenEsistenti = await pool.query(
+    `
+    SELECT data_inizio, data_fine
+    FROM prenotazioni
+    WHERE UPPER(npass) = $1
+      AND stato IN ('PRENOTATO', 'ENTRATO')
+      AND data_inizio <= $2
+      AND data_fine >= $3
+    `,
+    [p, finestraEndStr, finestraStartStr]
+);
+
+// uso Set per evitare doppi conteggi
+const giorniOccupati = new Set();
+
+// aggiungi giorni già prenotati
+prenEsistenti.rows.forEach(row => {
+
+    let d = new Date(row.data_inizio);
+    const end = new Date(row.data_fine);
+
+    while (d <= end) {
+
+        giorniOccupati.add(
+            d.toISOString().split('T')[0]
         );
 
-        let giorniOccupati = 0;
-        giorniEsistenti.rows.forEach(row => {
-            const inizio = new Date(row.data_inizio) > new Date(dataInizio) 
-                ? new Date(row.data_inizio) 
-                : new Date(dataInizio);
-            const fine = new Date(row.data_fine) < new Date(fineFinStr) 
-                ? new Date(row.data_fine) 
-                : new Date(fineFinStr);
-            const diff = Math.ceil((fine - inizio) / (1000 * 60 * 60 * 24)) + 1;
-            giorniOccupati += diff;
-        });
+        d.setDate(d.getDate() + 1);
+    }
+});
 
-        if (giorniOccupati + numGiorni > 15) {
-            return res.status(400).json({ 
-                error: `Limite superato: puoi prenotare massimo 15 giorni in una finestra di 30 giorni. Hai già ${giorniOccupati} giorni prenotati.` 
-            });
-        }
+// aggiungi nuova richiesta
+let d = new Date(inizioNuova);
 
+while (d <= fineNuova) {
+
+    giorniOccupati.add(
+        d.toISOString().split('T')[0]
+    );
+
+    d.setDate(d.getDate() + 1);
+}
+
+// controllo finale
+if (giorniOccupati.size > 15) {
+
+    return res.status(400).json({
+        error: `Limite superato: massimo 15 giorni prenotabili in qualunque finestra di 45 giorni consecutivi.`
+    });
+}
         // CHECK 3: Quote ENTE - FIX CRITICO
         const userInfo = await pool.query(
             `SELECT r.ente, a.posti 
