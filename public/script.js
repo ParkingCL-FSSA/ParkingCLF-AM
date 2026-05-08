@@ -204,6 +204,7 @@ async function inviaPren() {
         alert(err.error || "Errore durante la prenotazione.");
     }
 }
+
 async function mostraMie() {
 
     show('view-my-list');
@@ -213,35 +214,26 @@ async function mostraMie() {
 
     const statoColore = {
         'PRENOTATO': '#1e40af',
-        'ENTRATO':  '#15803d',
-        'USCITO':    '#b45309',
-        'SCADUTO':   '#ef4444'
+        'ENTRATO': '#15803d',
+        'USCITO': '#b45309',
+        'SCADUTO': '#ef4444'
     };
 
     const statoEmoji = {
         'PRENOTATO': '📅',
-        'ENTRATO':  '🚗',
-        'USCITO':    '✅',
-        'SCADUTO':   '⏰'
+        'ENTRATO': '🚗',
+        'USCITO': '✅',
+        'SCADUTO': '⏰'
     };
 
-    // cancellabile SOLO se prenotato e mai entrato
     const cancellabile = (p) => {
         return p.stato === 'PRENOTATO' && !p.orario_ingresso;
     };
 
     document.getElementById('my-list-content').innerHTML = dati.map(p => {
-    document.querySelectorAll('.btn-delete').forEach(btn => {
-    
-        btn.addEventListener('click', () => {
-    
-            eliminaPren(btn.dataset.id);
-    
-        });
-    
-    });
+
         const colore = statoColore[p.stato] || '#64748b';
-        const emoji  = statoEmoji[p.stato]  || '📅';
+        const emoji = statoEmoji[p.stato] || '📅';
 
         const isStorico =
             p.stato === 'USCITO' ||
@@ -252,7 +244,12 @@ async function mostraMie() {
                 <div
                     class="btn-delete"
                     data-id="${p.id}"
-                    style="color:red; cursor:pointer; font-size:20px;">
+                    style="
+                        color:red;
+                        cursor:pointer;
+                        font-size:20px;
+                        transition:0.2s;
+                    ">
                     🗑️
                 </div>
               `
@@ -263,11 +260,13 @@ async function mostraMie() {
                     🔒
                 </div>
               `;
-            const giorni =
-                Math.ceil(
-                    (new Date(p.data_fine) - new Date(p.data_inizio))
-                    / (1000 * 60 * 60 * 24)
-                ) + 1;
+
+        const giorni =
+            Math.ceil(
+                (new Date(p.data_fine) - new Date(p.data_inizio))
+                / (1000 * 60 * 60 * 24)
+            ) + 1;
+
         return `
         <div style="
             display:flex;
@@ -281,36 +280,46 @@ async function mostraMie() {
             opacity:${isStorico ? '0.75' : '1'};
         ">
             <div>
-            <div style="font-size:13px;">
-                ${emoji} Dal ${fmtData(p.data_inizio)} al ${fmtData(p.data_fine)}
+                <div style="font-size:13px;">
+                    ${emoji} Dal ${fmtData(p.data_inizio)} al ${fmtData(p.data_fine)}
+                </div>
+
+                <div style="
+                    display:flex;
+                    gap:12px;
+                    margin-top:4px;
+                    font-size:11px;
+                    align-items:center;
+                    flex-wrap:wrap;
+                ">
+                    <span style="font-weight:bold; color:${colore};">
+                        Stato: ${p.stato}
+                    </span>
+
+                    <span style="color:#64748b;">
+                        Totale giorni: ${giorni}
+                    </span>
+                </div>
             </div>
-        
-            <div style="
-                display:flex;
-                gap:12px;
-                margin-top:4px;
-                font-size:11px;
-                align-items:center;
-                flex-wrap:wrap;
-            ">
-                <span style="font-weight:bold; color:${colore};">
-                    Stato: ${p.stato}
-                </span>
-        
-                <span style="color:#64748b;">
-                    Totale giorni: ${giorni}
-                </span>
-            </div>
-        </div>
+
             ${cestino}
-
         </div>`;
-
     }).join('') || `
         <p style="color:#64748b; text-align:center;">
             Nessuna prenotazione.
         </p>
     `;
+
+    // ✅ EVENTI DOPO IL RENDER
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+
+        btn.addEventListener('click', () => {
+
+            eliminaPren(btn.dataset.id);
+
+        });
+
+    });
 }
 async function eliminaPren(id) {
     if (!confirm("Eliminare questa prenotazione?")) return;
