@@ -231,7 +231,15 @@ async function mostraMie() {
     };
 
     document.getElementById('my-list-content').innerHTML = dati.map(p => {
-
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+    
+        btn.addEventListener('click', () => {
+    
+            eliminaPren(btn.dataset.id);
+    
+        });
+    
+    });
         const colore = statoColore[p.stato] || '#64748b';
         const emoji  = statoEmoji[p.stato]  || '📅';
 
@@ -242,8 +250,9 @@ async function mostraMie() {
         const cestino = cancellabile(p)
             ? `
                 <div
-                    style="color:red; cursor:pointer; font-size:20px;"
-                    onclick="eliminaPren(${p.id})">
+                    class="btn-delete"
+                    data-id="${p.id}"
+                    style="color:red; cursor:pointer; font-size:20px;">
                     🗑️
                 </div>
               `
