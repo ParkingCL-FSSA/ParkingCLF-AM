@@ -286,7 +286,14 @@ app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
     try {
         const p = req.params.npass.toUpperCase();
         const r = await pool.query(
-            `SELECT id, data_inizio, data_fine, stato FROM prenotazioni
+            `SELECT
+                id,
+                data_inizio,
+                data_fine,
+                stato,
+                orario_ingresso,
+                orario_uscita
+             FROM prenotazioni
              WHERE UPPER(npass) = $1 AND data_inizio >= CURRENT_DATE - interval '60 days'
              ORDER BY data_inizio DESC`,
             [p]
@@ -311,10 +318,13 @@ app.post('/api/elimina-prenotazione', async (req, res) => {
         if (info.rows.length === 0) return res.status(404).json({ error: "Prenotazione non trovata" });
 
         const { data_inizio, data_fine, stato } = info.rows[0];
-        if (stato === 'ENTRATO' || stato === 'USCITO') {
-            return res.status(400).json({ error: "Non cancellabile: veicolo già registrato." });
-        }
-
+        if (
+            stato !== 'PRENOTATO'
+        ) {
+            return res.status(400).json({
+                error: "Prenotazione non cancellabile."
+            });
+    
         await pool.query('DELETE FROM prenotazioni WHERE id = $1 AND UPPER(npass) = $2', [id, p]);
 
         const htmlDisdetta = `
