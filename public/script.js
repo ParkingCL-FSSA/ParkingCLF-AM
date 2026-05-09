@@ -170,14 +170,30 @@ function buildCal() {
         slot.innerText = d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
         slot.onclick = () => {
             slot.classList.toggle('selected');
-            if (slot.classList.contains('selected')) selectedDays.push(iso);
-            else selectedDays = selectedDays.filter(x => x !== iso);
+            if (slot.classList.contains('selected')) {
+                if (!selectedDays.includes(iso)) {
+                    selectedDays.push(iso);
+                }
+            } else {
+                selectedDays =
+                    selectedDays.filter(x => x !== iso);
+            }
         };
         grid.appendChild(slot); d.setDate(d.getDate() + 1);
     }
 }
+
+let loadingPrenotazione = false;
+
 async function inviaPren() {
-  
+     if (loadingPrenotazione) return;
+
+    loadingPrenotazione = true;
+
+    const btn = document.getElementById('btn-prenota');
+    btn.disabled = true;
+
+    try {
     const email = document.getElementById('u-email').value.trim().toLowerCase();
     // 🚫 blocco mail difesa
     if (email.includes('@') && email.endsWith('.difesa.it')) {
@@ -202,6 +218,12 @@ async function inviaPren() {
         // Gestisci errori di validazione dal server
         const err = await res.json();
         alert(err.error || "Errore durante la prenotazione.");
+    }
+} finally {
+
+        loadingPrenotazione = false;
+        btn.disabled = false;
+
     }
 }
 
