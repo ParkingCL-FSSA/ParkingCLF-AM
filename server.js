@@ -32,8 +32,12 @@ pool.on('error', (err) => {
 });
 
 const LOGO_URL = "https://parkingclf-am.onrender.com/LogoCLF.png";
+
 function clean(input) {
-    return input.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    return input
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .toUpperCase()
+        .substring(0, 5);
 }
 
 // ⏰ JOB SCADENZA
