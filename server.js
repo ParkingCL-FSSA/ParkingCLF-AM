@@ -951,11 +951,11 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
 
 // --- DISPONIBILITA GIORNI PER ENTE ---
 app.get('/api/disponibilita/:npass', async (req, res) => {
-
-    try {
-
-        const npass = req.params.npass.toUpperCase();
-
+const npass = req.params.npass.toUpperCase();
+    if (!npass) {
+    return res.status(400).json({ error: "npass mancante" });
+}
+    try {     
         const utente = await pool.query(`
             SELECT ente
             FROM utenti
@@ -1017,13 +1017,8 @@ app.get('/api/disponibilita/:npass', async (req, res) => {
         res.json(out);
 
     } catch (err) {
-
-        console.error('DISPONIBILITA ERROR:', err);
-
-        res.status(500).json({
-            error: 'Errore disponibilità'
-        });
-
+        console.error("ERRORE disponibilità:", err);
+        res.status(500).json({ error: "Errore server disponibilità" });
     }
 
 });
