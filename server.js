@@ -219,9 +219,10 @@ const overlap = await pool.query(
      FROM prenotazioni 
      WHERE UPPER(npass) = $1 
        AND stato IN ('PRENOTATO', 'ENTRATO')
-       AND NOT (
-            data_fine < $2 OR data_inizio > $3
-       )`,
+       AND (
+            data_inizio <= $3
+            AND data_fine >= $2
+        )`,
     [p, dataInizio, dataFine]
 );
 
@@ -957,7 +958,7 @@ app.get('/api/disponibilita/:npass', async (req, res) => {
 
         const utente = await pool.query(`
             SELECT ente
-            FROM utenti
+            FROM registro_pass
             WHERE UPPER(npass) = $1
             LIMIT 1
         `, [npass]);
@@ -968,63 +969,58 @@ app.get('/api/disponibilita/:npass', async (req, res) => {
 
         const ente = utente.rows[0].ente;
 
-        const enteCfg = await pool.query(`
+        const cfg = await pool.query(`
             SELECT posti
-            FROM enti
-            WHERE nome = $1
+            FROM assegnazioni
+            WHERE ente = $1
             LIMIT 1
         `, [ente]);
 
-        const totale = parseInt(enteCfg.rows[0]?.posti || 0);
+        const totale = parseInt(cfg.rows[0]?.posti || 0);
 
         const pren = await pool.query(`
-            SELECT 
-                generate_series(
-                    data_inizio::date,
-                    data_fine::date,
-                    interval '1 day'
-                )::date as giorno
+            SELECT data_inizio, data_fine
             FROM prenotazioni
             WHERE ente = $1
-              AND stato IN ('PRENOTATO', 'ENTRATO')
+              AND stato IN ('PRENOTATO','ENTRATO')
         `, [ente]);
 
-        const mappa = {};
+        const map = {};
 
         pren.rows.forEach(r => {
 
-            // 🔥 FIX SICURO: evita toISOString
-            const g = String(r.giorno).split('T')[0];
+            let d = new Date(r.data_inizio);
+            const end = new Date(r.data_fine);
 
-            mappa[g] = (mappa[g] || 0) + 1;
+            while (d <= end) {
+
+                const g = d.toISOString().split('T')[0];
+                map[g] = (map[g] || 0) + 1;
+                d.setDate(d.getDate() + 1);
+            }
         });
 
         const out = {};
 
-        Object.keys(mappa).forEach(g => {
+        for (const g in map) {
 
-            const prenotati = mappa[g];
+            const occupati = map[g];
 
             out[g] = {
-                prenotati,
-                liberi: Math.max(totale - prenotati, 0),
+                prenotati: occupati,
+                liberi: Math.max(totale - occupati, 0),
                 totale
             };
-
-        });
+        }
 
         res.json(out);
 
     } catch (err) {
 
-        console.error('DISPONIBILITA ERROR:', err);
-
-        res.status(500).json({
-            error: 'Errore disponibilità'
-        });
+        console.error(err);
+        res.status(500).json({ error: "Errore disponibilità" });
 
     }
-
 });
 
 //PORTA SERVER//
