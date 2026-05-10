@@ -183,7 +183,7 @@ async function caricaDisponibilita() {
 
     const npass = userPass; // oppure da input
 
-    const res = await fetch(`/api/disponibilita/${Userpass}`);
+    const res = await fetch(`/api/disponibilita/${npass}`);
 
     if (!res.ok) {
         console.error("Errore disponibilità");
