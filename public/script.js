@@ -354,18 +354,20 @@ async function inviaPren() {
         `;
 
         // RESET SELEZIONE
-        selectedDays = [];
+       selectedDays = [];
 
-        document
-            .querySelectorAll('.day-slot.selected')
-            .forEach(el => el.classList.remove('selected'));
+document
+    .querySelectorAll('.day-slot.selected')
+    .forEach(el => el.classList.remove('selected'));
 
-       show('view-success');
+const success = document.getElementById('view-success');
+if (success) show('view-success');
 
 setTimeout(async () => {
 
     await mostraMie();
-    show('view-my-list'); // forza stabilità UI
+
+    show('view-my-list');
 
 }, 10000);
 
@@ -1086,16 +1088,9 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-ingresso')?.addEventListener('click', () => {
         mossa('E');
     });
-    const btnHomeSuccess = document.getElementById('btn-home-success');
+    const success = document.getElementById('view-success');
+        if (success) success.classList.remove('hidden');
     
-    if (btnHomeSuccess) {
-    
-        btnHomeSuccess.addEventListener('click', () => {
-    
-            location.reload();
-    
-        });
-    }
     document.getElementById('btn-uscita')?.addEventListener('click', () => {
         mossa('U');
     });
