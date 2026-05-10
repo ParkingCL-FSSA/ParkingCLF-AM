@@ -245,57 +245,111 @@ if (disp) {
 let loadingPrenotazione = false;
 
 async function inviaPren() {
-     if (loadingPrenotazione) return;
+
+    if (loadingPrenotazione) return;
+
+    const email = document
+        .getElementById('u-email')
+        .value
+        .trim()
+        .toLowerCase();
+
+    // VALIDAZIONI PRIMA DEL LOCK
+    if (email.includes('@') && email.endsWith('.difesa.it')) {
+
+        alert('Inserisci la tua mail privata');
+        return;
+    }
+
+    if (!selectedDays.length || !email) {
+
+        alert("Dati mancanti!");
+        return;
+    }
+
+    if (selectedDays.length > 15) {
+
+        alert("Massimo 15 giorni selezionabili!");
+        return;
+    }
 
     loadingPrenotazione = true;
 
     const btn = document.getElementById('btn-prenota');
+
     btn.disabled = true;
 
     try {
-    const email = document.getElementById('u-email').value.trim().toLowerCase();
-    // 🚫 blocco mail difesa
-    if (email.includes('@') && email.endsWith('.difesa.it')) {
-        alert('Inserisci la tua mail privata');
-        return;
-    }
-    if (!selectedDays.length || !email) return alert("Dati mancanti!");
-    if (selectedDays.length > 15) return alert("Massimo 15 giorni selezionabili!");
 
-   const res = await fetch('/api/prenota', {
+        const res = await fetch('/api/prenota', {
 
-    method: 'POST',
+            method: 'POST',
 
-    headers: {
-        'Content-Type': 'application/json'
-    },
+            headers: {
+                'Content-Type': 'application/json'
+            },
 
-    body: JSON.stringify({
-        npass: userPass,
-        giorni: selectedDays,
-        email: email
-    })
+            body: JSON.stringify({
+                npass: userPass,
+                giorni: selectedDays,
+                email: email
+            })
 
-});
-    if (res.ok) {
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+
+            alert(data.error || "Errore durante la prenotazione.");
+            return;
+        }
+
         selectedDays.sort();
-        //const totaleGiorni = selectedDays.length;
-        document.getElementById('summary-details').innerHTML =
-            `<b>Pass:</b> ${userPass}<br><b>Dal:</b> ${fmtData(selectedDays[0])}<br><b>Al:</b> ${fmtData(selectedDays[selectedDays.length - 1])}`;
+
+        document.getElementById('summary-details').innerHTML = `
+            <b>Pass:</b> ${userPass}<br>
+            <b>Dal:</b> ${fmtData(selectedDays[0])}<br>
+            <b>Al:</b> ${fmtData(selectedDays[selectedDays.length - 1])}<br>
+            <b>Totale giorni:</b> ${selectedDays.length}
+        `;
+
+        // RESET SELEZIONE
+        selectedDays = [];
+
+        document
+            .querySelectorAll('.day-slot.selected')
+            .forEach(el => el.classList.remove('selected'));
+
         show('view-success');
+
         setTimeout(() => {
+
             mostraMie();
+
         }, 10000);
-    } else {
-        // Gestisci errori di validazione dal server
-        const err = await res.json();
-        alert(err.error || "Errore durante la prenotazione.");
-    }
-} finally {
+
+    } catch (err) {
+
+        console.error(err);
+
+        alert("Errore rete/server");
+
+    } finally {
 
         loadingPrenotazione = false;
-        btn.disabled = false;
 
+        // RIABILITA SOLO SE NON SIAMO NELLA VIEW SUCCESS
+        if (
+            !document
+                .getElementById('view-success')
+                .classList
+                .contains('hidden')
+        ) {
+            return;
+        }
+
+        btn.disabled = false;
     }
 }
 
