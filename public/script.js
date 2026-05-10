@@ -180,17 +180,11 @@ async function aggiornaPostiLiberiPiantone() {
 }
 
 async function caricaDisponibilita() {
+    if (!userPass) return;
 
-    const npass = userPass; // oppure da input
-
-    const res = await fetch(`/api/disponibilita/${npass}`);
-
-    if (!res.ok) {
-        console.error("Errore disponibilità");
-        return;
-    }
-
+    const res = await fetch(`/api/disponibilita/${userPass}`);
     const data = await res.json();
+
     console.log(data);
 }
 
