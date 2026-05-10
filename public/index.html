@@ -147,7 +147,28 @@
     </div>
 
     <h4 style="margin-top: 25px; text-align: center;">🏎️ Veicoli Dentro</h4>
-       
+      <button class="btn-gray" onclick="mostraArriviOggi()">
+        📋 ARRIVI OGGI
+        </button>
+        
+        <div id="box-arrivi-oggi"
+             class="hidden"
+             style="margin-top:15px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px;">
+        
+            <h4 style="margin-top:0;">📅 Prenotati in arrivo oggi</h4>
+        
+            <table>
+                <thead>
+                    <tr>
+                        <th>PASS</th>
+                        <th>ENTE</th>
+                        <th>STATO</th>
+                    </tr>
+                </thead>
+        
+                <tbody id="lista-arrivi-oggi"></tbody>
+            </table>
+        </div>
         <button id="btn-filtro" style="width: 320px; padding: 10px 0;">Mostra tutti</button>
         <div id="badge-contatori" style="margin:10px 0; font-size:14px;"></div>
         
