@@ -7,7 +7,7 @@ const PDFDocument = require('pdfkit');
 
 const app = express();
 app.use(cors({
-    origin: ['https://parkingclf-am.onrender.com/']
+    origin: ['https://parkingclf-am.onrender.com']
 }));
 const helmet = require('helmet');
 app.use(helmet());
