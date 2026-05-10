@@ -406,13 +406,14 @@ app.get('/api/veicoli-dentro', async (req, res) => {
     }
 });
 
-// --- 6. PIANTONE CERCA ---
+// --- PIANTONE CERCA ---
 app.get('/api/piantone/cerca/:npass', async (req, res) => {
 
     const authPass = req.query.auth;
     const view = req.query.view || 'attivi';
 
     if (!await verificaRuolo(authPass, ['piantone', 'admin'])) {
+
         return res.status(403).json({
             error: "Accesso non autorizzato"
         });
@@ -422,24 +423,18 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
 
         const oggi = new Date().toISOString().split('T')[0];
 
-        let filtroSQL = "";
+        let whereFiltro = "";
 
-        // 🔥 SOLO STORICO
-        if (view === 'storico') {
+        // ATTIVI
+        if (view === 'attivi') {
 
-            filtroSQL = `
-                AND stato = 'USCITO'
-            `;
-        }
-
-        // 🔥 TUTTO
-        else if (view === 'tutti') {
-
-            filtroSQL = `
+            whereFiltro = `
                 AND (
-                    stato = 'PRENOTATO'
+                    (
+                        stato = 'PRENOTATO'
+                        AND data_fine >= CURRENT_DATE
+                    )
                     OR stato = 'ENTRATO'
-                    OR stato = 'USCITO'
                     OR (
                         stato = 'SCADUTO'
                         AND orario_uscita IS NULL
@@ -448,82 +443,84 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
             `;
         }
 
-        // 🔥 SOLO SCADUTI
+        // SCADUTI
         else if (view === 'scaduti') {
 
-            filtroSQL = `
+            whereFiltro = `
                 AND stato = 'ENTRATO'
                 AND CURRENT_DATE > data_fine
             `;
         }
 
-        // 🔥 ATTIVI
+        // STORICO
+        else if (view === 'storico') {
+
+            whereFiltro = `
+                AND stato = 'USCITO'
+            `;
+        }
+
+        // TUTTI
         else {
 
-            filtroSQL = `
-                AND (
-                    (
-                (
-                       stato = 'PRENOTATO'
-                       AND CURRENT_DATE BETWEEN data_inizio AND data_fine
-                )
-                    )
-                    OR stato = 'ENTRATO'
-                    OR (
-                        stato = 'SCADUTO'
-                        AND orario_uscita IS NULL
-                    )
+            whereFiltro = `
+                AND stato IN (
+                    'PRENOTATO',
+                    'ENTRATO',
+                    'USCITO',
+                    'SCADUTO'
                 )
             `;
         }
 
-        const r = await pool.query(
+        const query = `
 
-        `
-        SELECT *
-        FROM prenotazioni
+            SELECT *
 
-        WHERE
-            UPPER(npass) = $1
-            ${filtroSQL}
+            FROM prenotazioni
 
-        ORDER BY
-            CASE
-                WHEN stato = 'ENTRATO' THEN 1
-                WHEN stato = 'PRENOTATO' THEN 2
-                WHEN stato = 'SCADUTO' THEN 3
-                WHEN stato = 'USCITO' THEN 4
-                ELSE 99
-            END,
+            WHERE
+                UPPER(npass) = $1
+                ${whereFiltro}
 
-            data_inizio DESC
+            ORDER BY
 
-        LIMIT 1
-        `,
+                CASE
+                    WHEN stato = 'ENTRATO' THEN 1
+                    WHEN stato = 'PRENOTATO' THEN 2
+                    WHEN stato = 'SCADUTO' THEN 3
+                    WHEN stato = 'USCITO' THEN 4
+                    ELSE 99
+                END,
 
-        [
-            req.params.npass.toUpperCase(),
-            oggi
+                data_inizio DESC
+
+            LIMIT 1
+
+        `;
+
+        const r = await pool.query(query, [
+            req.params.npass.toUpperCase()
         ]);
 
-        if (r.rows.length === 0) {
+        if (!r.rows.length) {
 
             return res.json({
                 trovato: false
             });
         }
 
-        res.json({
+        return res.json({
             trovato: true,
             prenotazione: r.rows[0]
         });
 
     } catch (err) {
 
-        console.error(err);
+        console.error("ERRORE CERCA PASS:", err);
 
-        res.status(500).json({
-            error: "Errore interno"
+        return res.status(500).json({
+            error: "Errore interno server"
         });
     }
 });
