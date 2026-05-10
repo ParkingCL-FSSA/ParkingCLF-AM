@@ -432,7 +432,7 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
                 AND (
                     (
                         stato = 'PRENOTATO'
-                        AND data_fine >= CURRENT_DATE
+                        AND CURRENT_DATE BETWEEN data_inizio AND data_fine
                     )
                     OR stato = 'ENTRATO'
                     OR (
