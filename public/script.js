@@ -181,18 +181,17 @@ async function aggiornaPostiLiberiPiantone() {
 
 async function caricaDisponibilita() {
 
-    const res = await fetch(`/api/disponibilita/${userPass}`);
+    const npass = userPass; // oppure da input
+
+    const res = await fetch(`/api/disponibilita/${npass}`);
 
     if (!res.ok) {
         console.error("Errore disponibilità");
-        disponibilitaGiorni = {};
-        buildCal();
         return;
     }
 
-    disponibilitaGiorni = await res.json();
-
-    buildCal();
+    const data = await res.json();
+    console.log(data);
 }
 
 function buildCal() {
