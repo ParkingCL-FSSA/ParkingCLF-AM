@@ -876,7 +876,9 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-ingresso')?.addEventListener('click', () => {
         mossa('E');
     });
-
+    document.getElementById('btn-home-success')?.addEventListener('click', () => {
+          location.reload();
+    });
     document.getElementById('btn-uscita')?.addEventListener('click', () => {
         mossa('U');
     });
