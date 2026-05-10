@@ -93,7 +93,10 @@ function toggleScaduti() {
 }
 
 async function doLogin() {
-    document.querySelector('.card').classList.remove('admin-wide');
+    const card = document.querySelector('.card');
+        if (card) {
+            card.classList.remove('admin-wide');
+        }
     try {
             userPass = document
                 .getElementById('in-npass')
@@ -132,7 +135,9 @@ async function doLogin() {
     
             }
             else if (data.ruolo === 'admin') { 
-                document.querySelector('.card').classList.add('admin-wide');
+                if (card) {
+                    card.classList.add('admin-wide');
+                }
                 show('view-admin'); 
                 try { mostraAdmin(); } catch(e){ console.log(e); }
             }
@@ -219,7 +224,7 @@ async function inviaPren() {
 });
     if (res.ok) {
         selectedDays.sort();
-        const totaleGiorni = selectedDays.length;
+        //const totaleGiorni = selectedDays.length;
         document.getElementById('summary-details').innerHTML =
             `<b>Pass:</b> ${userPass}<br><b>Dal:</b> ${fmtData(selectedDays[0])}<br><b>Al:</b> ${fmtData(selectedDays[selectedDays.length - 1])}`;
         show('view-success');
