@@ -308,48 +308,26 @@ if (overlap.rows.length > 0) {
         // CHECK DISPONIBILITA ENTE
         // ---------------------------------------------------
 
-        let giorno = new Date(dataInizio);
+        for (const giorno of giorniRichiesti) {
 
-        while (giorno <= new Date(dataFine)) {
+    const occupatiEnte = await pool.query(`
+        SELECT COUNT(DISTINCT p.npass) as count
+        FROM prenotazioni p
+        JOIN registro_pass r ON UPPER(p.npass) = UPPER(r.npass)
+        WHERE r.ente = $1
+          AND p.stato IN ('PRENOTATO', 'ENTRATO')
+          AND $2 BETWEEN p.data_inizio AND p.data_fine
+    `, [userEnte, giorno]);
 
-            const giornoISO =
-                giorno.toISOString().split('T')[0];
+    const count = parseInt(occupatiEnte.rows[0].count);
 
-            const occupati = await pool.query(`
+    if (count >= postiEnte) {
 
-                SELECT COUNT(DISTINCT UPPER(npass))::int as totale
-
-                FROM prenotazioni
-
-                WHERE
-                    ente = $1
-
-                    AND stato IN (
-                        'PRENOTATO',
-                        'ENTRATO'
-                    )
-
-                    AND $2 BETWEEN data_inizio AND data_fine
-
-            `,
-            [
-                ente,
-                giornoISO
-            ]);
-
-            const count =
-                occupati.rows[0].totale || 0;
-
-            if (count >= postiEnte) {
-
-                return res.status(400).json({
-                    error:
-                        `Posti esauriti per il giorno ${formattaDataIT(giornoISO)}`
-                });
-            }
-
-            giorno.setDate(giorno.getDate() + 1);
-        }
+        return res.status(400).json({
+            error: `Posti esauriti per il giorno ${giorno}`
+        });
+    }
+}
 
         // ---------------------------------------------------
         // INSERIMENTO
