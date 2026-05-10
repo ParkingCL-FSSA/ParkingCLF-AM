@@ -970,13 +970,14 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
   }
 });
 
-// --- DISPONIBILITA GIORNI PER ENTE (FIX COMPLETO) ---
+// --- DISPONIBILITA GIORNI PER ENTE ---
 app.get('/api/disponibilita/:npass', async (req, res) => {
 
     try {
 
         const npass = req.params.npass.toUpperCase();
 
+        // 1. recupera ente utente
         const utente = await pool.query(`
             SELECT ente
             FROM utenti
@@ -985,12 +986,12 @@ app.get('/api/disponibilita/:npass', async (req, res) => {
         `, [npass]);
 
         if (!utente.rows.length) {
-
             return res.json({});
         }
 
         const ente = utente.rows[0].ente;
 
+        // 2. posti totali ente
         const enteCfg = await pool.query(`
             SELECT posti
             FROM enti
@@ -1000,55 +1001,59 @@ app.get('/api/disponibilita/:npass', async (req, res) => {
 
         const totale = parseInt(enteCfg.rows[0]?.posti || 0);
 
-        // 🔥 FIX: espandi correttamente ogni prenotazione in giorni UNICI
+        // 3. espansione giorni prenotati
         const pren = await pool.query(`
-            SELECT giorno, COUNT(DISTINCT npass)::int as prenotati
-            FROM (
-                SELECT DISTINCT
-                    npass,
-                    generate_series(
-                        data_inizio::date,
-                        data_fine::date,
-                        interval '1 day'
-                    )::date as giorno
-                FROM prenotazioni
-                WHERE ente = $1
-                  AND stato IN ('PRENOTATO', 'ENTRATO')
-            ) t
-            GROUP BY giorno
+            SELECT 
+                generate_series(
+                    data_inizio,
+                    data_fine,
+                    interval '1 day'
+                )::date as giorno
+            FROM prenotazioni
+            WHERE ente = $1
+              AND stato IN ('PRENOTATO', 'ENTRATO')
         `, [ente]);
 
-        const out = {};
+        const mappa = {};
 
         pren.rows.forEach(r => {
 
-            const giorno = r.giorno.toISOString().split('T')[0];
+            const g = r.giorno.toISOString().split('T')[0];
 
-            const prenotati = parseInt(r.prenotati);
+            if (!mappa[g]) mappa[g] = 0;
 
-            const liberi = Math.max(0, totale - prenotati);
+            mappa[g]++;
+        });
 
-            out[giorno] = {
+        // 4. output finale
+        const out = {};
 
-                liberi,
+        Object.keys(mappa).forEach(g => {
+
+            const prenotati = mappa[g];
+
+            out[g] = {
+
                 prenotati,
-                totale,
-                warning: liberi <= 3,
-                full: liberi === 0
+                liberi: Math.max(totale - prenotati, 0),
+                totale
 
             };
+
         });
 
         res.json(out);
 
     } catch (err) {
 
-        console.error('ERRORE DISPONIBILITA:', err);
+        console.error(err);
 
         res.status(500).json({
             error: 'Errore disponibilità'
         });
+
     }
+
 });
 
 //PORTA SERVER//
