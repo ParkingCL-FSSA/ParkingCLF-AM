@@ -781,6 +781,78 @@ async function caricaStorico() {
         </div>`;
     }).join('');
 }
+async function mostraArriviOggi() {
+
+    try {
+
+        const res = await fetch('/api/piantone/arrivi-oggi');
+        const dati = await res.json();
+
+        const box = document.getElementById('box-arrivi-oggi');
+        const lista = document.getElementById('lista-arrivi-oggi');
+
+        lista.innerHTML = '';
+
+        if (!dati.length) {
+
+            lista.innerHTML = `
+                <tr>
+                    <td colspan="3">Nessun arrivo previsto oggi</td>
+                </tr>
+            `;
+
+        } else {
+
+            dati.forEach(r => {
+
+                let badge = '';
+
+                if (r.stato === 'PRENOTATO') {
+
+                    badge = `
+                        <span class="badge-stato">
+                            <span class="dot dot-orange"></span>
+                            Deve Entrare
+                        </span>
+                    `;
+
+                } else if (r.stato === 'ENTRATO') {
+
+                    badge = `
+                        <span class="badge-stato">
+                            <span class="dot dot-green"></span>
+                            Entrato
+                        </span>
+                    `;
+
+                } else {
+
+                    badge = `
+                        <span class="badge-stato">
+                            <span class="dot dot-red"></span>
+                            Scaduto
+                        </span>
+                    `;
+                }
+
+                lista.innerHTML += `
+                    <tr>
+                        <td>${r.npass}</td>
+                        <td>${r.ente || '-'}</td>
+                        <td>${badge}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        box.classList.remove('hidden');
+
+    } catch (err) {
+
+        console.error(err);
+        alert('Errore caricamento arrivi');
+    }
+}
 window.addEventListener('DOMContentLoaded', () => {
 
     // LOGIN
