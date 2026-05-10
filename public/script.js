@@ -197,7 +197,12 @@ if (disp) {
 
     const liberi = disp.liberi;
 
+if (disp && disp.liberi <= 0) {
+    slot.classList.add('disabled');
+    return;
+    }
     // 🔴 esaurito
+    
     if (liberi <= 0) {
 
         slot.style.background = '#fee2e2';
@@ -209,7 +214,6 @@ if (disp) {
 
         slot.innerHTML += `<br><small>0</small>`;
     }
-
             // 🟠 ultimi 3
             else if (liberi <= 3) {
         
