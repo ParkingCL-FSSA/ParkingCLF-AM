@@ -803,7 +803,83 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
     res.status(500).json({ error: 'Errore server' });
   }
 });
+// --- DISPONIBILITA GIORNI PER ENTE ---
+app.get('/api/disponibilita/:npass', async (req, res) => {
 
+    try {
+
+        const npass = req.params.npass.toUpperCase();
+
+        // recupera ente utente
+        const utente = await pool.query(`
+            SELECT ente
+            FROM utenti
+            WHERE UPPER(npass) = $1
+            LIMIT 1
+        `, [npass]);
+
+        if (!utente.rows.length) {
+
+            return res.json([]);
+
+        }
+
+        const ente = utente.rows[0].ente;
+
+        // posti assegnati ente
+        const postiEnte = await pool.query(`
+            SELECT posti
+            FROM enti
+            WHERE nome = $1
+            LIMIT 1
+        `, [ente]);
+
+        const totale = postiEnte.rows[0]?.posti || 0;
+
+        // prossimi 45 giorni
+        const dati = await pool.query(`
+
+            SELECT
+                data_inizio,
+                COUNT(*)::int as prenotati
+
+            FROM prenotazioni
+
+            WHERE
+                ente = $1
+                AND stato IN ('PRENOTATO', 'ENTRATO')
+
+            GROUP BY data_inizio
+
+        `, [ente]);
+
+        const out = {};
+
+        dati.rows.forEach(r => {
+
+            const liberi = totale - r.prenotati;
+
+            out[r.data_inizio] = {
+                liberi,
+                totale
+            };
+
+        });
+
+        res.json(out);
+
+    } catch (err) {
+
+        console.error(err);
+
+        res.status(500).json({
+            error: 'Errore disponibilità'
+        });
+
+    }
+
+});
+//PORTA SERVER//
 app.listen(process.env.PORT || 3000, '0.0.0.0', () => {
     console.log(`Server avviato`);
 });
