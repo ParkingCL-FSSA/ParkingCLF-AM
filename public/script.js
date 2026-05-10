@@ -178,6 +178,12 @@ async function aggiornaPostiLiberiPiantone() {
      | <b>Dentro: ${dati.dentro}</b>`;
 }
 
+async function caricaDisponibilita() {
+    const res = await fetch(`/api/disponibilita/${userPass}`);
+    disponibilitaGiorni = await res.json();
+    buildCal();
+}
+
 function buildCal() {
     const grid = document.getElementById('cal-grid');
     grid.innerHTML = "";
