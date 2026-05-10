@@ -197,68 +197,85 @@ async function caricaDisponibilita() {
 }
 
 function buildCal() {
+
     const grid = document.getElementById('cal-grid');
+
+    if (!grid) return;
+
     grid.innerHTML = "";
     selectedDays = [];
+
     let d = new Date();
+
     for (let i = 0; i < 45; i++) {
+
         const iso = d.toISOString().split('T')[0];
+
         const slot = document.createElement('div');
         slot.className = "day-slot";
         slot.innerText = d.toLocaleDateString('it-IT', {
             day: '2-digit',
             month: '2-digit'
         });
-        const disp = disponibilitaGiorni[iso];
 
-if (disp) {
+        const disp = disponibilitaGiorni?.[iso];
 
-    const liberi = disp.liberi;
+        let liberi = disp?.liberi ?? null;
 
-if (disp && disp.liberi <= 0) {
-    slot.classList.add('disabled');
-    return;
-    }
-    // 🔴 esaurito
-    
-    if (liberi <= 0) {
+        if (disp) {
 
-        slot.style.background = '#fee2e2';
-        slot.style.color = '#991b1b';
-        slot.style.border = '2px solid #dc2626';
+            // 🔴 esaurito
+            if (liberi <= 0) {
 
-        slot.style.pointerEvents = 'none';
-        slot.style.opacity = '0.6';
+                slot.style.background = '#fee2e2';
+                slot.style.color = '#991b1b';
+                slot.style.border = '2px solid #dc2626';
+                slot.style.opacity = '0.6';
 
-        slot.innerHTML += `<br><small>0</small>`;
-    }
-            // 🟠 ultimi 3
+                slot.innerHTML += `<br><small>0</small>`;
+                slot.classList.add('disabled');
+
+            }
+
+            // 🟠 pochi
             else if (liberi <= 3) {
-        
+
                 slot.style.background = '#ffedd5';
                 slot.style.color = '#9a3412';
                 slot.style.border = '2px solid #f97316';
-        
+
                 slot.innerHTML += `<br><small>${liberi}</small>`;
             }
-        
-            // 🟢 disponibili
+
+            // 🟢 ok
             else {
-        
+
                 slot.innerHTML += `<br><small>${liberi}</small>`;
             }
         }
-        slot.addEventListener('click', () => {
-            slot.classList.toggle('selected');
-            if (slot.classList.contains('selected')) {
-                if (!selectedDays.includes(iso)) {
-                    selectedDays.push(iso);
+
+        // ❗ NON BLOCCARE LOOP
+        if (liberi === 0) {
+            slot.addEventListener('click', () => {});
+        } else {
+
+            slot.addEventListener('click', () => {
+
+                slot.classList.toggle('selected');
+
+                if (slot.classList.contains('selected')) {
+
+                    if (!selectedDays.includes(iso)) {
+                        selectedDays.push(iso);
+                    }
+
+                } else {
+
+                    selectedDays = selectedDays.filter(x => x !== iso);
                 }
-            } else {
-                selectedDays =
-                    selectedDays.filter(x => x !== iso);
-            }
-        });
+            });
+        }
+
         grid.appendChild(slot);
         d.setDate(d.getDate() + 1);
     }
