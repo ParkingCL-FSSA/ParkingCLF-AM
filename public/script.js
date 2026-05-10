@@ -149,7 +149,7 @@ async function doLogin() {
         
             try {
         
-                const resDisp = await fetch(`/api/disponibilita/${npass}`);
+                const resDisp = await fetch(`/api/disponibilita/${userPass}`);
                 disponibilitaGiorni = await resDisp.json();
                 
                 buildCal(); 
@@ -181,7 +181,7 @@ async function aggiornaPostiLiberiPiantone() {
 
 async function caricaDisponibilita() {
 
-    const res = await fetch(`/api/disponibilita/${npass}`);
+    const res = await fetch(`/api/disponibilita/${userPass}`);
 
     if (!res.ok) {
         console.error("Errore disponibilità");
