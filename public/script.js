@@ -181,8 +181,18 @@ async function aggiornaPostiLiberiPiantone() {
 }
 
 async function caricaDisponibilita() {
+
     const res = await fetch(`/api/disponibilita/${userPass}`);
+
+    if (!res.ok) {
+        console.error("Errore disponibilità");
+        disponibilitaGiorni = {};
+        buildCal();
+        return;
+    }
+
     disponibilitaGiorni = await res.json();
+
     buildCal();
 }
 
@@ -333,13 +343,14 @@ async function inviaPren() {
             .querySelectorAll('.day-slot.selected')
             .forEach(el => el.classList.remove('selected'));
 
-        show('view-success');
+       show('view-success');
 
-        setTimeout(() => {
+setTimeout(async () => {
 
-            mostraMie();
+    await mostraMie();
+    show('view-my-list'); // forza stabilità UI
 
-        }, 10000);
+}, 10000);
 
     } catch (err) {
 
@@ -349,20 +360,12 @@ async function inviaPren() {
 
     } finally {
 
-        loadingPrenotazione = false;
+    loadingPrenotazione = false;
 
-        // RIABILITA SOLO SE NON SIAMO NELLA VIEW SUCCESS
-        if (
-            !document
-                .getElementById('view-success')
-                .classList
-                .contains('hidden')
-        ) {
-            return;
-        }
+    const btn = document.getElementById('btn-prenota');
+    if (btn) btn.disabled = false;
 
-        btn.disabled = false;
-    }
+}
 }
 
 async function mostraMie() {
