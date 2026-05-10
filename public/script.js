@@ -149,7 +149,7 @@ async function doLogin() {
         
             try {
         
-                const resDisp = await fetch(`/api/disponibilita/${npass}`);
+                const resDisp = await fetch(`/api/disponibilita/${userPass}`);
                 disponibilitaGiorni = await resDisp.json();
                 
                 buildCal(); 
