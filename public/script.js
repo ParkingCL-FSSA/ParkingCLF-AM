@@ -106,9 +106,7 @@ async function doLogin() {
                 .toUpperCase();
     
             if (!userPass) return;
-        
-        caricaDisponibilita();
-        
+               
             const res = await fetch('/api/valida-pass', {
                 method: 'POST',
                 headers: {
@@ -153,8 +151,9 @@ async function doLogin() {
         
                 const resDisp = await fetch(`/api/disponibilita/${userPass}`);
                 disponibilitaGiorni = await resDisp.json();
-        
-                buildCal();
+                
+                buildCal(); 
+                caricaDisponibilita();
         
             } catch(e){
         
@@ -1069,7 +1068,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // LOGIN
     document.getElementById('btn-login')?.addEventListener('click', doLogin);
-
+    caricaDisponibilita();
     // USER
     document.getElementById('btn-prenota')?.addEventListener('click', inviaPren);
     document.getElementById('btn-mie')?.addEventListener('click', mostraMie);
