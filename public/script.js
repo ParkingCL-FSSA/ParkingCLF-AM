@@ -1,6 +1,7 @@
 let userPass = ""; let selectedDays = []; 
 let deferredPrompt; let currentPren = null;
 let filtroPiantone = 'attivi'; let ultimoAggiornato = null;
+let loadingAzione = false;
 // attivi = dentro (default)
 // scaduti = solo scaduti
 // tutti = tutto
@@ -93,9 +94,8 @@ function toggleScaduti() {
 }
 
 async function doLogin() {
-
+    document.querySelector('.card').classList.remove('admin-wide');
     try {
-    
             userPass = document
                 .getElementById('in-npass')
                 .value
@@ -168,7 +168,7 @@ function buildCal() {
         const iso = d.toISOString().split('T')[0];
         const slot = document.createElement('div'); slot.className = "day-slot";
         slot.innerText = d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
-        slot.onclick = () => {
+        slot.addEventListener('click', () => {
             slot.classList.toggle('selected');
             if (slot.classList.contains('selected')) {
                 if (!selectedDays.includes(iso)) {
@@ -363,8 +363,8 @@ async function cercaPass() {
     if (data.trovato) {
         currentPren = data.prenotazione;
 
-        const btnEntrata = document.querySelector('.btn-green');
-        const btnUscita = document.querySelector('.btn-orange');
+        const btnEntrata = document.getElementById('btn-ingresso');
+        const btnUscita = document.getElementById('btn-uscita');
 
         // RESET
         btnEntrata.disabled = false;
@@ -655,9 +655,7 @@ async function aggiornaVeicoli() {
 
 
 async function mossa(tipo) {
-    let loadingAzione = false;
     if (loadingAzione) return; // 🚫 blocco doppio click
-
     let azione = tipo;
     if (tipo === 'E') azione = 'ingresso';
     if (tipo === 'U') azione = 'uscita';
@@ -711,7 +709,10 @@ async function mossa(tipo) {
         
         // 🔄 aggiorna UI
         await aggiornaVeicoli();
-        await caricaStorico();
+       try {await caricaStorico();
+            } catch(e) {
+                console.log('Storico non presente');
+            }
 
         // se è uscita chiudi pannello
         if (tipo === 'U') {
