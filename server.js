@@ -955,7 +955,6 @@ app.get('/api/disponibilita/:npass', async (req, res) => {
 
         const npass = req.params.npass.toUpperCase();
 
-        // 1. recupera ente utente
         const utente = await pool.query(`
             SELECT ente
             FROM utenti
@@ -969,7 +968,6 @@ app.get('/api/disponibilita/:npass', async (req, res) => {
 
         const ente = utente.rows[0].ente;
 
-        // 2. posti totali ente
         const enteCfg = await pool.query(`
             SELECT posti
             FROM enti
@@ -979,12 +977,11 @@ app.get('/api/disponibilita/:npass', async (req, res) => {
 
         const totale = parseInt(enteCfg.rows[0]?.posti || 0);
 
-        // 3. espansione giorni prenotati
         const pren = await pool.query(`
             SELECT 
                 generate_series(
-                    data_inizio,
-                    data_fine,
+                    data_inizio::date,
+                    data_fine::date,
                     interval '1 day'
                 )::date as giorno
             FROM prenotazioni
@@ -996,14 +993,12 @@ app.get('/api/disponibilita/:npass', async (req, res) => {
 
         pren.rows.forEach(r => {
 
-            const g = r.giorno.toISOString().split('T')[0];
+            // 🔥 FIX SICURO: evita toISOString
+            const g = String(r.giorno).split('T')[0];
 
-            if (!mappa[g]) mappa[g] = 0;
-
-            mappa[g]++;
+            mappa[g] = (mappa[g] || 0) + 1;
         });
 
-        // 4. output finale
         const out = {};
 
         Object.keys(mappa).forEach(g => {
@@ -1011,11 +1006,9 @@ app.get('/api/disponibilita/:npass', async (req, res) => {
             const prenotati = mappa[g];
 
             out[g] = {
-
                 prenotati,
                 liberi: Math.max(totale - prenotati, 0),
                 totale
-
             };
 
         });
@@ -1024,7 +1017,7 @@ app.get('/api/disponibilita/:npass', async (req, res) => {
 
     } catch (err) {
 
-        console.error(err);
+        console.error('DISPONIBILITA ERROR:', err);
 
         res.status(500).json({
             error: 'Errore disponibilità'
