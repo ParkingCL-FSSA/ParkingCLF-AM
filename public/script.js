@@ -165,13 +165,20 @@ async function aggiornaPostiLiberiPiantone() {
     `<b style="color:green">Liberi: ${dati.totaleLiberi}</b> 
      | <b>Dentro: ${dati.dentro}</b>`;
 }
+
 function buildCal() {
-    const grid = document.getElementById('cal-grid'); grid.innerHTML = ""; selectedDays = [];
+    const grid = document.getElementById('cal-grid');
+    grid.innerHTML = "";
+    selectedDays = [];
     let d = new Date();
     for (let i = 0; i < 45; i++) {
         const iso = d.toISOString().split('T')[0];
-        const slot = document.createElement('div'); slot.className = "day-slot";
-        slot.innerText = d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+        const slot = document.createElement('div');
+        slot.className = "day-slot";
+        slot.innerText = d.toLocaleDateString('it-IT', {
+            day: '2-digit',
+            month: '2-digit'
+        });
         slot.addEventListener('click', () => {
             slot.classList.toggle('selected');
             if (slot.classList.contains('selected')) {
@@ -182,8 +189,9 @@ function buildCal() {
                 selectedDays =
                     selectedDays.filter(x => x !== iso);
             }
-        };
-        grid.appendChild(slot); d.setDate(d.getDate() + 1);
+        });
+        grid.appendChild(slot);
+        d.setDate(d.getDate() + 1);
     }
 }
 
