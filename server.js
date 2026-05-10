@@ -525,6 +525,8 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
         });
     }
 });
+
+// --- PIANTONE AZIONE ---
 app.post('/api/piantone/azione', async (req, res) => {
 
     const { id, azione, npass } = req.body;
@@ -765,6 +767,42 @@ app.get('/api/piantone/storico', async (req, res) => {
         console.error(err);
         res.status(500).json({ error: "Errore interno" });
     }
+});
+
+// --- PIANTONE ARRIVI OGGI ---
+app.get('/api/piantone/arrivi-oggi', async (req, res) => {
+
+  try {
+
+    const r = await pool.query(`
+      SELECT
+        p.npass,
+        r.ente,
+
+        CASE
+          WHEN p.stato = 'ENTRATO' THEN 'ENTRATO'
+          WHEN CURRENT_DATE > p.data_fine THEN 'SCADUTO'
+          ELSE 'PRENOTATO'
+        END AS stato
+
+      FROM prenotazioni p
+
+      LEFT JOIN registro_pass r
+        ON UPPER(p.npass) = UPPER(r.npass)
+
+      WHERE CURRENT_DATE BETWEEN p.data_inizio AND p.data_fine
+         OR CURRENT_DATE > p.data_fine
+
+      ORDER BY p.npass
+    `);
+
+    res.json(r.rows);
+
+  } catch (e) {
+
+    console.error(e);
+    res.status(500).json({ error: 'Errore server' });
+  }
 });
 
 app.listen(process.env.PORT || 3000, '0.0.0.0', () => {
