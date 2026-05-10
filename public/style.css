@@ -65,5 +65,29 @@ input {
     border-radius: 10px; 
     box-sizing: border-box;
 }
+.badge-stato{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-weight:bold;
+}
 
+.dot{
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    display:inline-block;
+}
+
+.dot-orange{
+    background:#f59e0b;
+}
+
+.dot-green{
+    background:#22c55e;
+}
+
+.dot-red{
+    background:#ef4444;
+}
 .summary-item { margin: 10px 0; padding: 10px; background: #f8fafc; border-radius: 8px; }
