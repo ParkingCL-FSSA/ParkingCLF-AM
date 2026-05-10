@@ -463,8 +463,10 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
             filtroSQL = `
                 AND (
                     (
-                        stato = 'PRENOTATO'
-                        AND data_fine >= $2
+                (
+                       stato = 'PRENOTATO'
+                       AND CURRENT_DATE BETWEEN data_inizio AND data_fine
+                )
                     )
                     OR stato = 'ENTRATO'
                     OR (
