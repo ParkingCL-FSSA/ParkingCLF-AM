@@ -1,7 +1,6 @@
 let userPass = ""; let selectedDays = []; 
 let deferredPrompt; let currentPren = null;
 let filtroPiantone = 'attivi'; let ultimoAggiornato = null;
-let loadingAzione = false;
 // attivi = dentro (default)
 // scaduti = solo scaduti
 // tutti = tutto
@@ -654,11 +653,17 @@ async function aggiornaVeicoli() {
 }
 
 
+let loadingAzione = false;
+
 async function mossa(tipo) {
-    if (loadingAzione) return; // 🚫 blocco doppio click
+
+    if (loadingAzione) return;
+
     let azione = tipo;
+
     if (tipo === 'E') azione = 'ingresso';
     if (tipo === 'U') azione = 'uscita';
+
     // 🚫 uscita senza ingresso
     if (
         tipo === 'U' &&
@@ -670,70 +675,91 @@ async function mossa(tipo) {
         alert("Auto ancora non entrata");
         return;
     }
+
     const btnIngresso = document.getElementById('btn-ingresso');
     const btnUscita = document.getElementById('btn-uscita');
 
-    // 🔒 blocco UI
     btnIngresso.disabled = true;
     btnUscita.disabled = true;
+
     loadingAzione = true;
 
     try {
+
         const res = await fetch('/api/piantone/azione', {
+
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+
+            headers: {
+                'Content-Type': 'application/json'
+            },
+
             body: JSON.stringify({
                 id: currentPren.id,
                 azione: azione,
                 npass: userPass
             })
+
         });
 
         const data = await res.json();
 
-                if (!data.success) {
-    alert(data.error || "Errore operazione");
-    return;
-        
-        } else {
-        
-            // 🔊 suoni diversi
-            if (tipo === 'E') {
-                beepIngresso.play();
-            } else {
-                beepUscita.play();
-            }
-        
-            ultimoAggiornato = currentPren.npass;
-        }
-        
-        // 🔄 aggiorna UI
-        await aggiornaVeicoli();
-       try {await caricaStorico();
-            } catch(e) {
-                console.log('Storico non presente');
-            }
+        if (!data.success) {
 
-        // se è uscita chiudi pannello
-        if (tipo === 'U') {
-            document.getElementById('panel-piantone').classList.add('hidden');
-            document.getElementById('search-p').value = '';
-            currentPren = null;
-        } else {
-            await cercaPass();
+            alert(data.error || "Errore operazione");
+            return;
+
         }
-                
+
+        // 🔊 suoni
+        if (tipo === 'E') {
+
+            beepIngresso.play();
+
+        } else {
+
+            beepUscita.play();
+
+        }
+
+        ultimoAggiornato = currentPren.npass;
+
+        await aggiornaVeicoli();
+
+        // uscita
+        if (tipo === 'U') {
+
+            document
+                .getElementById('panel-piantone')
+                .classList
+                .add('hidden');
+
+            document.getElementById('search-p').value = '';
+
+            currentPren = null;
+
+        } else {
+
+            await cercaPass();
+
+        }
+
     } catch (err) {
-        alert("Errore di rete");
+
         console.error(err);
+
+        alert("Errore rete/server");
+
     } finally {
+
         loadingAzione = false;
 
-        // 🔓 sblocco (ma poi cercaPass rimette stato corretto)
         btnIngresso.disabled = false;
         btnUscita.disabled = false;
+
     }
 }
+
 async function mostraRitardi() {
     const res = await fetch('/api/admin/ritardi');
     const dati = await res.json();
