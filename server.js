@@ -212,46 +212,38 @@ app.post('/api/prenota', async (req, res) => {
         }
 
         // ---------------------------------------------------
-        // CHECK SOVRAPPOSIZIONE STESSO UTENTE
+        // 🚫 controllo sovrapposizioni stesso utente
         // ---------------------------------------------------
+const overlap = await pool.query(`
 
-        const overlap = await pool.query(`
-            SELECT id
+    SELECT id
+    FROM prenotazioni
 
-            FROM prenotazioni
+    WHERE
+        npass = $1
+        AND stato IN ('PRENOTATO', 'ENTRATO')
+        AND daterange(data_inizio, data_fine, '[]')
+        && daterange($2::date, $3::date, '[]')
 
-            WHERE
-                UPPER(npass) = $1
+    LIMIT 1
 
-                AND stato IN (
-                    'PRENOTATO',
-                    'ENTRATO'
-                )
+`, [
 
-                AND daterange(
-                    data_inizio,
-                    data_fine,
-                    '[]'
-                ) && daterange(
-                    $2::date,
-                    $3::date,
-                    '[]'
-                )
+    npass,
+    giorni[0],
+    giorni[giorni.length - 1]
 
-            LIMIT 1
-        `,
-        [
-            p,
-            dataInizio,
-            dataFine
-        ]);
+]);
 
-        if (overlap.rows.length > 0) {
+if (overlap.rows.length > 0) {
 
-            return res.status(400).json({
-                error: "Hai già una prenotazione in questo periodo"
-            });
-        }
+    return res.status(400).json({
+
+        error: 'Hai già una prenotazione in queste date'
+
+    });
+
+}
 
         // ---------------------------------------------------
         // CHECK 15 GIORNI SU FINESTRA MOBILE
@@ -987,14 +979,14 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
     res.status(500).json({ error: 'Errore server' });
   }
 });
-// --- DISPONIBILITA GIORNI PER ENTE ---
+
+// --- DISPONIBILITA GIORNI PER ENTE (FIX COMPLETO) ---
 app.get('/api/disponibilita/:npass', async (req, res) => {
 
     try {
 
         const npass = req.params.npass.toUpperCase();
 
-        // recupera ente utente
         const utente = await pool.query(`
             SELECT ente
             FROM utenti
@@ -1005,12 +997,10 @@ app.get('/api/disponibilita/:npass', async (req, res) => {
         if (!utente.rows.length) {
 
             return res.json({});
-
         }
 
         const ente = utente.rows[0].ente;
 
-        // posti totali assegnati ente
         const enteCfg = await pool.query(`
             SELECT posti
             FROM enti
@@ -1018,56 +1008,45 @@ app.get('/api/disponibilita/:npass', async (req, res) => {
             LIMIT 1
         `, [ente]);
 
-        const totale = parseInt(
-            enteCfg.rows[0]?.posti || 0
-        );
+        const totale = parseInt(enteCfg.rows[0]?.posti || 0);
 
-        // conteggio reale multi-giorno
+        // 🔥 FIX: espandi correttamente ogni prenotazione in giorni UNICI
         const pren = await pool.query(`
-
-            SELECT
-                giorno,
-                COUNT(*)::int as prenotati
-
+            SELECT giorno, COUNT(DISTINCT npass)::int as prenotati
             FROM (
-
-                SELECT
+                SELECT DISTINCT
+                    npass,
                     generate_series(
-                        data_inizio,
-                        data_fine,
+                        data_inizio::date,
+                        data_fine::date,
                         interval '1 day'
                     )::date as giorno
-
                 FROM prenotazioni
-
-                WHERE
-                    ente = $1
-                    AND stato IN ('PRENOTATO', 'ENTRATO')
-
-            ) x
-
+                WHERE ente = $1
+                  AND stato IN ('PRENOTATO', 'ENTRATO')
+            ) t
             GROUP BY giorno
-
         `, [ente]);
 
         const out = {};
 
         pren.rows.forEach(r => {
 
-            const giorno = r.giorno
-                .toISOString()
-                .split('T')[0];
+            const giorno = r.giorno.toISOString().split('T')[0];
 
             const prenotati = parseInt(r.prenotati);
 
+            const liberi = Math.max(0, totale - prenotati);
+
             out[giorno] = {
 
-                liberi: totale - prenotati,
+                liberi,
                 prenotati,
-                totale
+                totale,
+                warning: liberi <= 3,
+                full: liberi === 0
 
             };
-
         });
 
         res.json(out);
@@ -1079,10 +1058,9 @@ app.get('/api/disponibilita/:npass', async (req, res) => {
         res.status(500).json({
             error: 'Errore disponibilità'
         });
-
     }
-
 });
+
 //PORTA SERVER//
 app.listen(process.env.PORT || 3000, '0.0.0.0', () => {
     console.log(`Server avviato`);
