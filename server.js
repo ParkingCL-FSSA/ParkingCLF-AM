@@ -214,26 +214,16 @@ app.post('/api/prenota', async (req, res) => {
         // ---------------------------------------------------
         // 🚫 controllo sovrapposizioni stesso utente
         // ---------------------------------------------------
-const overlap = await pool.query(`
-
-    SELECT id
-    FROM prenotazioni
-
-    WHERE
-        npass = $1
-        AND stato IN ('PRENOTATO', 'ENTRATO')
-        AND daterange(data_inizio, data_fine, '[]')
-        && daterange($2::date, $3::date, '[]')
-
-    LIMIT 1
-
-`, [
-
-    npass,
-    giorni[0],
-    giorni[giorni.length - 1]
-
-]);
+const overlap = await pool.query(
+    `SELECT id 
+     FROM prenotazioni 
+     WHERE UPPER(npass) = $1 
+       AND stato IN ('PRENOTATO', 'ENTRATO')
+       AND NOT (
+            data_fine < $2 OR data_inizio > $3
+       )`,
+    [p, dataInizio, dataFine]
+);
 
 if (overlap.rows.length > 0) {
 
