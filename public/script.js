@@ -834,14 +834,31 @@ async function caricaStorico() {
         </div>`;
     }).join('');
 }
+let arriviVisible = false;
+
 async function mostraArriviOggi() {
+
+    const box = document.getElementById('box-arrivi-oggi');
+    const btn = document.getElementById('btn-arrivi-oggi');
+
+    // TOGGLE HIDE
+    if (arriviVisible) {
+
+        box.classList.add('hidden');
+
+        arriviVisible = false;
+
+        btn.innerText = 'Mostra Arrivi Oggi';
+
+        return;
+    }
 
     try {
 
         const res = await fetch('/api/piantone/arrivi-oggi');
+
         const dati = await res.json();
 
-        const box = document.getElementById('box-arrivi-oggi');
         const lista = document.getElementById('lista-arrivi-oggi');
 
         lista.innerHTML = '';
@@ -850,7 +867,9 @@ async function mostraArriviOggi() {
 
             lista.innerHTML = `
                 <tr>
-                    <td colspan="3">Nessun arrivo previsto oggi</td>
+                    <td colspan="2">
+                        Nessun arrivo previsto oggi
+                    </td>
                 </tr>
             `;
 
@@ -899,12 +918,18 @@ async function mostraArriviOggi() {
 
         box.classList.remove('hidden');
 
+        arriviVisible = true;
+
+        btn.innerText = 'Nascondi Arrivi Oggi';
+
     } catch (err) {
 
         console.error(err);
+
         alert('Errore caricamento arrivi');
     }
 }
+
 window.addEventListener('DOMContentLoaded', () => {
 
     // LOGIN
