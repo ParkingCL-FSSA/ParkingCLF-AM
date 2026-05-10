@@ -839,7 +839,6 @@ async function mostraArriviOggi() {
                 lista.innerHTML += `
                     <tr>
                         <td>${r.npass}</td>
-                        <td>${r.ente || '-'}</td>
                         <td>${badge}</td>
                     </tr>
                 `;
