@@ -106,7 +106,9 @@ async function doLogin() {
                 .toUpperCase();
     
             if (!userPass) return;
-    
+        
+        caricaDisponibilita();
+        
             const res = await fetch('/api/valida-pass', {
                 method: 'POST',
                 headers: {
