@@ -183,7 +183,7 @@ async function caricaDisponibilita() {
 
     const npass = userPass; // oppure da input
 
-    const res = await fetch(`/api/disponibilita/${npass}`);
+    const res = await fetch(`/api/disponibilita/${Userpass}`);
 
     if (!res.ok) {
         console.error("Errore disponibilità");
@@ -1067,7 +1067,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // LOGIN
     document.getElementById('btn-login')?.addEventListener('click', doLogin);
-    caricaDisponibilita();
     // USER
     document.getElementById('btn-prenota')?.addEventListener('click', inviaPren);
     document.getElementById('btn-mie')?.addEventListener('click', mostraMie);
