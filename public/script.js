@@ -1,6 +1,7 @@
 let userPass = ""; let selectedDays = []; 
 let deferredPrompt; let currentPren = null;
 let filtroPiantone = 'attivi'; let ultimoAggiornato = null;
+let disponibilitaGiorni = {};
 // attivi = dentro (default)
 // scaduti = solo scaduti
 // tutti = tutto
@@ -145,9 +146,20 @@ async function doLogin() {
         else {
 
             show('view-user');
-
-            try { buildCal(); } catch(e){ console.log(e); }
-
+        
+            try {
+        
+                const resDisp = await fetch(`/api/disponibilita/${userPass}`);
+                disponibilitaGiorni = await resDisp.json();
+        
+                buildCal();
+        
+            } catch(e){
+        
+                console.log(e);
+        
+            }
+        
         }
 
     } catch (err) {
@@ -179,6 +191,41 @@ function buildCal() {
             day: '2-digit',
             month: '2-digit'
         });
+        const disp = disponibilitaGiorni[iso];
+
+if (disp) {
+
+    const liberi = disp.liberi;
+
+    // 🔴 esaurito
+    if (liberi <= 0) {
+
+        slot.style.background = '#fee2e2';
+        slot.style.color = '#991b1b';
+        slot.style.border = '2px solid #dc2626';
+
+        slot.style.pointerEvents = 'none';
+        slot.style.opacity = '0.6';
+
+        slot.innerHTML += `<br><small>0</small>`;
+    }
+
+            // 🟠 ultimi 3
+            else if (liberi <= 3) {
+        
+                slot.style.background = '#ffedd5';
+                slot.style.color = '#9a3412';
+                slot.style.border = '2px solid #f97316';
+        
+                slot.innerHTML += `<br><small>${liberi}</small>`;
+            }
+        
+            // 🟢 disponibili
+            else {
+        
+                slot.innerHTML += `<br><small>${liberi}</small>`;
+            }
+        }
         slot.addEventListener('click', () => {
             slot.classList.toggle('selected');
             if (slot.classList.contains('selected')) {
