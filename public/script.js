@@ -202,8 +202,21 @@ async function inviaPren() {
     if (!selectedDays.length || !email) return alert("Dati mancanti!");
     if (selectedDays.length > 15) return alert("Massimo 15 giorni selezionabili!");
 
-    const res = await fetch('/api/prenota', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ npass: userPass, giorni: selectedDays, email: email }) });
-    
+   const res = await fetch('/api/prenota', {
+
+    method: 'POST',
+
+    headers: {
+        'Content-Type': 'application/json'
+    },
+
+    body: JSON.stringify({
+        npass: userPass,
+        giorni: selectedDays,
+        email: email
+    })
+
+});
     if (res.ok) {
         selectedDays.sort();
         const totaleGiorni = selectedDays.length;
