@@ -184,7 +184,6 @@ async function caricaDisponibilita() {
   const res = await fetch(`/api/disponibilita/${userPass}`);
 
   const data = await res.json();
-  console.log("DISP:", data);
 
   if (!res.ok) {
     console.error("Errore disponibilità", data);
