@@ -236,9 +236,10 @@ async function inviaPren() {
         document.getElementById('summary-details').innerHTML =
             `<b>Pass:</b> ${userPass}<br><b>Dal:</b> ${fmtData(selectedDays[0])}<br><b>Al:</b> ${fmtData(selectedDays[selectedDays.length - 1])}`;
         show('view-success');
-        setTimeout(() => {
-            mostraMie();
-        }, 10000);
+        mostraMie();
+       // setTimeout(() => {
+        //    mostraMie();
+      //  }, 10000);
     } else {
         // Gestisci errori di validazione dal server
         const err = await res.json();
