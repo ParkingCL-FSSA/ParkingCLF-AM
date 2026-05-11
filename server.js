@@ -309,27 +309,25 @@ if (overlap.rows.length > 0) {
         // CHECK DISPONIBILITA ENTE
         // ---------------------------------------------------
 
-        for (const giorno of numGiorni) {
+      // CHECK DISPONIBILITA ENTE
+for (const giorno of sorted) {
 
-    const occupatiEnte = await pool.query(`
-        SELECT COUNT(DISTINCT p.npass) as count
-        FROM prenotazioni p
-        JOIN registro_pass r ON UPPER(p.npass) = UPPER(r.npass)
-        WHERE r.ente = $1
-          AND p.stato IN ('PRENOTATO', 'ENTRATO')
-          AND $2 BETWEEN p.data_inizio AND p.data_fine
-    `, [userEnte, giorno]);
+  const occupatiEnte = await pool.query(`
+    SELECT COUNT(DISTINCT p.npass) as count
+    FROM prenotazioni p
+    WHERE p.ente = $1
+      AND p.stato IN ('PRENOTATO', 'ENTRATO')
+      AND $2 BETWEEN p.data_inizio AND p.data_fine
+  `, [ente, giorno]);
 
-    const count = parseInt(occupatiEnte.rows[0].count);
+  const count = parseInt(occupatiEnte.rows[0].count);
 
-    if (count >= postiEnte) {
-
-        return res.status(400).json({
-            error: `Posti esauriti per il giorno ${giorno}`
-        });
-    }
+  if (count >= postiEnte) {
+    return res.status(400).json({
+      error: `Posti esauriti per il giorno ${giorno}`
+    });
+  }
 }
-
         // ---------------------------------------------------
         // INSERIMENTO
         // ---------------------------------------------------
@@ -951,76 +949,62 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
 
 // --- DISPONIBILITA GIORNI PER ENTE ---
 app.get('/api/disponibilita/:npass', async (req, res) => {
-const npass = req.params.npass.toUpperCase();
-    if (!npass) {
-    return res.status(400).json({ error: "npass mancante" });
-}
-    try {     
-        const utente = await pool.query(`
-            SELECT ente
-            FROM registro_pass
-            WHERE UPPER(npass) = $1
-            LIMIT 1
-        `, [npass]);
+  try {
+    const npass = clean(req.params.npass);
 
-        if (!utente.rows.length) {
-            return res.json({});
-        }
+    // 1) ente utente da registro_pass
+    const utente = await pool.query(`
+      SELECT ente
+      FROM registro_pass
+      WHERE UPPER(npass) = $1
+      LIMIT 1
+    `, [npass]);
 
-        const ente = utente.rows[0].ente;
+    if (!utente.rows.length) return res.json({});
 
-        const enteCfg = await pool.query(`
-            SELECT posti
-            FROM enti
-            WHERE nome = $1
-            LIMIT 1
-        `, [ente]);
+    const ente = utente.rows[0].ente;
 
-        const totale = parseInt(enteCfg.rows[0]?.posti || 0);
+    // 2) posti ente da assegnazioni
+    const cfg = await pool.query(`
+      SELECT posti
+      FROM assegnazioni
+      WHERE ente = $1
+      LIMIT 1
+    `, [ente]);
 
-        const pren = await pool.query(`
-            SELECT 
-                generate_series(
-                    data_inizio::date,
-                    data_fine::date,
-                    interval '1 day'
-                )::date as giorno
-            FROM prenotazioni
-            WHERE ente = $1
-              AND stato IN ('PRENOTATO', 'ENTRATO')
-        `, [ente]);
+    const totale = parseInt(cfg.rows[0]?.posti || 0);
+    if (!totale) return res.json({}); // ente non configurato
 
-        const mappa = {};
+    // 3) prenotazioni attive per ente
+    const pren = await pool.query(`
+      SELECT generate_series(
+        data_inizio::date,
+        data_fine::date,
+        interval '1 day'
+      )::date AS giorno
+      FROM prenotazioni
+      WHERE ente = $1
+        AND stato IN ('PRENOTATO', 'ENTRATO')
+    `, [ente]);
 
-        pren.rows.forEach(r => {
+    const mappa = {};
+    pren.rows.forEach(r => {
+      const g = String(r.giorno).split('T')[0];
+      mappa[g] = (mappa[g] || 0) + 1;
+    });
 
-            // 🔥 FIX SICURO: evita toISOString
-            const g = String(r.giorno).split('T')[0];
+    const out = {};
+    Object.keys(mappa).forEach(g => {
+      const prenotati = mappa[g];
+      out[g] = { prenotati, liberi: Math.max(totale - prenotati, 0), totale };
+    });
 
-            mappa[g] = (mappa[g] || 0) + 1;
-        });
+    res.json(out);
 
-        const out = {};
-
-        Object.keys(mappa).forEach(g => {
-
-            const prenotati = mappa[g];
-
-            out[g] = {
-                prenotati,
-                liberi: Math.max(totale - prenotati, 0),
-                totale
-            };
-
-        });
-
-        res.json(out);
-
-    } catch (err) {
-        console.error("ERRORE disponibilità:", err);
-        res.status(500).json({ error: "Errore server disponibilità" });
-    }
-
+  } catch (err) {
+    console.error("ERRORE disponibilità:", err);
+    res.status(500).json({ error: "Errore server disponibilità" });
+  }
 });
 
 //PORTA SERVER//
