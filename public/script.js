@@ -146,14 +146,13 @@ async function doLogin() {
         else {
 
             show('view-user');
-        
+            await caricaDisponibilita();
             try {
         
                 const resDisp = await fetch(`/api/disponibilita/${userPass}`);
                 disponibilitaGiorni = await resDisp.json();
                 
                 buildCal(); 
-                caricaDisponibilita();
         
             } catch(e){
         
@@ -180,12 +179,22 @@ async function aggiornaPostiLiberiPiantone() {
 }
 
 async function caricaDisponibilita() {
-    if (!userPass) return;
+  if (!userPass) return;
 
-    const res = await fetch(`/api/disponibilita/${userPass}`);
-    const data = await res.json();
+  const res = await fetch(`/api/disponibilita/${userPass}`);
 
-    console.log(data);
+  const data = await res.json();
+  console.log("DISP:", data);
+
+  if (!res.ok) {
+    console.error("Errore disponibilità", data);
+    disponibilitaGiorni = {};
+    buildCal();
+    return;
+  }
+
+  disponibilitaGiorni = data;
+  buildCal();
 }
 
 function buildCal() {
