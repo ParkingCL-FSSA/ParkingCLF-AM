@@ -7,7 +7,7 @@ const PDFDocument = require('pdfkit');
 
 const app = express();
 app.use(cors({
-    origin: ['https://parkingclf-am.onrender.com']
+    origin: ['https://parkingclf-am.onrender.com/']
 }));
 const helmet = require('helmet');
 app.use(helmet());
@@ -122,345 +122,205 @@ app.post('/api/valida-pass', async (req, res) => {
     }
 });
 
-// --- PRENOTAZIONE COMPLETA SICURA ---
+// --- 2. PRENOTAZIONE CON CONTROLLO QUOTE ENTE CORRETTO ---
 app.post('/api/prenota', async (req, res) => {
-
     const { npass, giorni, email } = req.body;
-
-    if (!npass || !email) {
-
-        return res.status(400).json({
-            error: "Dati mancanti"
-        });
-    }
-
-    if (!Array.isArray(giorni) || giorni.length === 0) {
-
-        return res.status(400).json({
-            error: "Giorni non validi"
-        });
-    }
-
-    if (giorni.length > 15) {
-
-        return res.status(400).json({
-            error: "Massimo 15 giorni"
-        });
-    }
+    const p = clean(npass);
+    
+    if (!npass || !email) return res.status(400).json({ error: "Dati mancanti" });
+    if (!Array.isArray(giorni) || giorni.length === 0) return res.status(400).json({ error: "Giorni non validi" });
+    if (giorni.length > 15) return res.status(400).json({ error: "Limite 15 giorni superato" });
 
     try {
-
-        const p = clean(npass);
-
-        // ordina giorni
         const sorted = [...giorni].sort();
-
         const dataInizio = sorted[0];
         const dataFine = sorted[sorted.length - 1];
+        const p = clean(npass);
+        const start = new Date(dataInizio);
+        const end = new Date(dataFine);
+        const numGiorni =
+            Math.floor(
+                (end - start) / (1000 * 60 * 60 * 24)
+            ) + 1;
 
-        // controllo continuità giorni
-        let tmp = new Date(dataInizio);
-
-        for (let i = 0; i < sorted.length; i++) {
-
-            const iso = tmp.toISOString().split('T')[0];
-
-            if (iso !== sorted[i]) {
-
-                return res.status(400).json({
-                    error: "I giorni devono essere consecutivi"
-                });
-            }
-
-            tmp.setDate(tmp.getDate() + 1);
-        }
-
-        // ---------------------------------------------------
-        // RECUPERO UTENTE + ENTE
-        // ---------------------------------------------------
-
-        const userInfo = await pool.query(`
-            SELECT
-                r.ente,
-                COALESCE(a.posti, 0) as posti
-
-            FROM registro_pass r
-
-            LEFT JOIN assegnazioni a
-                ON a.ente = r.ente
-
-            WHERE UPPER(r.npass) = $1
-
-            LIMIT 1
-        `, [p]);
-
-        if (!userInfo.rows.length) {
-
-            return res.status(400).json({
-                error: "Utente non trovato"
+        // CHECK 1: Sovrapposizione
+        const overlap = await pool.query(
+            `SELECT id FROM prenotazioni 
+             WHERE UPPER(npass) = $1 
+               AND stato IN ('PRENOTATO', 'ENTRATO')
+               AND (
+                   (data_inizio <= $2 AND data_fine >= $2) OR
+                   (data_inizio <= $3 AND data_fine >= $3) OR
+                   (data_inizio >= $2 AND data_fine <= $3)
+               )`,
+            [p, dataInizio, dataFine]
+        );
+        if (overlap.rows.length > 0) {
+            return res.status(400).json({ 
+                error: "Hai già una prenotazione attiva in questo periodo. Cancellala prima di prenotare nuovamente." 
             });
         }
 
-        const ente = userInfo.rows[0].ente;
-        const postiEnte = parseInt(userInfo.rows[0].posti || 0);
-
-        if (!ente || postiEnte <= 0) {
-
-            return res.status(400).json({
-                error: "Ente non configurato"
-            });
-        }
-
-        // ---------------------------------------------------
-        // 🚫 controllo sovrapposizioni stesso utente
-        // ---------------------------------------------------
-const overlap = await pool.query(
-    `SELECT id 
-     FROM prenotazioni 
-     WHERE UPPER(npass) = $1 
-       AND stato IN ('PRENOTATO', 'ENTRATO')
-       AND (
-            data_inizio <= $3
-            AND data_fine >= $2
-        )`,
-    [p, dataInizio, dataFine]
-);
-
-if (overlap.rows.length > 0) {
-
-    return res.status(400).json({
-
-        error: 'Hai già una prenotazione in queste date'
-
-    });
-
-}
-
-        // ---------------------------------------------------
-        // CHECK 15 GIORNI SU FINESTRA MOBILE
-        // ---------------------------------------------------
-
-        const finestraStart = new Date(dataInizio);
+        // CHECK 2: massimo 15 giorni cumulativi in 45 giorni
+        
+        const inizioNuova = new Date(dataInizio);
+        const fineNuova = new Date(dataFine);
+        
+        // finestra mobile di 45 giorni
+        const finestraStart = new Date(inizioNuova);
         finestraStart.setDate(finestraStart.getDate() - 44);
-
-        const finestraEnd = new Date(dataInizio);
+        
+        const finestraEnd = new Date(inizioNuova);
         finestraEnd.setDate(finestraEnd.getDate() + 44);
-
-        const prenUtente = await pool.query(`
-            SELECT
-                data_inizio,
-                data_fine
-
+        
+        const finestraStartStr = finestraStart.toISOString().split('T')[0];
+        const finestraEndStr = finestraEnd.toISOString().split('T')[0];
+        
+        // recupera tutte le prenotazioni che toccano la finestra
+        const prenEsistenti = await pool.query(
+            `
+            SELECT data_inizio, data_fine
             FROM prenotazioni
+            WHERE UPPER(npass) = $1
+              AND stato IN ('PRENOTATO', 'ENTRATO')
+              AND data_inizio <= $2
+              AND data_fine >= $3
+            `,
+            [p, finestraEndStr, finestraStartStr]
+        );
 
-            WHERE
-                UPPER(npass) = $1
-
-                AND stato IN (
-                    'PRENOTATO',
-                    'ENTRATO'
-                )
-
-                AND data_inizio <= $2
-                AND data_fine >= $3
-        `,
-        [
-            p,
-            finestraEnd.toISOString().split('T')[0],
-            finestraStart.toISOString().split('T')[0]
-        ]);
-
+        // uso Set per evitare doppi conteggi
         const giorniOccupati = new Set();
-
-        prenUtente.rows.forEach(r => {
-
-            let d = new Date(r.data_inizio);
-            const end = new Date(r.data_fine);
-
+        
+        // aggiungi giorni già prenotati
+        prenEsistenti.rows.forEach(row => {
+        
+            let d = new Date(row.data_inizio);
+            const end = new Date(row.data_fine);
+        
             while (d <= end) {
-
+        
                 giorniOccupati.add(
                     d.toISOString().split('T')[0]
                 );
-
+        
                 d.setDate(d.getDate() + 1);
             }
         });
-
-        let check = new Date(dataInizio);
-
-        while (check <= new Date(dataFine)) {
-
+        
+        // aggiungi nuova richiesta
+        let d = new Date(inizioNuova);
+        
+        while (d <= fineNuova) {
+        
             giorniOccupati.add(
-                check.toISOString().split('T')[0]
+                d.toISOString().split('T')[0]
             );
-
-            check.setDate(check.getDate() + 1);
+        
+            d.setDate(d.getDate() + 1);
         }
-
+        
+        // controllo finale
         if (giorniOccupati.size > 15) {
-
+        
             return res.status(400).json({
-                error: "Massimo 15 giorni prenotabili in 45 giorni"
+                error: `Limite superato: massimo 15 giorni prenotabili in qualunque finestra di 45 giorni consecutivi.`
             });
         }
+                // CHECK 3: Quote ENTE - FIX CRITICO
+                const userInfo = await pool.query(
+                    `SELECT r.ente, a.posti 
+                     FROM registro_pass r
+                     LEFT JOIN assegnazioni a ON r.ente = a.ente
+                     WHERE UPPER(r.npass) = $1`,
+                    [p]
+                );
+        
+                if (userInfo.rows.length === 0 || !userInfo.rows[0].ente) {
+                    return res.status(400).json({ error: "Configurazione utente non valida. Contatta l'amministratore." });
+                }
 
-      // CHECK DISPONIBILITA ENTE
-const giorniRichiesti = sorted;
+        const userEnte = userInfo.rows[0].ente;
+        const postiEnte = userInfo.rows[0].posti || 0;
 
-for (const giorno of giorniRichiesti) {
-  const occupatiEnte = await pool.query(`
-    SELECT COUNT(DISTINCT p.npass) as count
-    FROM prenotazioni p
-    WHERE p.ente = $1
-      AND p.stato IN ('PRENOTATO', 'ENTRATO')
-      AND $2 BETWEEN p.data_inizio AND p.data_fine
-  `, [ente, giorno]);
+        // Espandi prenotazione in singoli giorni
+        const giorniRichiesti = [];
+        for (let d = new Date(dataInizio); d <= new Date(dataFine); d.setDate(d.getDate() + 1)) {
+            giorniRichiesti.push(d.toISOString().split('T')[0]);
+        }
 
-  const count = parseInt(occupatiEnte.rows[0].count || 0);
+        // Verifica ogni giorno
+        for (const giorno of giorniRichiesti) {
+            const occupatiEnte = await pool.query(
+                `SELECT COUNT(DISTINCT p.npass) as count
+                 FROM prenotazioni p
+                 JOIN registro_pass r ON UPPER(p.npass) = UPPER(r.npass)
+                 WHERE r.ente = $1
+                   AND UPPER(p.npass) != $2
+                   AND p.stato IN ('PRENOTATO', 'ENTRATO')
+                   AND $3 BETWEEN p.data_inizio AND p.data_fine`,
+                [userEnte, p, giorno]
+            );
 
-  if (count >= postiEnte) {
-    return res.status(400).json({
-      error: `Posti esauriti per il giorno ${giorno}`
-    });
-  }
-}
-        // ---------------------------------------------------
-        // INSERIMENTO
-        // ---------------------------------------------------
+            const count = parseInt(occupatiEnte.rows[0].count);
+            
+            if (count >= postiEnte) {
+                return res.status(400).json({ 
+                    error: "Non è possibile prenotare nelle giornate selezionate. Posti esauriti per questa prenotazione." 
+                });
+            }
+        }
 
-        await pool.query(`
+        // OK → Inserisci
+        await pool.query(
+            'INSERT INTO prenotazioni (npass, data_inizio, data_fine, stato) VALUES ($1, $2, $3, $4)',
+            [p, dataInizio, dataFine, 'PRENOTATO']
+        );
+        await pool.query('UPDATE registro_pass SET ult_pren = NOW() WHERE UPPER(npass) = $1', [p]).catch(e => console.log(e));
 
-            INSERT INTO prenotazioni (
-                npass,
-                ente,
-                data_inizio,
-                data_fine,
-                stato
-            )
-
-            VALUES (
-                $1,
-                $2,
-                $3,
-                $4,
-                'PRENOTATO'
-            )
-
-        `,
-        [
-            p,
-            ente,
-            dataInizio,
-            dataFine
-        ]);
-
-        // aggiorna ultimo utilizzo
-        await pool.query(`
-            UPDATE registro_pass
-            SET ult_pren = NOW()
-            WHERE UPPER(npass) = $1
-        `, [p]).catch(e => console.log(e));
-
-        // ---------------------------------------------------
         // PDF
-        // ---------------------------------------------------
-
-        const start = new Date(dataInizio);
-        const end = new Date(dataFine);
-
-        const numGiorni =
-            Math.floor(
-                (end - start) /
-                (1000 * 60 * 60 * 24)
-            ) + 1;
-
-        const doc = new PDFDocument({
-            size: 'A4',
-            margin: 50
-        });
-
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
         let buffers = [];
-
         doc.on('data', buffers.push.bind(buffers));
-
         doc.on('end', async () => {
-
             const pdfData = Buffer.concat(buffers);
 
             const htmlUtente = `
-                <div style="font-family:sans-serif;">
-                    <h2>Prenotazione Confermata</h2>
+                <div style="text-align:center; font-family:sans-serif; border:2px solid #4A90E2; padding:20px; border-radius:15px; max-width:500px; margin:auto;">
+                    <img src="${LOGO_URL}" alt="Logo CLF" style="width:130px; margin-bottom:20px;">
+                    <h2 style="color:#4A90E2;">Prenotazione Confermata</h2>
+                    <p>Gentile utente <b>${p}</b>, il tuo pass è pronto.</p>
+                    <div style="background-color:#f4f8ff; padding:10px; border-radius:10px; margin:15px 0;">
+                        <p>Dal <b>${formattaDataIT(dataInizio)}</b> al <b>${formattaDataIT(dataFine)}</b></p>
+                        <p><b>Giorni totali:</b> ${numGiorni}</p>
+                    </div>
+                    <p style="font-size:12px; color:#666;">In allegato il PDF da esporre sul parabrezza.</p>
+                </div>`;
+            await inviaMailBrevoAPI(email, `Il tuo PASS - ${p}`, htmlUtente, pdfData, `PASS_${p}.pdf`);
 
-                    <p><b>PASS:</b> ${p}</p>
+            const htmlAdmin = `
+                <div style="text-align:center; font-family:sans-serif; border:1px solid #ddd; padding:20px; border-radius:10px; max-width:400px; margin:auto;">
+                    <img src="${LOGO_URL}" alt="Logo CLF" style="width:90px; margin-bottom:15px;">
+                    <h3 style="color:#333;">🔔 Nuova Prenotazione</h3>
+                    <p><b>Pass:</b> ${p}</p>
+                    <p><b>Email:</b> ${email}</p>
+                    <p><b>Periodo:</b> ${formattaDataIT(dataInizio)} - ${formattaDataIT(dataFine)}</p>
+                    <p><b>Giorni:</b> ${numGiorni}</p>
+                </div>`;
+            await inviaMailBrevoAPI("parkingclf.am@gmail.com", `Nuova Prenotazione: ${p}`, htmlAdmin);
 
-                    <p>
-                        Dal
-                        <b>${formattaDataIT(dataInizio)}</b>
-                        al
-                        <b>${formattaDataIT(dataFine)}</b>
-                    </p>
-
-                    <p>
-                        Giorni totali:
-                        <b>${numGiorni}</b>
-                    </p>
-                </div>
-            `;
-
-            await inviaMailBrevoAPI(
-                email,
-                `PASS ${p}`,
-                htmlUtente,
-                pdfData,
-                `PASS_${p}.pdf`
-            );
-
-            res.json({
-                success: true
-            });
-
+            res.json({ success: true });
         });
 
-        doc.rect(40, 40, 515, 320)
-            .lineWidth(3)
-            .stroke('#4A90E2');
-
-        doc.fontSize(22)
-            .fillColor('#4A90E2')
-            .text(
-                'PARCHEGGIO C.L. FONTANAROSSA',
-                50,
-                80,
-                { align: 'center' }
-            );
-
-        doc.fontSize(90)
-            .fillColor('black')
-            .text(
-                p,
-                50,
-                140,
-                { align: 'center' }
-            );
-
-        doc.fontSize(24)
-            .text(
-                `DAL ${formattaDataIT(dataInizio)} AL ${formattaDataIT(dataFine)}`,
-                50,
-                295,
-                { align: 'center' }
-            );
-
+        doc.rect(40, 40, 515, 320).lineWidth(3).stroke('#4A90E2');
+        doc.fontSize(22).fillColor('#4A90E2').text('PARCHEGGIO C.L. FONTANAROSSA', 50, 80, { align: 'center' });
+        doc.fontSize(90).fillColor('black').text(p, 50, 140, { align: 'center' });
+        doc.fontSize(24).text(`DAL ${formattaDataIT(dataInizio)} AL ${formattaDataIT(dataFine)}`, 50, 295, { align: 'center' });
         doc.end();
 
     } catch (err) {
-
         console.error('[PRENOTA]', err);
-
-        res.status(500).json({
-            error: "Errore prenotazione"
-        });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -944,67 +804,6 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
   }
 });
 
-// --- DISPONIBILITA GIORNI PER ENTE ---
-app.get('/api/disponibilita/:npass', async (req, res) => {
-  try {
-    const npass = clean(req.params.npass);
-
-    // 1) ente utente da registro_pass
-    const utente = await pool.query(`
-      SELECT ente
-      FROM registro_pass
-      WHERE UPPER(npass) = $1
-      LIMIT 1
-    `, [npass]);
-
-    if (!utente.rows.length) return res.json({});
-
-    const ente = utente.rows[0].ente;
-
-    // 2) posti ente da assegnazioni
-    const cfg = await pool.query(`
-      SELECT posti
-      FROM assegnazioni
-      WHERE ente = $1
-      LIMIT 1
-    `, [ente]);
-
-    const totale = parseInt(cfg.rows[0]?.posti || 0);
-    if (!totale) return res.json({}); // ente non configurato
-
-    // 3) prenotazioni attive per ente
-    const pren = await pool.query(`
-      SELECT generate_series(
-        data_inizio::date,
-        data_fine::date,
-        interval '1 day'
-      )::date AS giorno
-      FROM prenotazioni
-      WHERE ente = $1
-        AND stato IN ('PRENOTATO', 'ENTRATO')
-    `, [ente]);
-
-    const mappa = {};
-    pren.rows.forEach(r => {
-      const g = String(r.giorno).split('T')[0];
-      mappa[g] = (mappa[g] || 0) + 1;
-    });
-
-    const out = {};
-    Object.keys(mappa).forEach(g => {
-      const prenotati = mappa[g];
-      out[g] = { prenotati, liberi: Math.max(totale - prenotati, 0), totale };
-    });
-
-    res.json(out);
-
-  } catch (err) {
-    console.error("ERRORE disponibilità:", err);
-    res.status(500).json({ error: "Errore server disponibilità" });
-  }
-});
-
-//PORTA SERVER//
 app.listen(process.env.PORT || 3000, '0.0.0.0', () => {
     console.log(`Server avviato`);
 });
