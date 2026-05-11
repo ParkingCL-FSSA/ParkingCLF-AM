@@ -309,7 +309,7 @@ if (overlap.rows.length > 0) {
         // CHECK DISPONIBILITA ENTE
         // ---------------------------------------------------
 
-        for (const giorno of giorniRichiesti) {
+        for (const giorno of numGiorni) {
 
     const occupatiEnte = await pool.query(`
         SELECT COUNT(DISTINCT p.npass) as count
