@@ -958,7 +958,7 @@ const npass = req.params.npass.toUpperCase();
     try {     
         const utente = await pool.query(`
             SELECT ente
-            FROM utenti
+            FROM registro_pass
             WHERE UPPER(npass) = $1
             LIMIT 1
         `, [npass]);
