@@ -305,13 +305,10 @@ if (overlap.rows.length > 0) {
             });
         }
 
-        // ---------------------------------------------------
-        // CHECK DISPONIBILITA ENTE
-        // ---------------------------------------------------
-
       // CHECK DISPONIBILITA ENTE
-for (const giorno of sorted) {
+const giorniRichiesti = sorted;
 
+for (const giorno of giorniRichiesti) {
   const occupatiEnte = await pool.query(`
     SELECT COUNT(DISTINCT p.npass) as count
     FROM prenotazioni p
@@ -320,7 +317,7 @@ for (const giorno of sorted) {
       AND $2 BETWEEN p.data_inizio AND p.data_fine
   `, [ente, giorno]);
 
-  const count = parseInt(occupatiEnte.rows[0].count);
+  const count = parseInt(occupatiEnte.rows[0].count || 0);
 
   if (count >= postiEnte) {
     return res.status(400).json({
