@@ -45,11 +45,6 @@ h1::before { content: "🅿️ "; } /* Simbolo Parcheggio */
     transform: scale(1.05);
 }
 
-.day-slot.disabled {
-    pointer-events: none;
-    opacity: 0.5;
-}
-
 button { 
     width: 100%; 
     padding: 15px; 

@@ -1,7 +1,6 @@
 let userPass = ""; let selectedDays = []; 
 let deferredPrompt; let currentPren = null;
 let filtroPiantone = 'attivi'; let ultimoAggiornato = null;
-let disponibilitaGiorni = {};
 // attivi = dentro (default)
 // scaduti = solo scaduti
 // tutti = tutto
@@ -106,7 +105,7 @@ async function doLogin() {
                 .toUpperCase();
     
             if (!userPass) return;
-               
+    
             const res = await fetch('/api/valida-pass', {
                 method: 'POST',
                 headers: {
@@ -146,20 +145,9 @@ async function doLogin() {
         else {
 
             show('view-user');
-            await caricaDisponibilita();
-            try {
-        
-                const resDisp = await fetch(`/api/disponibilita/${userPass}`);
-                disponibilitaGiorni = await resDisp.json();
-                
-                buildCal(); 
-        
-            } catch(e){
-        
-                console.log(e);
-        
-            }
-        
+
+            try { buildCal(); } catch(e){ console.log(e); }
+
         }
 
     } catch (err) {
@@ -178,104 +166,30 @@ async function aggiornaPostiLiberiPiantone() {
      | <b>Dentro: ${dati.dentro}</b>`;
 }
 
-async function caricaDisponibilita() {
-  if (!userPass) return;
-
-  const res = await fetch(`/api/disponibilita/${userPass}`);
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    console.error("Errore disponibilità", data);
-    disponibilitaGiorni = {};
-    buildCal();
-    return;
-  }
-
-  disponibilitaGiorni = data;
-  buildCal();
-}
-
 function buildCal() {
-
     const grid = document.getElementById('cal-grid');
-
-    if (!grid) return;
-
     grid.innerHTML = "";
     selectedDays = [];
-
     let d = new Date();
-
     for (let i = 0; i < 45; i++) {
-
         const iso = d.toISOString().split('T')[0];
-
         const slot = document.createElement('div');
         slot.className = "day-slot";
         slot.innerText = d.toLocaleDateString('it-IT', {
             day: '2-digit',
             month: '2-digit'
         });
-
-        const disp = disponibilitaGiorni?.[iso];
-
-        let liberi = disp?.liberi ?? null;
-
-        if (disp) {
-
-            // 🔴 esaurito
-            if (liberi <= 0) {
-
-                slot.style.background = '#fee2e2';
-                slot.style.color = '#991b1b';
-                slot.style.border = '2px solid #dc2626';
-                slot.style.opacity = '0.6';
-
-                slot.innerHTML += `<br><small>0</small>`;
-                slot.classList.add('disabled');
-
-            }
-
-            // 🟠 pochi
-            else if (liberi <= 3) {
-
-                slot.style.background = '#ffedd5';
-                slot.style.color = '#9a3412';
-                slot.style.border = '2px solid #f97316';
-
-                slot.innerHTML += `<br><small>${liberi}</small>`;
-            }
-
-            // 🟢 ok
-            else {
-
-                slot.innerHTML += `<br><small>${liberi}</small>`;
-            }
-        }
-
-        // ❗ NON BLOCCARE LOOP
-        if (liberi === 0) {
-            slot.addEventListener('click', () => {});
-        } else {
-
-            slot.addEventListener('click', () => {
-
-                slot.classList.toggle('selected');
-
-                if (slot.classList.contains('selected')) {
-
-                    if (!selectedDays.includes(iso)) {
-                        selectedDays.push(iso);
-                    }
-
-                } else {
-
-                    selectedDays = selectedDays.filter(x => x !== iso);
+        slot.addEventListener('click', () => {
+            slot.classList.toggle('selected');
+            if (slot.classList.contains('selected')) {
+                if (!selectedDays.includes(iso)) {
+                    selectedDays.push(iso);
                 }
-            });
-        }
-
+            } else {
+                selectedDays =
+                    selectedDays.filter(x => x !== iso);
+            }
+        });
         grid.appendChild(slot);
         d.setDate(d.getDate() + 1);
     }
@@ -284,107 +198,58 @@ function buildCal() {
 let loadingPrenotazione = false;
 
 async function inviaPren() {
-
-    if (loadingPrenotazione) return;
-
-    const email = document
-        .getElementById('u-email')
-        .value
-        .trim()
-        .toLowerCase();
-
-    // VALIDAZIONI PRIMA DEL LOCK
-    if (email.includes('@') && email.endsWith('.difesa.it')) {
-
-        alert('Inserisci la tua mail privata');
-        return;
-    }
-
-    if (!selectedDays.length || !email) {
-
-        alert("Dati mancanti!");
-        return;
-    }
-
-    if (selectedDays.length > 15) {
-
-        alert("Massimo 15 giorni selezionabili!");
-        return;
-    }
+     if (loadingPrenotazione) return;
 
     loadingPrenotazione = true;
 
     const btn = document.getElementById('btn-prenota');
-
     btn.disabled = true;
 
     try {
+    const email = document.getElementById('u-email').value.trim().toLowerCase();
+    // 🚫 blocco mail difesa
+    if (email.includes('@') && email.endsWith('.difesa.it')) {
+        alert('Inserisci la tua mail privata');
+        return;
+    }
+    if (!selectedDays.length || !email) return alert("Dati mancanti!");
+    if (selectedDays.length > 15) return alert("Massimo 15 giorni selezionabili!");
 
-        const res = await fetch('/api/prenota', {
+   const res = await fetch('/api/prenota', {
 
-            method: 'POST',
+    method: 'POST',
 
-            headers: {
-                'Content-Type': 'application/json'
-            },
+    headers: {
+        'Content-Type': 'application/json'
+    },
 
-            body: JSON.stringify({
-                npass: userPass,
-                giorni: selectedDays,
-                email: email
-            })
+    body: JSON.stringify({
+        npass: userPass,
+        giorni: selectedDays,
+        email: email
+    })
 
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-
-            alert(data.error || "Errore durante la prenotazione.");
-            return;
-        }
-
+});
+    if (res.ok) {
         selectedDays.sort();
+        //const totaleGiorni = selectedDays.length;
+        document.getElementById('summary-details').innerHTML =
+            `<b>Pass:</b> ${userPass}<br><b>Dal:</b> ${fmtData(selectedDays[0])}<br><b>Al:</b> ${fmtData(selectedDays[selectedDays.length - 1])}`;
+        show('view-success');
+        setTimeout(() => {
+            mostraMie();
+        }, 10000);
+    } else {
+        // Gestisci errori di validazione dal server
+        const err = await res.json();
+        alert(err.error || "Errore durante la prenotazione.");
+    }
+} finally {
 
-        document.getElementById('summary-details').innerHTML = `
-            <b>Pass:</b> ${userPass}<br>
-            <b>Dal:</b> ${fmtData(selectedDays[0])}<br>
-            <b>Al:</b> ${fmtData(selectedDays[selectedDays.length - 1])}<br>
-            <b>Totale giorni:</b> ${selectedDays.length}
-        `;
+        loadingPrenotazione = false;
+        btn.disabled = false;
 
-        // RESET SELEZIONE
-       selectedDays = [];
-
-document
-    .querySelectorAll('.day-slot.selected')
-    .forEach(el => el.classList.remove('selected'));
-
-const success = document.getElementById('view-success');
-if (success) show('view-success');
-
-setTimeout(async () => {
-
-    await mostraMie();
-
-    show('view-my-list');
-
-}, 10000);
-
-    } catch (err) {
-
-        console.error(err);
-
-        alert("Errore rete/server");
-
-    } finally {
-
-    loadingPrenotazione = false;
-
-    const btn = document.getElementById('btn-prenota');
-    if (btn) btn.disabled = false;
-
-}
+    }
 }
 
 async function mostraMie() {
@@ -1069,6 +934,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // LOGIN
     document.getElementById('btn-login')?.addEventListener('click', doLogin);
+
     // USER
     document.getElementById('btn-prenota')?.addEventListener('click', inviaPren);
     document.getElementById('btn-mie')?.addEventListener('click', mostraMie);
@@ -1087,9 +953,16 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-ingresso')?.addEventListener('click', () => {
         mossa('E');
     });
-    const success = document.getElementById('view-success');
-        if (success) success.classList.remove('hidden');
+    const btnHomeSuccess = document.getElementById('btn-home-success');
     
+    if (btnHomeSuccess) {
+    
+        btnHomeSuccess.addEventListener('click', () => {
+    
+            location.reload();
+    
+        });
+    }
     document.getElementById('btn-uscita')?.addEventListener('click', () => {
         mossa('U');
     });
