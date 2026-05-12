@@ -127,7 +127,12 @@ app.post('/api/prenota', async (req, res) => {
     const { npass, giorni, email } = req.body;
     const p = clean(npass);
     
-    if (!npass || !email) return res.status(400).json({ error: "Dati mancanti" });
+    if (!npass || !email) return res.status(400).json({ error: "Inserisci la tua email" });
+    if (giorni.length === 1) {
+        return res.status(400).json({ 
+            error: "Per il parcheggio <Lunga Sosta> il minimo di giorni prenotabili sono 2" 
+        });
+    }
     if (!Array.isArray(giorni) || giorni.length === 0) return res.status(400).json({ error: "Giorni non validi" });
     if (giorni.length > 15) return res.status(400).json({ error: "Limite 15 giorni superato" });
 
@@ -315,6 +320,7 @@ app.post('/api/prenota', async (req, res) => {
         doc.rect(40, 40, 515, 320).lineWidth(3).stroke('#4A90E2');
         doc.fontSize(22).fillColor('#4A90E2').text('PARCHEGGIO C.L. FONTANAROSSA', 50, 80, { align: 'center' });
         doc.fontSize(90).fillColor('black').text(p, 50, 140, { align: 'center' });
+        doc.fontSize(28).fillColor('black').text('<LUNGA SOSTA>', 50, 235, { align: 'center' });
         doc.fontSize(24).text(`DAL ${formattaDataIT(dataInizio)} AL ${formattaDataIT(dataFine)}`, 50, 295, { align: 'center' });
         doc.end();
 
