@@ -318,7 +318,7 @@ app.post('/api/prenota', async (req, res) => {
         });
 
         doc.rect(40, 40, 515, 320).lineWidth(3).stroke('#4A90E2');
-        doc.fontSize(22).fillColor('#4A90E2').text('PARCHEGGIO C.L. FONTANAROSSA', 50, 80, { align: 'center' });
+        doc.fontSize(28).fillColor('#4A90E2').text('PARCHEGGIO C.L. FONTANAROSSA', 50, 80, { align: 'center' });
         doc.fontSize(90).fillColor('black').text(p, 50, 140, { align: 'center' });
         doc.fontSize(32).fillColor('black').text('[LUNGA SOSTA]', 50, 235, { align: 'center' });
         doc.fontSize(28).text(`DAL  ${formattaDataIT(dataInizio)}  AL  ${formattaDataIT(dataFine)}`, 50, 295, { align: 'center' });
