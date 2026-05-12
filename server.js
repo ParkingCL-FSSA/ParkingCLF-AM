@@ -294,12 +294,12 @@ app.post('/api/prenota', async (req, res) => {
                 <div style="text-align:center; font-family:sans-serif; border:2px solid #4A90E2; padding:20px; border-radius:15px; max-width:500px; margin:auto;">
                     <img src="${LOGO_URL}" alt="Logo CLF" style="width:130px; margin-bottom:20px;">
                     <h2 style="color:#4A90E2;">Prenotazione Confermata</h2>
-                    <p>Gentile utente <b>${p}</b>, il tuo pass è pronto.</p>
+                    <p>Gentile utente <b>${p}</b>, il tuo pass [Lunga Sosta] è pronto.</p>
                     <div style="background-color:#f4f8ff; padding:10px; border-radius:10px; margin:15px 0;">
                         <p>Dal <b>${formattaDataIT(dataInizio)}</b> al <b>${formattaDataIT(dataFine)}</b></p>
                         <p><b>Giorni totali:</b> ${numGiorni}</p>
                     </div>
-                    <p style="font-size:12px; color:#666;">In allegato il PDF da esporre sul parabrezza.</p>
+                    <p style="font-size:12px; color:#666;">In allegato il PDF da esporre sul parabrezza, unitamente al tuo Pass "Permanente".</p>
                 </div>`;
             await inviaMailBrevoAPI(email, `Il tuo PASS - ${p}`, htmlUtente, pdfData, `PASS_${p}.pdf`);
 
