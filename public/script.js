@@ -209,10 +209,11 @@ async function inviaPren() {
     const email = document.getElementById('u-email').value.trim().toLowerCase();
     // 🚫 blocco mail difesa
     if (email.includes('@') && email.endsWith('.difesa.it')) {
-        alert('Inserisci la tua mail privata');
+        alert('Inserisci la tua mail privata!');
         return;
     }
-    if (!selectedDays.length || !email) return alert("inserisci la tua email!");
+    if (!selectedDays.length <1) return alert("Seleziona almeno 2 giorni");
+    if (!selectedDays.length || !email) return alert("inserisci la tua email!");    
     if (selectedDays.length < 2) {
         return alert("Per il parcheggio <Lunga Sosta> il minimo di giorni prenotabili sono 2");
     }
