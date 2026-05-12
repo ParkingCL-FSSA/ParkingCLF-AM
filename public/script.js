@@ -215,7 +215,10 @@ async function inviaPren() {
     if (!email) { return alert("Inserisci la tua email!"); }
     if (selectedDays.length === 0) { return alert("Seleziona almeno 2 giorni"); }
     if (selectedDays.length === 1) { return alert("Per il parcheggio【Lunga Sosta】il minimo di giorni prenotabili sono 2"); }
-    if (selectedDays.length > 15) { return alert("Massimo 15 giorni selezionabili!"); }
+    if (selectedDays.length > 15) { 
+        resetSelezione();
+        return alert("Massimo 15 giorni selezionabili!"); 
+    }
 
    const res = await fetch('/api/prenota', {
 
@@ -244,6 +247,7 @@ async function inviaPren() {
     } else {
         // Gestisci errori di validazione dal server
         const err = await res.json();
+        resetSelezione();
         alert(err.error || "Errore durante la prenotazione.");
     }
 } finally {
