@@ -39,7 +39,14 @@ function clean(input) {
         .toUpperCase()
         .substring(0, 5);
 }
+function resetSelezione() {
 
+    selectedDays = [];
+
+    document
+        .querySelectorAll('.day-slot.selected')
+        .forEach(el => el.classList.remove('selected'));
+}
 // ⏰ JOB SCADENZA
 async function scadenzaPrenotazioni() {
     try {
