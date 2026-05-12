@@ -212,7 +212,10 @@ async function inviaPren() {
         alert('Inserisci la tua mail privata');
         return;
     }
-    if (!selectedDays.length || !email) return alert("Dati mancanti!");
+    if (!selectedDays.length || !email) return alert("inserisci la tua email!");
+    if (selectedDays.length < 2) {
+        return alert("Per il parcheggio <Lunga Sosta> il minimo di giorni prenotabili sono 2");
+    }
     if (selectedDays.length > 15) return alert("Massimo 15 giorni selezionabili!");
 
    const res = await fetch('/api/prenota', {
