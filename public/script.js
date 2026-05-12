@@ -45,7 +45,14 @@ function fmtData(isoStr) {
     const p = isoStr.toString().split('T')[0].split('-');
     return `${p[2]}/${p[1]}/${p[0]}`;
 }
+function resetSelezione() {
 
+    selectedDays = [];
+
+    document
+        .querySelectorAll('.day-slot.selected')
+        .forEach(el => el.classList.remove('selected'));
+}
 function show(id) {
 
     document
