@@ -20,6 +20,23 @@ window.addEventListener('beforeinstallprompt', (e) => {
         });
     }
 });
+// Quando la pagina si carica...
+window.onload = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Se l'utente è arrivato tramite il QR code con mode=install
+    if (urlParams.get('mode') === 'install') {
+        // Aspettiamo un secondo e poi mostriamo un avviso o evidenziamo il tasto installa
+        setTimeout(() => {
+            const btn = document.getElementById('btnInstalla');
+            if (btn) {
+                btn.style.border = "4px solid #3b82f6"; // Lo rendiamo più visibile
+                alert("Benvenuto! Clicca sul tasto bianco e blu 'INSTALLA APP' per averla sempre sul telefono.");
+            }
+        }, 1500);
+    }
+};
+
 const btnEsci = document.getElementById('btnEsciApp');
 const beepIngresso = new Audio('/beep_i.mp3');
 const beepUscita = new Audio('/beep_u.mp3');
