@@ -943,6 +943,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // USER
     document.getElementById('btn-prenota')?.addEventListener('click', inviaPren);
+    document.getElementById('btn-reset-days')?.addEventListener('click', resetSelezione);
     document.getElementById('btn-mie')?.addEventListener('click', mostraMie);
 
     document.getElementById('btn-back-user')?.addEventListener('click', () => {
