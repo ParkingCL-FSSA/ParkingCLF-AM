@@ -130,7 +130,7 @@ app.post('/api/prenota', async (req, res) => {
     if (!npass || !email) return res.status(400).json({ error: "Inserisci la tua email" });
     if (giorni.length === 1) {
         return res.status(400).json({ 
-            error: "Per il parcheggio <Lunga Sosta> il minimo di giorni prenotabili sono 2" 
+            error: "Per il parcheggio 【Lunga Sosta】 il minimo di giorni prenotabili sono 2" 
         });
     }
     if (!Array.isArray(giorni) || giorni.length === 0) return res.status(400).json({ error: "Giorni non validi" });
@@ -294,7 +294,7 @@ app.post('/api/prenota', async (req, res) => {
                 <div style="text-align:center; font-family:sans-serif; border:2px solid #4A90E2; padding:20px; border-radius:15px; max-width:500px; margin:auto;">
                     <img src="${LOGO_URL}" alt="Logo CLF" style="width:130px; margin-bottom:20px;">
                     <h2 style="color:#4A90E2;">Prenotazione Confermata</h2>
-                    <p>Gentile utente <b>${p}</b>, il tuo pass [Lunga Sosta] è pronto.</p>
+                    <p>Gentile utente <b>${p}</b>, il tuo pass 【Lunga Sosta】 è pronto.</p>
                     <div style="background-color:#f4f8ff; padding:10px; border-radius:10px; margin:15px 0;">
                         <p>Dal <b>${formattaDataIT(dataInizio)}</b> al <b>${formattaDataIT(dataFine)}</b></p>
                         <p><b>Giorni totali:</b> ${numGiorni}</p>
@@ -320,7 +320,7 @@ app.post('/api/prenota', async (req, res) => {
         doc.rect(40, 40, 515, 320).lineWidth(3).stroke('#4A90E2');
         doc.fontSize(22).fillColor('#4A90E2').text('PARCHEGGIO C.L. FONTANAROSSA', 50, 80, { align: 'center' });
         doc.fontSize(90).fillColor('black').text(p, 50, 140, { align: 'center' });
-        doc.fontSize(32).fillColor('black').text('<LUNGA SOSTA>', 50, 235, { align: 'center' });
+        doc.fontSize(32).fillColor('black').text('【LUNGA SOSTA】', 50, 235, { align: 'center' });
         doc.fontSize(28).text(`DAL  ${formattaDataIT(dataInizio)}  AL  ${formattaDataIT(dataFine)}`, 50, 295, { align: 'center' });
         doc.end();
 
