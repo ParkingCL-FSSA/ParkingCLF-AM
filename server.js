@@ -321,7 +321,7 @@ app.post('/api/prenota', async (req, res) => {
                 line-height:1.8;
             ">
                 <p style="margin:0;">
-                    Dal <b>${formattaDataIT(dataInizio)}</b><br>
+                    Dal <b>${formattaDataIT(dataInizio)}</b>
                     al <b>${formattaDataIT(dataFine)}</b>
                 </p>
                 <p style="margin-top:10px;">
