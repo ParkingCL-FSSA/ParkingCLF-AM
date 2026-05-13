@@ -322,8 +322,8 @@ app.post('/api/prenota', async (req, res) => {
             ">
                 <p style="margin:0;">
                     Dal <b>${formattaDataIT(dataInizio)}</b>
-                    al <b>${formattaDataIT(dataFine)}</b>
-                    style="margin-top:10px;"><Br>
+                    al <b>${formattaDataIT(dataFine)}</b></p>
+                   <p style="margin-top:10px;"><Br>
                     <b>Giorni totali:</b> ${numGiorni}
                 </p>
             </div>
