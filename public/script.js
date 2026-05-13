@@ -267,7 +267,7 @@ async function inviaPren() {
         show('view-success');
          setTimeout(() => {
          mostraMie();
-         }, 5000);
+         }, 10000);
     } else {
         // Gestisci errori di validazione dal server
         const err = await res.json();
