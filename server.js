@@ -310,7 +310,8 @@ app.post('/api/prenota', async (req, res) => {
                 Prenotazione Confermata
             </h2>
             <p style="font-size:15px; color:#111827;">
-                Gentile utente <b>${p}</b>,<br>
+                Gentile utente <b>${p}</b>,</p>
+            <P style="margin:0px;">
                 il tuo pass <b>[Lunga Sosta]</b> è pronto.
             </p>
             <div style="
