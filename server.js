@@ -358,14 +358,18 @@ app.post('/api/prenota', async (req, res) => {
         </div>
     </div>
 `;
-
-await inviaMailBrevoAPI(
-    email,
-    `Il tuo PASS - ${p}`,
-    htmlUtente,
-    pdfData,
-    `PASS_${p}.pdf`
-);
+await inviaMailBrevoAPI(email,`Il tuo PASS - ${p}`, htmlUtente, pdfData, `PASS_${p}.pdf`);
+            
+         const htmlAdmin = `
+                <div style="text-align:center; font-family:sans-serif; border:1px solid #ddd; padding:20px; border-radius:10px; max-width:400px; margin:auto;">
+                    <img src="${LOGO_URL}" alt="Logo CLF" style="width:90px; margin-bottom:15px;">
+                    <h3 style="color:#333;">🔔 Nuova Prenotazione</h3>
+                    <p><b>Pass:</b> ${p}</p>
+                    <p><b>Email:</b> ${email}</p>
+                    <p><b>Periodo:</b> ${formattaDataIT(dataInizio)} - ${formattaDataIT(dataFine)}</p>
+                    <p><b>Giorni:</b> ${numGiorni}</p>
+                </div>`;
+            await inviaMailBrevoAPI("parkingclf.am@gmail.com", `Nuova Prenotazione: ${p}`, htmlAdmin);
             res.json({ success: true });
         });
 
