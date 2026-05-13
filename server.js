@@ -290,30 +290,85 @@ app.post('/api/prenota', async (req, res) => {
         doc.on('end', async () => {
             const pdfData = Buffer.concat(buffers);
 
-            const htmlUtente = `
-                <div style="text-align:center; font-family:sans-serif; border:2px solid #4A90E2; padding:20px; border-radius:15px; max-width:500px; margin:auto;">
-                    <img src="${LOGO_URL}" alt="Logo CLF" style="width:130px; margin-bottom:20px;">
-                    <h2 style="color:#4A90E2;">Prenotazione Confermata</h2>
-                    <p>Gentile utente <b>${p}</b>, il tuo pass [Lunga Sosta] è pronto.</p>
-                    <div style="background-color:#f4f8ff; padding:10px; border-radius:10px; margin:15px 0;">
-                        <p>Dal <b>${formattaDataIT(dataInizio)}</b> al <b>${formattaDataIT(dataFine)}</b></p>
-                        <p><b>Giorni totali:</b> ${numGiorni}</p>
-                    </div>
-                    <p style="font-size:12px; color:#666;">In allegato il PDF da esporre sul parabrezza, unitamente al tuo Pass "Permanente".</p>
-                </div>`;
-            await inviaMailBrevoAPI(email, `Il tuo PASS - ${p}`, htmlUtente, pdfData, `PASS_${p}.pdf`);
+           const htmlUtente = `
+    <div style="font-family:sans-serif; max-width:520px; margin:auto;">
 
-            const htmlAdmin = `
-                <div style="text-align:center; font-family:sans-serif; border:1px solid #ddd; padding:20px; border-radius:10px; max-width:400px; margin:auto;">
-                    <img src="${LOGO_URL}" alt="Logo CLF" style="width:90px; margin-bottom:15px;">
-                    <h3 style="color:#333;">🔔 Nuova Prenotazione</h3>
-                    <p><b>Pass:</b> ${p}</p>
-                    <p><b>Email:</b> ${email}</p>
-                    <p><b>Periodo:</b> ${formattaDataIT(dataInizio)} - ${formattaDataIT(dataFine)}</p>
-                    <p><b>Giorni:</b> ${numGiorni}</p>
-                </div>`;
-            await inviaMailBrevoAPI("parkingclf.am@gmail.com", `Nuova Prenotazione: ${p}`, htmlAdmin);
+        <!-- BOX PRINCIPALE -->
+        <div style="
+            text-align:center;
+            border:2px solid #4A90E2;
+            padding:20px;
+            border-radius:15px;
+            background:#ffffff;
+        ">
+            <img 
+                src="${LOGO_URL}" 
+                alt="Logo CLF" 
+                style="width:130px; margin-bottom:20px;"
+            >
+            <h2 style="color:#4A90E2; margin-bottom:10px;">
+                Prenotazione Confermata
+            </h2>
+            <p style="font-size:15px; color:#111827;">
+                Gentile utente <b>${p}</b>,<br>
+                il tuo pass <b>[Lunga Sosta]</b> è pronto.
+            </p>
+            <div style="
+                background-color:#f4f8ff;
+                padding:14px;
+                border-radius:12px;
+                margin:20px 0;
+                line-height:1.8;
+            ">
+                <p style="margin:0;">
+                    Dal <b>${formattaDataIT(dataInizio)}</b><br>
+                    al <b>${formattaDataIT(dataFine)}</b>
+                </p>
+                <p style="margin-top:10px;">
+                    <b>Giorni totali:</b> ${numGiorni}
+                </p>
+            </div>
+            <p style="
+                font-size:12px;
+                color:#666;
+                line-height:1.6;
+                margin-top:15px;
+            ">
+                In allegato trovi il PDF da esporre sul parabrezza,
+                unitamente al tuo Pass “Permanente”.
+            </p>
 
+        </div>
+
+        <!-- GDPR FUORI DAL BOX -->
+        <div style="
+            margin-top:16px;
+            padding:14px;
+            background:#f0fdf4;
+            border:1px solid #86efac;
+            border-radius:12px;
+            font-size:11px;
+            color:#166534;
+            line-height:1.7;
+            text-align:justify;
+        ">
+            🛡️ <strong>Privacy & Sicurezza (GDPR)</strong><br><br>
+            Usiamo la tua email esclusivamente per l’invio del ticket
+            tramite infrastrutture sicure (Brevo & Google).
+            <br><br>
+            Il dato non viene archiviato per scopi pubblicitari
+            e sarà cancellato automaticamente al termine della tua sosta.
+        </div>
+    </div>
+`;
+
+await inviaMailBrevoAPI(
+    email,
+    `Il tuo PASS - ${p}`,
+    htmlUtente,
+    pdfData,
+    `PASS_${p}.pdf`
+);
             res.json({ success: true });
         });
 
