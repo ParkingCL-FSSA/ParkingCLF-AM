@@ -320,12 +320,10 @@ app.post('/api/prenota', async (req, res) => {
                 margin:20px 0;
                 line-height:1.8;
             ">
-                <p style="margin:0;">
-                    Dal <b>${formattaDataIT(dataInizio)}</b>
-                    al <b>${formattaDataIT(dataFine)}</b></p>
-                   <p style="margin-top:10px;"><Br>
-                    <b>Giorni totali:</b> ${numGiorni}
-                </p>
+                <p style="margin:0; line-height:1.8;">
+    Dal <b>${formattaDataIT(dataInizio)}</b>
+    al <b>${formattaDataIT(dataFine)}</b><br>
+    <b>Giorni totali:</b> ${numGiorni}</p>
             </div>
             <p style="
                 font-size:12px;
