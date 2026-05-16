@@ -410,7 +410,14 @@ async function eliminaPren(id) {
 }
 
 async function cercaPass() {
-    const p = document.getElementById('search-p').value.trim().toUpperCase();
+    async function cercaPass(passManuale = null) {
+
+    const p = (
+        passManuale ||
+        document.getElementById('search-p').value
+    )
+    .trim()
+    .toUpperCase();
     if (!p) return;
     const res = await fetch(`/api/piantone/cerca/${p}?auth=${userPass}&view=${filtroPiantone}`);
     const data = await res.json();
@@ -723,16 +730,20 @@ async function apriPass(pass) {
 
     document.getElementById('search-p').value = pass;
 
-    await cercaPass();
+    await cercaPass(pass);
 
-    document
-        .getElementById('panel-piantone')
-        ?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-        });
+    setTimeout(() => {
+
+        document
+            .getElementById('panel-piantone')
+            ?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+
+    }, 100);
 }
-
+    
 let loadingAzione = false;
 
 async function mossa(tipo) {
