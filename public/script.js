@@ -481,22 +481,6 @@ async function cercaPass(passManuale = null) {
     }
 }
 
-function apriPass(npass) {
-
-    // compila automaticamente il campo ricerca
-    document.getElementById('search-p').value = npass;
-
-    // esegue la ricerca
-    cercaPass(npass);
-
-    // scroll automatico al pannello
-    document
-        .getElementById('panel-piantone')
-        ?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-        });
-}
 // FIX: tabella a 4 colonne (PASS | Data Accesso | Ora Ingresso | Data e Ora Uscita)
 // con gestione null su orario_ingresso e orario_uscita
 
