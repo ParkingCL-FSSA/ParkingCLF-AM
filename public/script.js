@@ -664,7 +664,28 @@ async function aggiornaVeicoli() {
         
         const evidenzia =
             x.npass === ultimoAggiornato;
+        
+    document.querySelectorAll('.click-pass').forEach(el => {
 
+    el.addEventListener('click', async () => {
+
+        const pass = el.dataset.pass;
+
+        document.getElementById('search-p').value = pass;
+
+        await cercaPass();
+
+        // scroll automatico pannello mobile
+        document
+            .getElementById('panel-piantone')
+            ?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+
+    });
+
+});
            return `<tr style="
         ${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
         ${uscitoScaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
@@ -672,10 +693,17 @@ async function aggiornaVeicoli() {
         ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
     ">
 
-            <td style="font-weight:bold;">
-                ${x.npass}
-            </td>
-
+        <td
+        class="click-pass"
+        data-pass="${x.npass}"
+        style="
+        font-weight:bold;
+        cursor:pointer;
+        color:#2563eb;
+        text-decoration:underline;
+    ">
+    ${x.npass}
+     </td>
             <td>
                 ${dataIng}
             </td>
@@ -707,7 +735,6 @@ async function aggiornaVeicoli() {
         </tr>
     `;
 }
-
 
 let loadingAzione = false;
 
