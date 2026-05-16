@@ -692,18 +692,23 @@ async function aggiornaVeicoli() {
         ${storico ? 'background:#f1f5f9;' : ''}
         ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
     ">
-
-        <td
+        <td>
+    <button
         class="click-pass"
         data-pass="${x.npass}"
         style="
-        font-weight:bold;
-        cursor:pointer;
-        color:#2563eb;
-        text-decoration:underline;
-    ">
-    ${x.npass}
-     </td>
+            border:none;
+            background:none;
+            color:#2563eb;
+            font-weight:bold;
+            cursor:pointer;
+            text-decoration:underline;
+            font-size:16px;
+            padding:4px 8px;
+        ">
+        ${x.npass}
+    </button>
+</td>
             <td>
                 ${dataIng}
             </td>
