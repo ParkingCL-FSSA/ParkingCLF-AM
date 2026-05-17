@@ -278,7 +278,6 @@ async function inviaPren() {
 
         loadingPrenotazione = false;
         btn.disabled = false;
-
     }
 }
 
