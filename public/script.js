@@ -1,6 +1,7 @@
 let userPass = ""; let selectedDays = []; 
 let deferredPrompt; let currentPren = null;
-let filtroPiantone = 'attivi'; let ultimoAggiornato = null;
+let filtroPiantone = 'attivi'; let totaleScaduti = 0;
+let ultimoAggiornato = null;
 // attivi = dentro (default)
 // scaduti = solo scaduti
 // tutti = tutto
@@ -87,16 +88,27 @@ function toggleScaduti() {
 
     if (filtroPiantone === 'attivi') {
 
-        filtroPiantone = 'scaduti';
+        // se ci sono scaduti → vai a SCADUTI
+        if (totaleScaduti > 0) {
+
+            filtroPiantone = 'scaduti';
+
+        } else {
+
+            filtroPiantone = 'tutti';
+        }
     }
+
     else if (filtroPiantone === 'scaduti') {
 
         filtroPiantone = 'tutti';
     }
+
     else if (filtroPiantone === 'tutti') {
 
         filtroPiantone = 'storico';
     }
+
     else {
 
         filtroPiantone = 'attivi';
@@ -108,14 +120,17 @@ function toggleScaduti() {
 
         btn.innerText = "Mostra scaduti";
     }
+
     else if (filtroPiantone === 'scaduti') {
 
         btn.innerText = "Mostra tutti";
     }
+
     else if (filtroPiantone === 'tutti') {
 
         btn.innerText = "Mostra storico";
     }
+
     else {
 
         btn.innerText = "Mostra attivi";
@@ -577,6 +592,8 @@ dati.forEach(x => {
     if (dentro) countDentro++;
     if (prenotatoOggi) countPrenotati++;
     if (scaduto) countScaduti++;
+    
+    totaleScaduti = countScaduti;
 });
         let label = "";
         let colore = "#334155";
