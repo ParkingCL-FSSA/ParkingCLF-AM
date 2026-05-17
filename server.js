@@ -832,25 +832,37 @@ app.get('/api/piantone/storico', async (req, res) => {
 
 // --- PIANTONE ARRIVI OGGI ---
 app.get('/api/piantone/arrivi-oggi', async (req, res) => {
+
   try {
+
     const r = await pool.query(`
+
       SELECT DISTINCT ON (UPPER(p.npass))
+
         UPPER(p.npass) AS npass,
         r.ente,
-        CASE
-          WHEN p.stato = 'ENTRATO' THEN 'ENTRATO'
-          WHEN CURRENT_DATE > p.data_fine THEN 'SCADUTO'
-          ELSE 'PRENOTATO'
-        END AS stato
+        'PRENOTATO' AS stato
+
       FROM prenotazioni p
+
       LEFT JOIN registro_pass r
         ON UPPER(p.npass) = UPPER(r.npass)
-      WHERE CURRENT_DATE BETWEEN p.data_inizio AND p.data_fine
-      ORDER BY UPPER(p.npass), p.data_inizio DESC, p.id DESC
+
+      WHERE
+        CURRENT_DATE BETWEEN p.data_inizio AND p.data_fine
+        AND p.stato = 'PRENOTATO'
+
+      ORDER BY
+        UPPER(p.npass),
+        p.data_inizio DESC,
+        p.id DESC
+
     `);
 
     res.json(r.rows);
+
   } catch (e) {
+
     console.error(e);
     res.status(500).json({ error: 'Errore server' });
   }
