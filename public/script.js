@@ -1,7 +1,7 @@
 let userPass = ""; let selectedDays = []; 
 let deferredPrompt; let currentPren = null;
 let filtroPiantone = 'attivi'; let totaleScaduti = 0;
-let ultimoAggiornato = null;
+let ultimoAggiornato = null;let totaleVerificare = 0;
 // attivi = dentro (default)
 // scaduti = solo scaduti
 // tutti = tutto
@@ -86,12 +86,36 @@ function show(id) {
 
 function toggleScaduti() {
 
+    // ATTIVI
     if (filtroPiantone === 'attivi') {
 
-        // se ci sono scaduti → vai a SCADUTI
+        // priorità:
+        // 1) scaduti mai entrati
+        // 2) da verificare
+        // 3) tutti
+
         if (totaleScaduti > 0) {
 
             filtroPiantone = 'scaduti';
+
+        } 
+        else if (totaleVerificare > 0) {
+
+            filtroPiantone = 'verificare';
+
+        } 
+        else {
+
+            filtroPiantone = 'tutti';
+        }
+    }
+
+    // SCADUTI
+    else if (filtroPiantone === 'scaduti') {
+
+        if (totaleVerificare > 0) {
+
+            filtroPiantone = 'verificare';
 
         } else {
 
@@ -99,16 +123,19 @@ function toggleScaduti() {
         }
     }
 
-    else if (filtroPiantone === 'scaduti') {
+    // DA VERIFICARE
+    else if (filtroPiantone === 'verificare') {
 
         filtroPiantone = 'tutti';
     }
 
+    // TUTTI
     else if (filtroPiantone === 'tutti') {
 
         filtroPiantone = 'storico';
     }
 
+    // STORICO
     else {
 
         filtroPiantone = 'attivi';
@@ -116,12 +143,38 @@ function toggleScaduti() {
 
     const btn = document.getElementById('btn-filtro');
 
+    // TESTO PULSANTE
     if (filtroPiantone === 'attivi') {
 
-        btn.innerText = totaleScaduti > 0 ? "Mostra scaduti" : "Mostra tutti";
+        if (totaleScaduti > 0) {
+
+            btn.innerText = "Mostra scaduti";
+
+        } 
+        else if (totaleVerificare > 0) {
+
+            btn.innerText = "Mostra verificare";
+
+        } 
+        else {
+
+            btn.innerText = "Mostra tutti";
+        }
     }
 
     else if (filtroPiantone === 'scaduti') {
+
+        if (totaleVerificare > 0) {
+
+            btn.innerText = "Mostra verificare";
+
+        } else {
+
+            btn.innerText = "Mostra tutti";
+        }
+    }
+
+    else if (filtroPiantone === 'verificare') {
 
         btn.innerText = "Mostra tutti";
     }
@@ -587,23 +640,24 @@ dati.forEach(x => {
         oggi <= x.data_fine;
 
     const dentro =
-        x.stato === 'ENTRATO';
+        x.stato === 'ENTRATO' ||
+        x.stato === 'DA_VERIFICARE';
 
-   const scaduto =
-    x.stato === 'SCADUTO' ||
-    (
-        x.stato === 'ENTRATO' &&
-        oggi > x.data_fine
-    );
+    const maiEntrato =
+        x.stato === 'MAI_ENTRATO';
+    
+    const daVerificare =
+        x.stato === 'DA_VERIFICARE';
 
     if (dentro) countDentro++;
     if (prenotatoOggi) countPrenotati++;
     if (scaduto) countScaduti++;
     
     totaleScaduti = countScaduti;
-
+    totaleVerificare = countVerificare;
+    
     const daVerificare =
-    x.stato === 'DA_VERIFICARE';
+        x.stato === 'DA_VERIFICARE';
     if (daVerificare) countVerificare++;
 });
         let label = "";
@@ -678,7 +732,7 @@ if (elScaduti && countScaduti > 0) {
     elScaduti.style.color = '#ef4444';
 }
 
-    // FILTRI
+ // FILTRI
 const lista = dati
     .filter(x => {
 
@@ -687,39 +741,37 @@ const lista = dati
             oggi >= x.data_inizio &&
             oggi <= x.data_fine;
 
-        const scaduto =
-            x.stato === 'SCADUTO' ||
-            (
-                x.stato === 'ENTRATO' &&
-                oggi > x.data_fine
-            );
+        const maiEntrato =
+            x.stato === 'MAI_ENTRATO';
+
         const daVerificare =
             x.stato === 'DA_VERIFICARE';
-        
+
         const dentro =
             prenotatoOggi ||
-            x.stato === 'ENTRATO';
+            x.stato === 'ENTRATO' ||
+            x.stato === 'DA_VERIFICARE';
 
         // ATTIVI
         if (filtroPiantone === 'attivi')
-            return dentro && !scaduto;
+            return dentro;
 
         // SCADUTI
         if (filtroPiantone === 'scaduti')
-            return scaduto;
+            return maiEntrato;
+
+        // DA VERIFICARE
+        if (filtroPiantone === 'verificare')
+            return daVerificare;
 
         // STORICO
         if (filtroPiantone === 'storico')
             return x.stato === 'USCITO';
 
-        // VERIFICARE
-        if (filtroPiantone === 'scaduti')
-            return scaduto || daVerificare;
-
         // TUTTI
         return true;
     })
-
+    
     .sort((a, b) => {
 
     const prenA =
@@ -755,7 +807,7 @@ const lista = dati
     // ⏰ SCADUTI subito sotto
     if (scadA && !scadB) return -1;
     if (!scadA && scadB) return 1;
-
+        
     // resto dal più recente
     return new Date(b.data_inserimento || 0)
         - new Date(a.data_inserimento || 0);
@@ -794,12 +846,11 @@ const lista = dati
             })
             : '';
 
-        const scaduto =
-            x.stato === 'SCADUTO' ||
-            (
-                x.stato === 'ENTRATO' &&
-                oggi > x.data_fine
-            );
+        const maiEntrato =
+            x.stato === 'MAI_ENTRATO';
+        
+        const daVerificare =
+            x.stato === 'DA_VERIFICARE';
 
         const storico =
             x.stato === 'USCITO';
@@ -820,6 +871,8 @@ const lista = dati
         ${storico ? 'background:#f1f5f9;' : ''}
         ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
         ${verificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
+        ${daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
+        ${maiEntrato ? 'background:#fee2e2; color:#991b1b;' : ''}
     ">
 <td>
     <button
