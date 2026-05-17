@@ -546,25 +546,21 @@ let countScaduti = 0;
 
 dati.forEach(x => {
 
-    const dentro =
-        x.stato === 'ENTRATO';
-
     const prenotatoOggi =
         x.stato === 'PRENOTATO' &&
         oggi >= x.data_inizio &&
         oggi <= x.data_fine;
+
+    const dentro =
+        x.stato === 'ENTRATO';
 
     const scaduto =
         x.stato === 'ENTRATO' &&
         oggi > x.data_fine;
 
     if (dentro) countDentro++;
-
-    if (prenotatoOggi)
-        countPrenotati++;
-
-    if (scaduto)
-        countScaduti++;
+    if (prenotatoOggi) countPrenotati++;
+    if (scaduto) countScaduti++;
 });
         let label = "";
         let colore = "#334155";
