@@ -51,10 +51,11 @@ async function scadenzaPrenotazioni() {
 
             SET stato = CASE
 
-                -- prenotato mai entrato
+                -- prenotazione mai usata
                 WHEN stato = 'PRENOTATO'
                      AND data_fine < CURRENT_DATE
-                THEN 'SCADUTO'
+                     AND orario_ingresso IS NULL
+                THEN 'MAI_ENTRATO'
 
                 -- entrato ma mai uscito
                 WHEN stato = 'ENTRATO'
@@ -98,6 +99,7 @@ async function scadenzaPrenotazioni() {
         );
     }
 }
+
 async function verificaRuolo(npass, ruoloRichiesto) {
     if (!npass) return false;
     const result = await pool.query(
@@ -529,13 +531,13 @@ app.get('/api/veicoli-dentro', async (req, res) => {
 
             FROM prenotazioni
 
-           WHERE stato IN (
-            'PRENOTATO',
-            'ENTRATO',
-            'USCITO',
-            'SCADUTO',
-            'DA_VERIFICARE'
-        )
+            WHERE stato IN (
+                'PRENOTATO',
+                'ENTRATO',
+                'USCITO',
+                'DA_VERIFICARE',
+                'MAI_ENTRATO'
+            )
 
             ORDER BY
                 data_inserimento DESC,
