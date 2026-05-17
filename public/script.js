@@ -410,8 +410,15 @@ async function eliminaPren(id) {
 }
 
 async function cercaPass(passManuale = null) {
+async function cercaPass(passManuale = null) {
 
     const input = document.getElementById('search-p');
+
+    if (!input) {
+        alert("Campo ricerca non trovato");
+        return;
+    }
+
     const p = (
         passManuale ||
         input.value
@@ -424,11 +431,13 @@ async function cercaPass(passManuale = null) {
 
     if (!p) return;
 
-    const res = await fetch(
-        `/api/piantone/cerca/${encodeURIComponent(p)}?auth=${userPass}&view=${filtroPiantone}`
-    );
+    try {
 
-    const data = await res.json();
+        const res = await fetch(
+            `/api/piantone/cerca/${encodeURIComponent(p)}?auth=${userPass}&view=${filtroPiantone}`
+        );
+
+        const data = await res.json();
 
     if (data.trovato) {
         currentPren = data.prenotazione;
