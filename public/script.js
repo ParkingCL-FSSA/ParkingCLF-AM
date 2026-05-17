@@ -729,7 +729,8 @@ async function aggiornaVeicoli() {
     ">
 <td>
     <button
-        onclick="apriPass('${x.npass}')"
+        class="btn-pass"
+        data-pass="${x.npass}"
         type="button"
         style="
             border:none;
