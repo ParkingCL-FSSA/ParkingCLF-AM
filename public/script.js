@@ -807,25 +807,20 @@ const lista = dati
                 minute: '2-digit'
             })
             : '';
-
-        const maiEntrato =
-            x.stato === 'MAI_ENTRATO';
-        
-        const daVerificare =
-            x.stato === 'DA_VERIFICARE';
-
-        const storico =
-            x.stato === 'USCITO';
-        
-        const uscitoScaduto =
-            x.stato === 'USCITO' &&
-            x.data_fine < oggi;
         
         const evidenzia =
             x.npass === ultimoAggiornato;
         
-        const verificare =
-            x.stato === 'DA_VERIFICARE';
+        const scaduto =
+            (x.stato === 'PRENOTATO' && oggi > x.data_fine) ||
+            x.stato === 'MAI_ENTRATO';
+
+        const daVerificare = x.stato === 'DA_VERIFICARE';
+        const maiEntrato = x.stato === 'MAI_ENTRATO';
+        const storico = x.stato === 'USCITO';
+        const uscitoScaduto =
+            x.stato === 'USCITO' &&
+            x.data_fine < oggi;
         
            return `<tr style="
         ${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
