@@ -730,89 +730,51 @@ if (elScaduti && countScaduti > 0) {
 }
 
  // FILTRI
-const lista = dati.filter(x => {
+const lista = dati
+    .filter(x => {
+        const oggi = new Date().toISOString().split('T')[0];
 
-    const oggi = new Date().toISOString().split('T')[0];
+        const prenotatoOggi =
+            x.stato === 'PRENOTATO' &&
+            oggi >= x.data_inizio &&
+            oggi <= x.data_fine;
 
-    const prenotatoOggi =
-        x.stato === 'PRENOTATO' &&
-        oggi >= x.data_inizio &&
-        oggi <= x.data_fine;
+        const dentro = x.stato === 'ENTRATO';
+        const daVerificare = x.stato === 'DA_VERIFICARE';
+        const scaduto =
+            (x.stato === 'PRENOTATO' && oggi > x.data_fine) ||
+            x.stato === 'MAI_ENTRATO';
 
-    const dentro =
-        x.stato === 'ENTRATO';
+        if (filtroPiantone === 'attivi')
+            return dentro || prenotatoOggi;
 
-    const daVerificare =
-        x.stato === 'DA_VERIFICARE';
+        if (filtroPiantone === 'scaduti')
+            return scaduto;
 
-    const maiEntrato =
-        x.stato === 'MAI_ENTRATO';
+        if (filtroPiantone === 'verificare')
+            return daVerificare;
 
-    const scaduto =
-        (x.stato === 'PRENOTATO' && oggi > x.data_fine) ||
-        x.stato === 'MAI_ENTRATO';
+        if (filtroPiantone === 'storico')
+            return x.stato === 'USCITO';
 
-    // 🔵 ATTIVI
-    if (filtroPiantone === 'attivi')
-        return dentro || prenotatoOggi;
-
-    // 🔴 SCADUTI (solo chi NON è mai entrato + prenotazione finita)
-    if (filtroPiantone === 'scaduti')
-        return scaduto;
-
-    // 🟠 DA VERIFICARE
-    if (filtroPiantone === 'verificare')
-        return daVerificare;
-
-    // 🕘 STORICO
-    if (filtroPiantone === 'storico')
-        return x.stato === 'USCITO';
-
-    // 📋 TUTTI
-    return true;
-});
-    
+        return true;
+    })
     .sort((a, b) => {
 
-    const prenA =
-        a.stato === 'PRENOTATO';
+        const prenA = a.stato === 'PRENOTATO';
+        const prenB = b.stato === 'PRENOTATO';
 
-    const prenB =
-        b.stato === 'PRENOTATO';
+        if (prenA && prenB) {
+            return new Date(a.data_inizio) - new Date(b.data_inizio);
+        }
 
-    // 📅 PRENOTATI in alto ordinati per data_inizio
-    if (prenA && prenB) {
+        if (prenA && !prenB) return -1;
+        if (!prenA && prenB) return 1;
 
-        return new Date(a.data_inizio)
-            - new Date(b.data_inizio);
-    }
-
-    if (prenA && !prenB) return -1;
-    if (!prenA && prenB) return 1;
-
-    const scadA =
-        a.stato === 'SCADUTO' ||
-        (
-            a.stato === 'ENTRATO' &&
-            oggi > a.data_fine
-        );
-
-    const scadB =
-        b.stato === 'SCADUTO' ||
-        (
-            b.stato === 'ENTRATO' &&
-            oggi > b.data_fine
-        );
-
-    // ⏰ SCADUTI subito sotto
-    if (scadA && !scadB) return -1;
-    if (!scadA && scadB) return 1;
-        
-    // resto dal più recente
-    return new Date(b.data_inserimento || 0)
-        - new Date(a.data_inserimento || 0);
+        return new Date(b.data_inserimento || 0) -
+               new Date(a.data_inserimento || 0);
     });
-
+    
     // RENDER
     document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
 
@@ -1218,8 +1180,7 @@ window.addEventListener('DOMContentLoaded', () => {
 // PIANTONE
 
 const inputSearch = document.getElementById('search-p');
-document.getElementById('btn-cerca')
-?.addEventListener('click', () => {
+document.getElementById('btn-cerca')?.addEventListener('click', () => {
     cercaPass();
 
 });
@@ -1240,10 +1201,7 @@ document.getElementById('btn-reset-search')
 
     currentPren = null;
 
-    document
-        .getElementById('panel-piantone')
-        ?.classList
-        .add('hidden');
+    document.getElementById('panel-piantone')?.classList.add('hidden');
 
 });
 document.getElementById('btn-non-presente')
