@@ -440,53 +440,56 @@ async function cercaPass(passManuale = null) {
         if (data.trovato) {
 
             currentPren = data.prenotazione;
+            
+            if (!currentPren) {
+            
+                alert("Prenotazione non trovata");
+            
+                return;
+            }
 
             const btnEntrata = document.getElementById('btn-ingresso');
             const btnUscita = document.getElementById('btn-uscita');
 
-            // RESET
-            btnEntrata.disabled = false;
-            btnUscita.disabled = false;
-
-            // LOGICA STATI
+           // RESET
+            btnEntrata.disabled = true;
+            btnUscita.disabled = true;
+            
+            // PRENOTATO
             if (
-                currentPren.stato === 'PRENOTATO' ||
-                !currentPren.orario_ingresso
+                currentPren.stato === 'PRENOTATO'
             ) {
+            
                 btnEntrata.disabled = false;
-                btnUscita.disabled = true;
             }
-
-            if (currentPren.stato === 'ENTRATO') {
-                btnEntrata.disabled = true;
+            
+            // ENTRATO
+            else if (
+                currentPren.stato === 'ENTRATO'
+            ) {
+            
                 btnUscita.disabled = false;
             }
-
-            // COLORI DINAMICI
-            const oggi = new Date().toISOString().split('T')[0];
-
-            const scaduto =
-                x.stato === 'SCADUTO' ||
-                (
-                    x.stato === 'ENTRATO' &&
-                    oggi > x.data_fine
-                );
-
-            if (scaduto) {
-
-                btnEntrata.style.background = '#9ca3af';
+            
+            // SCADUTO
+            else if (
+                currentPren.stato === 'SCADUTO'
+            ) {
+            
+                btnUscita.disabled = false;
+            
                 btnUscita.style.background = '#ef4444';
                 btnUscita.innerText = 'USCITA (SCADUTO)';
-
-                btnUscita.disabled = false;
-
-            } else {
-
-                btnEntrata.style.background = '';
-                btnUscita.style.background = '';
-                btnUscita.innerText = 'USCITA';
             }
-
+            
+            // USCITO
+            else if (
+                currentPren.stato === 'USCITO'
+            ) {
+            
+                btnEntrata.disabled = true;
+                btnUscita.disabled = true;
+            }
             // UI
             document
                 .getElementById('panel-piantone')
