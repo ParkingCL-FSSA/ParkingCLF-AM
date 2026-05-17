@@ -827,7 +827,6 @@ const lista = dati
         ${uscitoScaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
         ${storico ? 'background:#f1f5f9;' : ''}
         ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
-        ${verificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
         ${daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
         ${maiEntrato ? 'background:#fee2e2; color:#991b1b;' : ''}
     ">
