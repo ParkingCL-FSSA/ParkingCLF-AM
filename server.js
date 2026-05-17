@@ -42,25 +42,54 @@ function clean(input) {
 
 // ⏰ JOB SCADENZA
 async function scadenzaPrenotazioni() {
+
     try {
-        const result = await pool.query(
-            `UPDATE prenotazioni SET stato = 'SCADUTO'
-             WHERE stato = 'PRENOTATO' AND data_fine < CURRENT_DATE`
-        );
-        if (result.rowCount > 0)
-            console.log(`[SCADENZA] ${result.rowCount} prenotazione/i scaduta/e.`);
+
+        const result = await pool.query(`
+
+            UPDATE prenotazioni
+
+            SET stato = 'SCADUTO'
+
+            WHERE
+
+                (
+                    stato = 'PRENOTATO'
+                    AND data_fine < CURRENT_DATE
+                )
+
+                OR
+
+                (
+                    stato = 'ENTRATO'
+                    AND data_fine < CURRENT_DATE
+                    AND orario_uscita IS NULL
+                )
+
+        `);
+
+        if (result.rowCount > 0) {
+
+            console.log(
+                `[SCADENZA] ${result.rowCount} prenotazioni aggiornate`
+            );
+        }
+
     } catch (err) {
-        console.error('[SCADENZA] Errore:', err.message);
+
+        console.error(
+            '[SCADENZA] Errore:',
+            err.message
+        );
     }
 }
-scadenzaPrenotazioni();
-setInterval(scadenzaPrenotazioni, 60 * 60 * 1000);
 
-const formattaDataIT = (data) => {
-    return new Date(data).toLocaleDateString('it-IT', {
-        day: '2-digit', month: '2-digit', year: 'numeric'
-    });
-};
+scadenzaPrenotazioni();
+
+setInterval(
+    scadenzaPrenotazioni,
+    60 * 60 * 1000
+);
 
 async function verificaRuolo(npass, ruoloRichiesto) {
     if (!npass) return false;
@@ -539,50 +568,55 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
 
         let whereFiltro = "";
 
-        // ATTIVI
-        if (view === 'attivi') {
-
-           whereFiltro = `
-                    AND (
-                        stato = 'ENTRATO'
-                        OR (
-                            stato = 'SCADUTO'
-                            AND orario_uscita IS NULL
-                        )
-                    )
-                `;
-        }
-
-        // SCADUTI
-        else if (view === 'scaduti') {
-
-            whereFiltro = `
-                AND stato = 'ENTRATO'
-                AND CURRENT_DATE > data_fine
-            `;
-        }
-
-        // STORICO
-        else if (view === 'storico') {
-
-            whereFiltro = `
-                AND stato = 'USCITO'
-            `;
-        }
-
-        // TUTTI
-        else {
-
-            whereFiltro = `
-                AND stato IN (
-                    'PRENOTATO',
-                    'ENTRATO',
-                    'USCITO',
-                    'SCADUTO'
+    // ATTIVI = dentro OR prenotati validi oggi
+    if (view === 'attivi') {
+    
+        whereFiltro = `
+            AND (
+                (
+                    stato = 'PRENOTATO'
+                    AND CURRENT_DATE BETWEEN data_inizio AND data_fine
                 )
-            `;
-        }
-
+                OR stato = 'ENTRATO'
+            )
+        `;
+    }
+    
+   // SCADUTI
+    else if (view === 'scaduti') {
+    
+        whereFiltro = `
+            AND (
+                stato = 'SCADUTO'
+                OR (
+                    stato = 'ENTRATO'
+                    AND CURRENT_DATE > data_fine
+                    AND orario_uscita IS NULL
+                )
+            )
+        `;
+    }
+    
+    // STORICO = usciti
+    else if (view === 'storico') {
+    
+        whereFiltro = `
+            AND stato = 'USCITO'
+        `;
+    }
+    
+    // TUTTI
+    else {
+    
+        whereFiltro = `
+            AND stato IN (
+                'PRENOTATO',
+                'ENTRATO',
+                'USCITO',
+                'SCADUTO'
+            )
+        `;
+    }
         const query = `
 
             SELECT *
