@@ -670,10 +670,6 @@ async function aggiornaVeicoli() {
             return scadB - scadA;
         });
 
-    console.log("DATI:", dati);
-    console.log("FILTRO:", filtroPiantone);
-    console.log("LISTA DOPO FILTRO:", lista);
-
     // RENDER
     document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
 
