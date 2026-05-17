@@ -640,24 +640,21 @@ dati.forEach(x => {
         oggi <= x.data_fine;
 
     const dentro =
-        x.stato === 'ENTRATO' ||
+        x.stato === 'ENTRATO';
+
+    const daVerificare =
         x.stato === 'DA_VERIFICARE';
 
     const maiEntrato =
         x.stato === 'MAI_ENTRATO';
-    
-    const daVerificare =
-        x.stato === 'DA_VERIFICARE';
+
+    const scaduto =
+        (x.stato === 'PRENOTATO' && oggi > x.data_fine) ||
+        x.stato === 'MAI_ENTRATO';
 
     if (dentro) countDentro++;
     if (prenotatoOggi) countPrenotati++;
     if (scaduto) countScaduti++;
-    
-    totaleScaduti = countScaduti;
-    totaleVerificare = countVerificare;
-    
-    const daVerificare =
-        x.stato === 'DA_VERIFICARE';
     if (daVerificare) countVerificare++;
 });
         let label = "";
@@ -733,44 +730,47 @@ if (elScaduti && countScaduti > 0) {
 }
 
  // FILTRI
-const lista = dati
-    .filter(x => {
+const lista = dati.filter(x => {
 
-        const prenotatoOggi =
-            x.stato === 'PRENOTATO' &&
-            oggi >= x.data_inizio &&
-            oggi <= x.data_fine;
+    const oggi = new Date().toISOString().split('T')[0];
 
-        const maiEntrato =
-            x.stato === 'MAI_ENTRATO';
+    const prenotatoOggi =
+        x.stato === 'PRENOTATO' &&
+        oggi >= x.data_inizio &&
+        oggi <= x.data_fine;
 
-        const daVerificare =
-            x.stato === 'DA_VERIFICARE';
+    const dentro =
+        x.stato === 'ENTRATO';
 
-        const dentro =
-            prenotatoOggi ||
-            x.stato === 'ENTRATO' ||
-            x.stato === 'DA_VERIFICARE';
+    const daVerificare =
+        x.stato === 'DA_VERIFICARE';
 
-        // ATTIVI
-        if (filtroPiantone === 'attivi')
-            return dentro;
+    const maiEntrato =
+        x.stato === 'MAI_ENTRATO';
 
-        // SCADUTI
-        if (filtroPiantone === 'scaduti')
-            return maiEntrato;
+    const scaduto =
+        (x.stato === 'PRENOTATO' && oggi > x.data_fine) ||
+        x.stato === 'MAI_ENTRATO';
 
-        // DA VERIFICARE
-        if (filtroPiantone === 'verificare')
-            return daVerificare;
+    // 🔵 ATTIVI
+    if (filtroPiantone === 'attivi')
+        return dentro || prenotatoOggi;
 
-        // STORICO
-        if (filtroPiantone === 'storico')
-            return x.stato === 'USCITO';
+    // 🔴 SCADUTI (solo chi NON è mai entrato + prenotazione finita)
+    if (filtroPiantone === 'scaduti')
+        return scaduto;
 
-        // TUTTI
-        return true;
-    })
+    // 🟠 DA VERIFICARE
+    if (filtroPiantone === 'verificare')
+        return daVerificare;
+
+    // 🕘 STORICO
+    if (filtroPiantone === 'storico')
+        return x.stato === 'USCITO';
+
+    // 📋 TUTTI
+    return true;
+});
     
     .sort((a, b) => {
 
