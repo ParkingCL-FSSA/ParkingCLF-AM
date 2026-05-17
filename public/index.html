@@ -226,25 +226,23 @@
     <div id="status-parcheggio" style="margin-bottom: 15px; padding: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; color: #166534; font-weight: bold; font-size: 14px;">
         <span id="total-free-display">Calcolo disponibilità...</span>
     </div>
+ <div style="display:flex; gap:10px;">
 
-    <div style="display: flex; gap: 8px;">
-        <input
-    type="text"
-    id="search-p"
-    placeholder="CERCA Codice"
-    style="text-transform: uppercase;"
-    autocomplete="off"
-    autocorrect="off"
-    autocapitalize="characters"
-    spellcheck="false"
->
-        <button id="btn-cerca" style="width: auto; padding: 0 20px;">Cerca</button>
-    </div>
-    <div style="display:flex; gap:10px;">
-    
+    <input
+        type="text"
+        id="search-p"
+        placeholder="CERCA CODICE"
+        style="text-transform: uppercase;"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="characters"
+        spellcheck="false"
+    />
+
+    <button id="btn-cerca" style="width:auto; padding:0 20px;">Cerca</button>
+    <button id="btn-reset-search"> ✖ </button> 
     <input id="search-p" placeholder="CERCA CODICE"/>
-    <button id="btn-cerca">Cerca</button>
-    <button id="btn-reset-search"> ✖ </button>
+ 
 </div>
     <div id="panel-piantone" class="hidden" style="margin-top: 15px; padding: 20px; background: #f8fafc; border-radius: 15px; border: 1px solid #e2e8f0;">
         <h4 id="lab-pass" style="margin: 0; font-size: 18px;">PASS: ---</h4>
