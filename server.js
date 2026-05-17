@@ -424,39 +424,37 @@ app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
 
         const r = await pool.query(`
 
-        SELECT
-            npass,
-            data_inizio,
-            data_fine,
-            orario_ingresso,
-            orario_uscita,
-            stato
-    
-        FROM prenotazioni
-    
-        WHERE
-            stato = 'ENTRATO'
-            OR (
-                stato = 'SCADUTO'
-                AND orario_uscita IS NULL
-            )
-    
-        ORDER BY
-            orario_ingresso DESC
-    
-        `);
-console.log("VEICOLI DENTRO:", r.rows);
+            SELECT
+                id,
+                npass,
+                data_inizio,
+                data_fine,
+                orario_ingresso,
+                orario_uscita,
+                stato,
+                data_inserimento
+
+            FROM prenotazioni
+
+            WHERE UPPER(npass) = $1
+
+            ORDER BY
+                data_inserimento DESC,
+                id DESC
+
+        `, [p]);
+
         res.json(r.rows);
-    
-        } catch (err) {
-    
-            console.error(err);
-    
-            res.status(500).json({
-                error: "Errore interno"
-            });
-        }
-    });
+
+    } catch (err) {
+
+        console.error(err);
+
+        res.status(500).json({
+            error: "Errore interno"
+        });
+    }
+});
 
 // --- 4. ELIMINA ---
 app.post('/api/elimina-prenotazione', async (req, res) => {
@@ -533,7 +531,7 @@ app.get('/api/veicoli-dentro', async (req, res) => {
             ORDER BY
                 COALESCE(orario_uscita, orario_ingresso, data_inizio) DESC
 
-            LIMIT 50
+            LIMIT 300
 
         `);
 
