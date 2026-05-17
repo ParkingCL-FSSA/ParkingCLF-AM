@@ -478,27 +478,127 @@ async function cercaPass(passManuale = null) {
         }
         // ⚠️ SCADUTO MA DENTRO → USCITA SEMPRE POSSIBILE
         if (currentPren.stato === 'ENTRATO' && oggi > currentPren.data_fine) {
+async function cercaPass(passManuale = null) {
+
+    const input = document.getElementById('search-p');
+
+    if (!input) {
+        alert("Campo ricerca non trovato");
+        return;
+    }
+
+    const p = (
+        passManuale ||
+        input.value
+    )
+    .trim()
+    .toUpperCase();
+
+    // aggiorna il campo visivamente
+    input.value = p;
+
+    if (!p) return;
+
+    try {
+
+        const res = await fetch(
+            `/api/piantone/cerca/${encodeURIComponent(p)}?auth=${userPass}&view=${filtroPiantone}`
+        );
+
+        const data = await res.json();
+
+        if (data.trovato) {
+
+            currentPren = data.prenotazione;
+
+            const btnEntrata = document.getElementById('btn-ingresso');
+            const btnUscita = document.getElementById('btn-uscita');
+
+            // RESET
+            btnEntrata.disabled = false;
             btnUscita.disabled = false;
+
+            // LOGICA STATI
+            if (
+                currentPren.stato === 'PRENOTATO' ||
+                !currentPren.orario_ingresso
+            ) {
+                btnEntrata.disabled = false;
+                btnUscita.disabled = true;
+            }
+
+            if (currentPren.stato === 'ENTRATO') {
+                btnEntrata.disabled = true;
+                btnUscita.disabled = false;
+            }
+
+            // COLORI DINAMICI
+            const oggi = new Date().toISOString().split('T')[0];
+
+            const scaduto =
+                currentPren.stato === 'ENTRATO' &&
+                oggi > currentPren.data_fine;
+
+            if (scaduto) {
+
+                btnEntrata.style.background = '#9ca3af';
+                btnUscita.style.background = '#ef4444';
+                btnUscita.innerText = 'USCITA (SCADUTO)';
+
+                btnUscita.disabled = false;
+
+            } else {
+
+                btnEntrata.style.background = '';
+                btnUscita.style.background = '';
+                btnUscita.innerText = 'USCITA';
+            }
+
+            // UI
+            document
+                .getElementById('panel-piantone')
+                .classList
+                .remove('hidden');
+
+            document.getElementById('lab-pass').innerHTML =
+                `PASS: ${currentPren.npass}`;
+
+            document.getElementById('lab-periodo').innerHTML =
+                `(Periodo: ${fmtData(currentPren.data_inizio)} - ${fmtData(currentPren.data_fine)})`;
+
+            document.getElementById('reg-e').innerHTML =
+                currentPren.orario_ingresso
+                    ? `Registrato il ${new Date(currentPren.orario_ingresso).toLocaleString('it-IT', {
+                        dateStyle: 'short',
+                        timeStyle: 'short'
+                    })}`
+                    : "";
+
+            document.getElementById('reg-u').innerHTML =
+                currentPren.orario_uscita
+                    ? `Registrato il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT', {
+                        dateStyle: 'short',
+                        timeStyle: 'short'
+                    })}`
+                    : "";
+
+        } else {
+
+            alert("Nessuna prenotazione trovata per questo PASS.");
+
+            document
+                .getElementById('panel-piantone')
+                .classList
+                .add('hidden');
         }
 
-        // UI
-        document.getElementById('panel-piantone').classList.remove('hidden');
-        document.getElementById('lab-pass').innerHTML = `PASS: ${currentPren.npass}`;
-        document.getElementById('lab-periodo').innerHTML =
-            `(Periodo: ${fmtData(currentPren.data_inizio)} - ${fmtData(currentPren.data_fine)})`;
+    } catch (err) {
 
-        document.getElementById('reg-e').innerHTML = currentPren.orario_ingresso
-            ? `Registrato il ${new Date(currentPren.orario_ingresso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}` : "";
+        console.error("ERRORE CERCA PASS:", err);
 
-        document.getElementById('reg-u').innerHTML = currentPren.orario_uscita
-            ? `Registrato il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}` : "";
-
-    } else {
-        alert("Nessuna prenotazione trovata per questo PASS.");
-        document.getElementById('panel-piantone').classList.add('hidden');
+        alert("Errore ricerca PASS");
     }
 }
-
 // FIX: tabella a 4 colonne (PASS | Data Accesso | Ora Ingresso | Data e Ora Uscita)
 // con gestione null su orario_ingresso e orario_uscita
 
@@ -1032,6 +1132,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // PIANTONE
     document.getElementById('btn-cerca')?.addEventListener('click', cercaPass);
+    document.getElementById('search-p')?.addEventListener('keydown', (e) => {
+
+    if (e.key === 'Enter') {
+        cercaPass();
+    }
+
+});
     document.getElementById('btn-arrivi-oggi')?.addEventListener('click', mostraArriviOggi);
     document.getElementById('btn-ingresso')?.addEventListener('click', () => {
         mossa('E');
