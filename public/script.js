@@ -561,11 +561,11 @@ dati.forEach(x => {
     if (dentro) countDentro++;
 
     if (prenotatoOggi)
-        ++;
+        countPrenotati++;
 
     if (scaduto)
         countScaduti++;
-});    
+});
         let label = "";
         let colore = "#334155";
         let sfondo = "#f8fafc";
