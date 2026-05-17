@@ -390,19 +390,19 @@ await inviaMailBrevoAPI(email,`Il tuo PASS - ${p}`, htmlUtente, pdfData, `PASS_$
 app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
     try {
         const p = req.params.npass.toUpperCase();
-        const r = await pool.query(
-            `SELECT
-                id,
+        const r = await pool.query(`
+            SELECT 
+                npass,
                 data_inizio,
                 data_fine,
-                stato,
                 orario_ingresso,
-                orario_uscita
-             FROM prenotazioni
-             WHERE UPPER(npass) = $1 AND data_inizio >= CURRENT_DATE - interval '60 days'
-             ORDER BY data_inizio DESC`,
-            [p]
-        );
+                orario_uscita,
+                stato
+            FROM prenotazioni
+            WHERE stato IN ('PRENOTATO', 'ENTRATO', 'USCITO')
+            ORDER BY COALESCE(orario_uscita, orario_ingresso, data_inizio) DESC
+            LIMIT 20
+        `);
         res.json(r.rows);
     } catch (err) {
         console.error(err);
