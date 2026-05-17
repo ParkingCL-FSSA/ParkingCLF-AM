@@ -631,8 +631,9 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
         }
 
         return res.json({
-            trovato: true,
-            prenotazione: r.rows
+        trovato: true,
+        prenotazione: r.rows[0],
+        storico: r.rows
         });
 
     } catch (err) {
