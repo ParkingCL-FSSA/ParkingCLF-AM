@@ -466,8 +466,11 @@ async function cercaPass(passManuale = null) {
             const oggi = new Date().toISOString().split('T')[0];
 
             const scaduto =
-                currentPren.stato === 'ENTRATO' &&
-                oggi > currentPren.data_fine;
+                x.stato === 'SCADUTO' ||
+                (
+                    x.stato === 'ENTRATO' &&
+                    oggi > x.data_fine
+                );
 
             if (scaduto) {
 
@@ -553,7 +556,7 @@ dati.forEach(x => {
     const dentro =
         x.stato === 'ENTRATO';
 
-    const scaduto =
+   const scaduto =
     x.stato === 'SCADUTO' ||
     (
         x.stato === 'ENTRATO' &&
@@ -726,8 +729,11 @@ const lista = dati
             : '';
 
         const scaduto =
-            x.stato === 'ENTRATO' &&
-            oggi > x.data_fine;
+            x.stato === 'SCADUTO' ||
+            (
+                x.stato === 'ENTRATO' &&
+                oggi > x.data_fine
+            );
 
         const storico =
             x.stato === 'USCITO';
