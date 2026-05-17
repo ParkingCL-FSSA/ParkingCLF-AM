@@ -1065,13 +1065,23 @@ window.addEventListener('DOMContentLoaded', () => {
         location.reload();
     });
 
-    // PIANTONE
-    document.getElementById('btn-cerca')?.addEventListener('click', cercaPass);
-    document.getElementById('search-p')?.addEventListener('keydown', (e) => {
-    document.getElementById('btn-reset-search')?.addEventListener('click', () => {
+   // PIANTONE
+document.getElementById('btn-cerca')?.addEventListener('click', cercaPass);
+document.getElementById('search-p')?.addEventListener('keydown', (e) => {
+
+    if (e.key === 'Enter') {
+        cercaPass();
+    }
+
+});
+
+document.getElementById('btn-reset-search')?.addEventListener('click', () => {
     document.getElementById('search-p').value = '';
     currentPren = null;
-    document.getElementById('panel-piantone')?.classList.add('hidden');
+    document
+        .getElementById('panel-piantone')
+        ?.classList
+        .add('hidden');
 
 });
     if (e.key === 'Enter') {
@@ -1086,11 +1096,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const btnHomeSuccess = document.getElementById('btn-home-success');
     
     if (btnHomeSuccess) {
-    
         btnHomeSuccess.addEventListener('click', () => {
-    
             location.reload();
-    
         });
     }
     document.getElementById('btn-uscita')?.addEventListener('click', () => {
@@ -1098,7 +1105,6 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('btn-filtro')?.addEventListener('click', toggleScaduti);
-
     document.getElementById('btn-logout-piantone')?.addEventListener('click', () => {
         location.reload();
     });
