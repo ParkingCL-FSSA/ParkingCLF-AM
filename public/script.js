@@ -673,29 +673,38 @@ const lista = dati
     })
 
     .sort((a, b) => {
-
-        // SCADUTI SEMPRE SOPRA
+    
+        const prenA =
+            a.stato === 'PRENOTATO';
+    
+        const prenB =
+            b.stato === 'PRENOTATO';
+    
+        // PRENOTATI sempre in alto
+        if (prenA && !prenB) return -1;
+        if (!prenA && prenB) return 1;
+    
         const scadA =
             a.stato === 'SCADUTO' ||
             (
                 a.stato === 'ENTRATO' &&
                 oggi > a.data_fine
             );
-
+    
         const scadB =
             b.stato === 'SCADUTO' ||
             (
                 b.stato === 'ENTRATO' &&
                 oggi > b.data_fine
             );
-
-        if (scadA !== scadB) {
-            return scadB - scadA;
-        }
-
-        // ORDINE PIÙ RECENTE
-        return new Date(b.data_inserimento || b.data_inizio)
-            - new Date(a.data_inserimento || a.data_inizio);
+    
+        // poi SCADUTI
+        if (scadA && !scadB) return -1;
+        if (!scadA && scadB) return 1;
+    
+        // infine più recenti
+        return new Date(b.data_inserimento || 0)
+            - new Date(a.data_inserimento || 0);
     });
 
     // RENDER
