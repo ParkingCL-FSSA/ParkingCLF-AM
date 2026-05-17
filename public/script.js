@@ -540,28 +540,28 @@ async function aggiornaVeicoli() {
     const dati = await res.json();
     const oggi = new Date().toISOString().split('T')[0];
 
-    let countDentro = 0;
-    let countScaduti = 0;
+let countDentro = 0;
+let countPrenotati = 0;
+let countScaduti = 0;
 
-    dati.forEach(x => {
+dati.forEach(x => {
 
-        const prenotatoOggi =
-            x.stato === 'PRENOTATO' &&
-            oggi >= x.data_inizio &&
-            oggi <= x.data_fine;
+    const prenotatoOggi =
+        x.stato === 'PRENOTATO' &&
+        oggi >= x.data_inizio &&
+        oggi <= x.data_fine;
 
-        const dentro =
-            prenotatoOggi ||
-            x.stato === 'ENTRATO' ||
-            (x.stato === 'SCADUTO' && !x.orario_uscita);
+    const dentro =
+        x.stato === 'ENTRATO';
 
-        const scaduto =
-            x.stato === 'ENTRATO' &&
-            oggi > x.data_fine;
+    const scaduto =
+        x.stato === 'ENTRATO' &&
+        oggi > x.data_fine;
 
-        if (dentro) countDentro++;
-        if (scaduto) countScaduti++;
-    });
+    if (dentro) countDentro++;
+    if (prenotatoOggi) countPrenotati++;
+    if (scaduto) countScaduti++;
+});
     
         let label = "";
         let colore = "#334155";
@@ -607,14 +607,16 @@ async function aggiornaVeicoli() {
         statoTabella.style.borderColor = colore;
     }
     badge.innerHTML = `
-        🚗 <b>Dentro:</b> ${countDentro}
-        &nbsp;&nbsp;|&nbsp;&nbsp;
-        🅿️ <b>Liberi:</b> ${120 - countDentro}
-        &nbsp;&nbsp;|&nbsp;&nbsp;
-        <span id="badge-scaduti">
-            ⏰ <b>Scaduti:</b> ${countScaduti}
-        </span>
-    `;
+    🚗 <b>Dentro:</b> ${countDentro}
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    📅 <b>Prenotati Oggi:</b> ${countPrenotati}
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    🅿️ <b>Liberi:</b> ${120 - countDentro}
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    <span id="badge-scaduti">
+        ⏰ <b>Scaduti:</b> ${countScaduti}
+    </span>
+`;
 
     // LAMPEGGIO SOLO SCADUTI
     const elScaduti = document.getElementById('badge-scaduti');
@@ -643,7 +645,7 @@ async function aggiornaVeicoli() {
             const dentro =
                 prenotatoOggi ||
                 x.stato === 'ENTRATO' ||
-                (x.stato === 'SCADUTO' && !x.orario_uscita);
+                x.stato === 'ENTRATO' && oggi > x.data_fine;
 
             if (filtroPiantone === 'attivi')
                 return dentro;
