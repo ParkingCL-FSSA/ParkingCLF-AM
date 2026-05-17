@@ -1082,12 +1082,11 @@ document.getElementById('btn-reset-search')?.addEventListener('click', () => {
         .getElementById('panel-piantone')
         ?.classList
         .add('hidden');
-
-});
+    
     if (e.key === 'Enter') {
         cercaPass();
     }
-
+});
     document.getElementById('btn-arrivi-oggi')?.addEventListener('click', mostraArriviOggi);
     document.getElementById('btn-ingresso')?.addEventListener('click', () => {
         mossa('E');
