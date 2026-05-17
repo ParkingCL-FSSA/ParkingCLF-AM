@@ -412,7 +412,13 @@ async function eliminaPren(id) {
 async function cercaPass(passManuale = null) {
 
     const input = document.getElementById('search-p');
-
+<input
+    id="search-p"
+    autocomplete="off"
+    autocorrect="off"
+    autocapitalize="characters"
+    spellcheck="false"
+>
     const p = (
         passManuale ||
         input.value
