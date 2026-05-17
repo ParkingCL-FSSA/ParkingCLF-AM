@@ -294,6 +294,83 @@
             PASS: ---
         </h4>
 
+<div id="view-piantone" class="hidden">
+
+    <h3>Controllo Sbarra 🚧</h3>
+
+    <!-- STATUS -->
+    <div id="status-parcheggio"
+        style="
+            margin-bottom:15px;
+            padding:12px;
+            background:#f0fdf4;
+            border:1px solid #bbf7d0;
+            border-radius:12px;
+            color:#166534;
+            font-weight:bold;
+            font-size:14px;
+        ">
+
+        <span id="total-free-display">
+            Calcolo disponibilità...
+        </span>
+
+    </div>
+
+    <!-- RICERCA -->
+    <div style="display:flex; gap:8px; align-items:center;">
+
+        <input
+            type="text"
+            id="search-p"
+            placeholder="CERCA CODICE"
+            style="text-transform:uppercase; flex:1;"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="characters"
+            spellcheck="false"
+        />
+
+        <button
+            id="btn-cerca"
+            type="button"
+            style="width:auto; padding:0 20px;"
+        >
+            Cerca
+        </button>
+
+        <button
+            id="btn-reset-search"
+            type="button"
+            style="
+                width:48px;
+                background:#ef4444;
+                color:white;
+                font-weight:bold;
+            "
+        >
+            ✖
+        </button>
+
+    </div>
+
+    <!-- PANEL -->
+    <div
+        id="panel-piantone"
+        class="hidden"
+        style="
+            margin-top:15px;
+            padding:20px;
+            background:#f8fafc;
+            border-radius:15px;
+            border:1px solid #e2e8f0;
+        "
+    >
+
+        <h4 id="lab-pass" style="margin:0; font-size:18px;">
+            PASS: ---
+        </h4>
+
         <p
             id="lab-periodo"
             style="
@@ -354,6 +431,112 @@
                 ></div>
 
             </div>
+
+        </div>
+
+    </div>
+
+    <!-- VEICOLI -->
+    <h4 style="margin-top:25px; text-align:center;">
+        🏎️ Veicoli Dentro
+    </h4>
+
+    <button
+        id="btn-arrivi-oggi"
+        class="btn-gray"
+        style="width:320px; padding:6px 0;"
+    >
+        📋 ARRIVI OGGI
+    </button>
+
+    <div
+        id="box-arrivi-oggi"
+        class="hidden"
+        style="
+            margin-top:15px;
+            background:#f8fafc;
+            border:1px solid #e2e8f0;
+            border-radius:12px;
+            padding:12px;
+        "
+    >
+
+        <h4 style="margin-top:0;">
+            📅 Prenotati in arrivo oggi
+        </h4>
+
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th>PASS</th>
+                    <th>STATO</th>
+                </tr>
+
+            </thead>
+
+            <tbody id="lista-arrivi-oggi"></tbody>
+
+        </table>
+
+    </div>
+
+    <button
+        id="btn-filtro"
+        style="width:320px; padding:8px 0;"
+    >
+        Mostra tutti
+    </button>
+
+    <div
+        id="badge-contatori"
+        style="margin:10px 0; font-size:14px;"
+    ></div>
+
+    <div
+        id="stato-tabella"
+        style="
+            margin:12px auto;
+            padding:8px 18px;
+            border-radius:999px;
+            border:2px solid #cbd5e1;
+            background:#f8fafc;
+            font-size:13px;
+            font-weight:bold;
+            color:#334155;
+            box-shadow:0 2px 8px rgba(0,0,0,0.05);
+        "
+    >
+        📋 ATTIVI
+    </div>
+
+    <table style="font-size:14px; margin-bottom:20px;">
+
+        <thead>
+
+            <tr>
+                <th style="color:var(--blue);">PASS</th>
+                <th style="color:var(--gray);">Data Ingresso</th>
+                <th style="color:var(--green);">ORA</th>
+                <th style="color:var(--gray);">Data Uscita</th>
+                <th style="color:var(--orange);">ORA</th>
+            </tr>
+
+        </thead>
+
+        <tbody id="lista-veicoli"></tbody>
+
+    </table>
+
+    <button
+        class="btn-gray"
+        id="btn-logout-piantone"
+    >
+        LOGOUT
+    </button>
+
+</div>
 
 
     <h4 style="margin-top: 25px; text-align: center;">🏎️ Veicoli Dentro</h4>
