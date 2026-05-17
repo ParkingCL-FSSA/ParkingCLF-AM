@@ -777,9 +777,15 @@ async function aggiornaVeicoli() {
 
 window.apriPass = async function(pass) {
 
+    console.log("CLICK PASS:", pass);
+
     document.getElementById('search-p').value = pass;
 
+    console.log("INPUT:", document.getElementById('search-p').value);
+
     await cercaPass(pass);
+
+    console.log("CERCA COMPLETATA");
 
     setTimeout(() => {
 
