@@ -546,10 +546,9 @@ let countScaduti = 0;
 
 dati.forEach(x => {
 
-    const prenotatoOggi =
-        x.stato === 'PRENOTATO' &&
-        oggi >= x.data_inizio &&
-        oggi <= x.data_fine;
+const arriviRes = await fetch('/api/piantone/arrivi-oggi');
+const arrivi = await arriviRes.json();
+const prenotatiOggi = arrivi.length;
 
     const dentro =
         x.stato === 'ENTRATO';
