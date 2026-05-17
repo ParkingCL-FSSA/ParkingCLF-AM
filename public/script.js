@@ -1068,7 +1068,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // PIANTONE
     document.getElementById('btn-cerca')?.addEventListener('click', cercaPass);
     document.getElementById('search-p')?.addEventListener('keydown', (e) => {
+    document.getElementById('btn-reset-search')?.addEventListener('click', () => {
+    document.getElementById('search-p').value = '';
+    currentPren = null;
+    document.getElementById('panel-piantone')?.classList.add('hidden');
 
+});
     if (e.key === 'Enter') {
         cercaPass();
     }
