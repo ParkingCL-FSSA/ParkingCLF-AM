@@ -561,7 +561,7 @@ dati.forEach(x => {
     if (dentro) countDentro++;
 
     if (prenotatoOggi)
-        countPrenotati++;
+        ++;
 
     if (scaduto)
         countScaduti++;
@@ -612,7 +612,7 @@ dati.forEach(x => {
     badge.innerHTML = `
     🚗 <b>Dentro:</b> ${countDentro}
     &nbsp;&nbsp;|&nbsp;&nbsp;
-    📅 <b>Prenotati Oggi:</b> ${countPrenotati}
+    📅 <b>Prenotati:</b> ${countPrenotati}
     &nbsp;&nbsp;|&nbsp;&nbsp;
     🅿️ <b>Liberi:</b> ${120 - countDentro}
     &nbsp;&nbsp;|&nbsp;&nbsp;
