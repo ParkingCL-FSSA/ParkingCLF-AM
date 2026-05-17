@@ -388,26 +388,53 @@ await inviaMailBrevoAPI(email,`Il tuo PASS - ${p}`, htmlUtente, pdfData, `PASS_$
 
 // --- 3. LE MIE PRENOTAZIONI ---
 app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
+
     try {
-       const p = req.params.npass.toUpperCase();
-       const r = await pool.query(`
-            SELECT 
+
+        const p = clean(req.params.npass);
+
+        const r = await pool.query(`
+
+            SELECT
+                id,
                 npass,
                 data_inizio,
                 data_fine,
                 orario_ingresso,
                 orario_uscita,
                 stato
+
             FROM prenotazioni
-            WHERE UPPER(npass) = $1
-            AND stato IN ('PRENOTATO', 'ENTRATO', 'USCITO')
-            ORDER BY COALESCE(orario_uscita, orario_ingresso, data_inizio) DESC
+
+            WHERE
+                UPPER(npass) = $1
+                AND stato IN (
+                    'PRENOTATO',
+                    'ENTRATO',
+                    'USCITO',
+                    'SCADUTO'
+                )
+
+            ORDER BY
+                COALESCE(
+                    orario_uscita,
+                    orario_ingresso,
+                    data_inizio
+                ) DESC
+
             LIMIT 20
+
         `, [p]);
+
         res.json(r.rows);
+
     } catch (err) {
+
         console.error(err);
-        res.status(500).json({ error: "Errore interno" });
+
+        res.status(500).json({
+            error: "Errore interno"
+        });
     }
 });
 
@@ -746,23 +773,6 @@ app.post('/api/piantone/azione', async (req, res) => {
 });
 // --- 7B. PIANTONE LIBERI ---
 app.get('/api/piantone/liberi', async (req, res) => {
-    try {
-        const oggi = new Date().toISOString().split('T')[0];
-        const r = await pool.query(
-            `SELECT COUNT(*) as count
-             FROM prenotazioni
-             WHERE stato = 'ENTRATO'
-             AND $1 BETWEEN data_inizio AND data_fine`,
-            [oggi]
-        );
-        const dentro = parseInt(r.rows[0].count);
-        const totaleLiberi = Math.max(0, 120 - dentro);
-        res.json({ totaleLiberi, dentro });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Errore interno" });
-    }
-});
 // --- 8. ADMIN CRUSCOTTO OTTIMIZZATO ---
 app.get('/api/admin/cruscotto', async (req, res) => {
     const npass = req.query.npass;
@@ -826,6 +836,7 @@ app.get('/api/admin/cruscotto', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+    
 app.get('/api/admin/ritardi', async (req, res) => {
     try {
         const r = await pool.query(`
