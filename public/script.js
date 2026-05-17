@@ -775,7 +775,7 @@ async function aggiornaVeicoli() {
     `;
 }
 
-async function apriPass(pass) {
+window.apriPass = async function(pass) {
 
     document.getElementById('search-p').value = pass;
 
