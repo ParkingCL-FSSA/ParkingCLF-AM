@@ -473,7 +473,13 @@ async function cercaPass(passManuale = null) {
 
             const btnEntrata = document.getElementById('btn-ingresso');
             const btnUscita = document.getElementById('btn-uscita');
-
+            const boxVerifica = document.getElementById('box-verifica');
+            if (currentPren.stato === 'DA_VERIFICARE') {
+                boxVerifica.classList.remove('hidden');
+            } else {
+                boxVerifica.classList.add('hidden');
+            }
+            
            // RESET
             btnEntrata.disabled = true;
             btnUscita.disabled = true;
@@ -571,7 +577,8 @@ async function aggiornaVeicoli() {
 let countDentro = 0;
 let countPrenotati = 0;
 let countScaduti = 0;
-
+let countVerificare = 0;
+    
 dati.forEach(x => {
 
     const prenotatoOggi =
@@ -594,6 +601,10 @@ dati.forEach(x => {
     if (scaduto) countScaduti++;
     
     totaleScaduti = countScaduti;
+
+    const daVerificare =
+    x.stato === 'DA_VERIFICARE';
+    if (daVerificare) countVerificare++;
 });
         let label = "";
         let colore = "#334155";
@@ -644,6 +655,8 @@ dati.forEach(x => {
     📅 <b>Prenotati oggi:</b> ${countPrenotati}
     &nbsp;&nbsp;|&nbsp;&nbsp;
     🅿️ <b>Liberi:</b> ${120 - countDentro}
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    🚨 <b>Da verificare:</b> ${countVerificare}
     ${
         countScaduti > 0
         ? `
@@ -680,7 +693,9 @@ const lista = dati
                 x.stato === 'ENTRATO' &&
                 oggi > x.data_fine
             );
-
+        const daVerificare =
+            x.stato === 'DA_VERIFICARE';
+        
         const dentro =
             prenotatoOggi ||
             x.stato === 'ENTRATO';
@@ -696,6 +711,10 @@ const lista = dati
         // STORICO
         if (filtroPiantone === 'storico')
             return x.stato === 'USCITO';
+
+        // VERIFICARE
+        if (filtroPiantone === 'scaduti')
+            return scaduto || daVerificare;
 
         // TUTTI
         return true;
@@ -792,11 +811,15 @@ const lista = dati
         const evidenzia =
             x.npass === ultimoAggiornato;
         
+        const verificare =
+            x.stato === 'DA_VERIFICARE';
+        
            return `<tr style="
         ${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
         ${uscitoScaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
         ${storico ? 'background:#f1f5f9;' : ''}
         ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
+        ${verificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
     ">
 <td>
     <button
@@ -1142,35 +1165,24 @@ window.addEventListener('DOMContentLoaded', () => {
 // PIANTONE
 
 const inputSearch = document.getElementById('search-p');
-
 document.getElementById('btn-cerca')
 ?.addEventListener('click', () => {
-
     cercaPass();
 
 });
-
 inputSearch?.addEventListener('keydown', (e) => {
-
     if (e.key === 'Enter') {
-
         e.preventDefault();
-
         cercaPass();
-
     }
 
 });
 
 document.getElementById('btn-reset-search')
 ?.addEventListener('click', () => {
-
     if (inputSearch) {
-
         inputSearch.value = '';
-
         inputSearch.focus();
-
     }
 
     currentPren = null;
@@ -1181,7 +1193,37 @@ document.getElementById('btn-reset-search')
         .add('hidden');
 
 });
+document.getElementById('btn-non-presente')
+?.addEventListener('click', async () => {
 
+    if (!currentPren) return;
+    if (!confirm(
+        'Confermi che il veicolo NON è presente nel parcheggio?'
+    )) return;
+
+    const res = await fetch(
+        '/api/piantone/non-presente',
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id: currentPren.id
+            })
+        }
+    );
+    const data = await res.json();
+
+    if (data.success) {
+        alert('Segnato come USCITO');
+        aggiornaVeicoli();
+        document
+            .getElementById('panel-piantone')
+            .classList
+            .add('hidden');
+    }
+});
     document.getElementById('btn-arrivi-oggi')?.addEventListener('click', mostraArriviOggi);
     document.getElementById('btn-ingresso')?.addEventListener('click', () => {
         mossa('E');
