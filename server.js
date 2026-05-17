@@ -962,6 +962,28 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
   }
 });
 
+app.post('/api/piantone/non-presente', async (req, res) => {
+
+    const { id } = req.body;
+
+    try {
+
+        await pool.query(`
+            UPDATE prenotazioni
+            SET stato = 'USCITO'
+            WHERE id = $1
+        `, [id]);
+
+        res.json({ success: true });
+
+    } catch (err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
+
 app.listen(process.env.PORT || 3000, '0.0.0.0', () => {
     console.log(`Server avviato`);
 });
