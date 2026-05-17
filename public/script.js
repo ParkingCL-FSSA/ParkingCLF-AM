@@ -774,30 +774,30 @@ async function aggiornaVeicoli() {
             </td>
         </tr>
     `;
-}
+    document.querySelectorAll('.btn-pass').forEach(btn => {
 
-window.apriPass = async function(pass) {
+    btn.addEventListener('click', async () => {
 
-    console.log("CLICK PASS:", pass);
+        const pass = btn.dataset.pass;
 
-    document.getElementById('search-p').value = pass;
+        document.getElementById('search-p').value = pass;
 
-    console.log("INPUT:", document.getElementById('search-p').value);
+        await cercaPass(pass);
 
-    await cercaPass(pass);
+        setTimeout(() => {
 
-    console.log("CERCA COMPLETATA");
+            document
+                .getElementById('panel-piantone')
+                ?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
 
-    setTimeout(() => {
+        }, 100);
 
-        document
-            .getElementById('panel-piantone')
-            ?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
+    });
 
-    }, 100);
+});
 }
     
 let loadingAzione = false;
