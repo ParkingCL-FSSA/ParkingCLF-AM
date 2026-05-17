@@ -568,19 +568,15 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
         let whereFiltro = "";
 
     // ATTIVI = dentro OR prenotati validi oggi
-    if (view === 'attivi') {
+       if (view === 'attivi') {
     
         whereFiltro = `
             AND (
-                (
-                    stato = 'PRENOTATO'
-                    AND CURRENT_DATE BETWEEN data_inizio AND data_fine
-                )
+                stato = 'PRENOTATO'
                 OR stato = 'ENTRATO'
             )
         `;
-    }
-    
+    }   
    // SCADUTI
     else if (view === 'scaduti') {
     
