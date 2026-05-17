@@ -86,30 +86,38 @@ function show(id) {
 function toggleScaduti() {
 
     if (filtroPiantone === 'attivi') {
+
         filtroPiantone = 'scaduti';
     }
     else if (filtroPiantone === 'scaduti') {
-        filtroPiantone = 'storico';
-    }
-    else if (filtroPiantone === 'storico') {
+
         filtroPiantone = 'tutti';
     }
+    else if (filtroPiantone === 'tutti') {
+
+        filtroPiantone = 'storico';
+    }
     else {
+
         filtroPiantone = 'attivi';
     }
 
     const btn = document.getElementById('btn-filtro');
 
     if (filtroPiantone === 'attivi') {
+
         btn.innerText = "Mostra scaduti";
     }
     else if (filtroPiantone === 'scaduti') {
-        btn.innerText = "Mostra storico";
-    }
-    else if (filtroPiantone === 'storico') {
+
         btn.innerText = "Mostra tutti";
     }
+    else if (filtroPiantone === 'tutti') {
+
+        btn.innerText = "Mostra storico";
+    }
     else {
+
         btn.innerText = "Mostra attivi";
     }
 
