@@ -438,74 +438,6 @@ async function cercaPass(passManuale = null) {
 
         const data = await res.json();
 
-    if (data.trovato) {
-        currentPren = data.prenotazione;
-
-        const btnEntrata = document.getElementById('btn-ingresso');
-        const btnUscita = document.getElementById('btn-uscita');
-
-        // RESET
-        btnEntrata.disabled = false;
-        btnUscita.disabled = false;
-
-        // LOGICA STATI
-        if (
-            currentPren.stato === 'PRENOTATO' ||
-            !currentPren.orario_ingresso
-        ) {
-            btnEntrata.disabled = false;
-            btnUscita.disabled = true;
-        }
-
-        if (currentPren.stato === 'ENTRATO') {
-            btnEntrata.disabled = true;
-            btnUscita.disabled = false;
-        }
-        // 🎨 COLORI DINAMICI BOTTONI
-        const oggi = new Date().toISOString().split('T')[0];
-        const scaduto = currentPren.stato === 'ENTRATO' && oggi > currentPren.data_fine;
-        
-        if (scaduto) {
-            btnEntrata.style.background = '#9ca3af'; // grigio
-            btnUscita.style.background = '#ef4444'; // rosso alert
-            btnUscita.innerText = 'USCITA (SCADUTO)';
-        } else {
-            // reset colori originali
-            btnEntrata.style.background = '';
-            btnUscita.style.background = '';
-            btnUscita.innerText = 'USCITA';
-        }
-        // ⚠️ SCADUTO MA DENTRO → USCITA SEMPRE POSSIBILE
-        if (currentPren.stato === 'ENTRATO' && oggi > currentPren.data_fine) {
-async function cercaPass(passManuale = null) {
-
-    const input = document.getElementById('search-p');
-
-    if (!input) {
-        alert("Campo ricerca non trovato");
-        return;
-    }
-
-    const p = (
-        passManuale ||
-        input.value
-    )
-    .trim()
-    .toUpperCase();
-
-    // aggiorna il campo visivamente
-    input.value = p;
-
-    if (!p) return;
-
-    try {
-
-        const res = await fetch(
-            `/api/piantone/cerca/${encodeURIComponent(p)}?auth=${userPass}&view=${filtroPiantone}`
-        );
-
-        const data = await res.json();
-
         if (data.trovato) {
 
             currentPren = data.prenotazione;
@@ -598,6 +530,7 @@ async function cercaPass(passManuale = null) {
         alert("Errore ricerca PASS");
     }
 }
+
 // FIX: tabella a 4 colonne (PASS | Data Accesso | Ora Ingresso | Data e Ora Uscita)
 // con gestione null su orario_ingresso e orario_uscita
 
