@@ -1064,14 +1064,22 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-logout-user')?.addEventListener('click', () => {
         location.reload();
     });
+// PIANTONE
 
-   // PIANTONE
+const inputSearch = document.getElementById('search-p');
 
-document.getElementById('btn-cerca')?.addEventListener('click', cercaPass);
+document.getElementById('btn-cerca')
+?.addEventListener('click', () => {
 
-document.getElementById('search-p')?.addEventListener('keydown', (e) => {
+    cercaPass();
+
+});
+
+inputSearch?.addEventListener('keydown', (e) => {
 
     if (e.key === 'Enter') {
+
+        e.preventDefault();
 
         cercaPass();
 
@@ -1079,9 +1087,16 @@ document.getElementById('search-p')?.addEventListener('keydown', (e) => {
 
 });
 
-document.getElementById('btn-reset-search')?.addEventListener('click', () => {
+document.getElementById('btn-reset-search')
+?.addEventListener('click', () => {
 
-    document.getElementById('search-p').value = '';
+    if (inputSearch) {
+
+        inputSearch.value = '';
+
+        inputSearch.focus();
+
+    }
 
     currentPren = null;
 
@@ -1091,6 +1106,7 @@ document.getElementById('btn-reset-search')?.addEventListener('click', () => {
         .add('hidden');
 
 });
+
     document.getElementById('btn-arrivi-oggi')?.addEventListener('click', mostraArriviOggi);
     document.getElementById('btn-ingresso')?.addEventListener('click', () => {
         mossa('E');
