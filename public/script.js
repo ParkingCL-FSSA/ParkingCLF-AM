@@ -411,14 +411,24 @@ async function eliminaPren(id) {
 
 async function cercaPass(passManuale = null) {
 
+    const input = document.getElementById('search-p');
+
     const p = (
         passManuale ||
-        document.getElementById('search-p').value
+        input.value
     )
     .trim()
     .toUpperCase();
+
+    // aggiorna il campo visivamente
+    input.value = p;
+
     if (!p) return;
-    const res = await fetch(`/api/piantone/cerca/${p}?auth=${userPass}&view=${filtroPiantone}`);
+
+    const res = await fetch(
+        `/api/piantone/cerca/${encodeURIComponent(p)}?auth=${userPass}&view=${filtroPiantone}`
+    );
+
     const data = await res.json();
 
     if (data.trovato) {
