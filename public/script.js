@@ -554,8 +554,11 @@ dati.forEach(x => {
         x.stato === 'ENTRATO';
 
     const scaduto =
+    x.stato === 'SCADUTO' ||
+    (
         x.stato === 'ENTRATO' &&
-        oggi > x.data_fine;
+        oggi > x.data_fine
+    );
 
     if (dentro) countDentro++;
     if (prenotatoOggi) countPrenotati++;
@@ -628,47 +631,66 @@ dati.forEach(x => {
     }
 
     // FILTRI
-    const lista = dati
-        .filter(x => {
+const lista = dati
+    .filter(x => {
 
-            const prenotatoOggi =
-                x.stato === 'PRENOTATO' &&
-                oggi >= x.data_inizio &&
-                oggi <= x.data_fine;
+        const prenotatoOggi =
+            x.stato === 'PRENOTATO' &&
+            oggi >= x.data_inizio &&
+            oggi <= x.data_fine;
 
-            const scaduto =
+        const scaduto =
+            x.stato === 'SCADUTO' ||
+            (
                 x.stato === 'ENTRATO' &&
-                oggi > x.data_fine;
+                oggi > x.data_fine
+            );
 
-            const dentro =
-                prenotatoOggi ||
-                x.stato === 'ENTRATO' ||
-                x.stato === 'ENTRATO' && oggi > x.data_fine;
+        const dentro =
+            prenotatoOggi ||
+            x.stato === 'ENTRATO';
 
-            if (filtroPiantone === 'attivi')
-                return dentro;
+        // ATTIVI
+        if (filtroPiantone === 'attivi')
+            return dentro && !scaduto;
 
-            if (filtroPiantone === 'scaduti')
-                return scaduto;
+        // SCADUTI
+        if (filtroPiantone === 'scaduti')
+            return scaduto;
 
-            if (filtroPiantone === 'storico')
-                return x.stato === 'USCITO';
+        // STORICO
+        if (filtroPiantone === 'storico')
+            return x.stato === 'USCITO';
 
-            return true;
-        })
+        // TUTTI
+        return true;
+    })
 
-        .sort((a, b) => {
+    .sort((a, b) => {
 
-            const scadA =
+        // SCADUTI SEMPRE SOPRA
+        const scadA =
+            a.stato === 'SCADUTO' ||
+            (
                 a.stato === 'ENTRATO' &&
-                oggi > a.data_fine;
+                oggi > a.data_fine
+            );
 
-            const scadB =
+        const scadB =
+            b.stato === 'SCADUTO' ||
+            (
                 b.stato === 'ENTRATO' &&
-                oggi > b.data_fine;
+                oggi > b.data_fine
+            );
 
+        if (scadA !== scadB) {
             return scadB - scadA;
-        });
+        }
+
+        // ORDINE PIÙ RECENTE
+        return new Date(b.data_inserimento || b.data_inizio)
+            - new Date(a.data_inserimento || a.data_inizio);
+    });
 
     // RENDER
     document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
