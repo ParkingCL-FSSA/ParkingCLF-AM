@@ -617,9 +617,6 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
                 END,
 
                 data_inizio DESC
-
-            LIMIT 1
-
         `;
 
         const r = await pool.query(query, [
@@ -635,7 +632,7 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
 
         return res.json({
             trovato: true,
-            prenotazione: r.rows[0]
+            prenotazione: r.rows
         });
 
     } catch (err) {
