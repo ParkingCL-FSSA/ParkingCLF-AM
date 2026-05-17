@@ -1088,7 +1088,6 @@ document.getElementById('btn-reset-search')?.addEventListener('click', () => {
         cercaPass();
     }
 
-});
     document.getElementById('btn-arrivi-oggi')?.addEventListener('click', mostraArriviOggi);
     document.getElementById('btn-ingresso')?.addEventListener('click', () => {
         mossa('E');
