@@ -781,6 +781,7 @@ app.get('/api/piantone/liberi', async (req, res) => {
         SELECT COUNT(DISTINCT npass) as dentro
         FROM prenotazioni
         WHERE stato = 'ENTRATO'
+        AND CURRENT_DATE BETWEEN data_inizio AND data_fine
     `);
 
         const dentro = parseInt(result.rows[0].dentro) || 0;
@@ -920,7 +921,9 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
       LEFT JOIN registro_pass r
         ON UPPER(p.npass) = UPPER(r.npass)
 
-      WHERE p.stato = 'PRENOTATO' AND p.data_inizio <= CURRENT_DATE
+      WHERE
+        CURRENT_DATE BETWEEN p.data_inizio AND p.data_fine
+        AND p.stato = 'PRENOTATO'
 
       ORDER BY
         UPPER(p.npass),
