@@ -65,6 +65,16 @@ input {
     border-radius: 10px; 
     box-sizing: border-box;
 }
+#btn-reset-search{
+    width:50px;
+    border:none;
+    border-radius:14px;
+    background:#ef4444;
+    color:white;
+    font-size:20px;
+    font-weight:bold;
+    cursor:pointer;
+}
 .badge-stato{
     display:inline-flex;
     align-items:center;
