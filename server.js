@@ -627,17 +627,9 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
                 UPPER(npass) = $1
                 ${whereFiltro}
 
-            ORDER BY
-
-                CASE
-                    WHEN stato = 'ENTRATO' THEN 1
-                    WHEN stato = 'PRENOTATO' THEN 2
-                    WHEN stato = 'SCADUTO' THEN 3
-                    WHEN stato = 'USCITO' THEN 4
-                    ELSE 99
-                END,
-
-                data_inizio DESC
+           ORDER BY
+            data_inserimento DESC,
+            id DESC
         `;
 
         const r = await pool.query(query, [
