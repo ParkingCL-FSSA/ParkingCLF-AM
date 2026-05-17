@@ -183,7 +183,7 @@ async function doLogin() {
 }
 // ✅ Nuova funzione per visualizzazione posti liberi totali al piantone
 async function aggiornaPostiLiberiPiantone() {
-    const res = await fetch('/api/piantone/liberi');
+    const res = await fetch(`/api/piantone/liberi?npass=${userPass}`);
     const dati = await res.json();
     document.getElementById('total-free-display').innerHTML =
     `<b style="color:green">Liberi: ${dati.totaleLiberi}</b> 
