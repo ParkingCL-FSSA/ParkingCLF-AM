@@ -7,7 +7,7 @@ const PDFDocument = require('pdfkit');
 
 const app = express();
 app.use(cors({
-    origin: ['https://parkingclf-am.onrender.com/']
+    origin: ['https://parkingclf-am.onrender.com']
 }));
 const helmet = require('helmet');
 app.use(helmet());
@@ -45,7 +45,7 @@ async function scadenzaPrenotazioni() {
     try {
         const result = await pool.query(
             `UPDATE prenotazioni SET stato = 'SCADUTO'
-             WHERE stato = 'PRENOTATO' AND data_inizio < CURRENT_DATE`
+             WHERE stato = 'PRENOTATO' AND data_fine < CURRENT_DATE`
         );
         if (result.rowCount > 0)
             console.log(`[SCADENZA] ${result.rowCount} prenotazione/i scaduta/e.`);
@@ -389,8 +389,8 @@ await inviaMailBrevoAPI(email,`Il tuo PASS - ${p}`, htmlUtente, pdfData, `PASS_$
 // --- 3. LE MIE PRENOTAZIONI ---
 app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
     try {
-        const p = req.params.npass.toUpperCase();
-        const r = await pool.query(`
+       const p = req.params.npass.toUpperCase();
+       const r = await pool.query(`
             SELECT 
                 npass,
                 data_inizio,
@@ -399,10 +399,11 @@ app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
                 orario_uscita,
                 stato
             FROM prenotazioni
-            WHERE stato IN ('PRENOTATO', 'ENTRATO', 'USCITO')
+            WHERE UPPER(npass) = $1
+            AND stato IN ('PRENOTATO', 'ENTRATO', 'USCITO')
             ORDER BY COALESCE(orario_uscita, orario_ingresso, data_inizio) DESC
             LIMIT 20
-        `);
+        `, [p]);
         res.json(r.rows);
     } catch (err) {
         console.error(err);
