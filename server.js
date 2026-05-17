@@ -551,19 +551,15 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
         // ATTIVI
         if (view === 'attivi') {
 
-            whereFiltro = `
-                AND (
-                    (
-                        stato = 'PRENOTATO'
-                        AND CURRENT_DATE BETWEEN data_inizio AND data_fine
+           whereFiltro = `
+                    AND (
+                        stato = 'ENTRATO'
+                        OR (
+                            stato = 'SCADUTO'
+                            AND orario_uscita IS NULL
+                        )
                     )
-                    OR stato = 'ENTRATO'
-                    OR (
-                        stato = 'SCADUTO'
-                        AND orario_uscita IS NULL
-                    )
-                )
-            `;
+                `;
         }
 
         // SCADUTI
