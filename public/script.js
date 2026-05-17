@@ -410,7 +410,6 @@ async function eliminaPren(id) {
 }
 
 async function cercaPass(passManuale = null) {
-async function cercaPass(passManuale = null) {
 
     const input = document.getElementById('search-p');
 
