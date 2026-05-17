@@ -453,18 +453,51 @@ app.post('/api/elimina-prenotazione', async (req, res) => {
 
 // --- 5. VEICOLI DENTRO ---
 app.get('/api/veicoli-dentro', async (req, res) => {
+
     const npass = req.query.npass;
+
     if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
-        return res.status(403).json({ error: "Accesso non autorizzato" });
+        return res.status(403).json({
+            error: "Accesso non autorizzato"
+        });
     }
+
     try {
-        const r = await pool.query(
-            "SELECT npass, data_fine, orario_ingresso, orario_uscita, stato FROM prenotazioni WHERE stato IN ('ENTRATO', 'USCITO') ORDER BY COALESCE(orario_uscita, orario_ingresso) DESC LIMIT 20"
-        );
+
+        const r = await pool.query(`
+
+            SELECT
+                npass,
+                data_inizio,
+                data_fine,
+                orario_ingresso,
+                orario_uscita,
+                stato
+
+            FROM prenotazioni
+
+            WHERE stato IN (
+                'PRENOTATO',
+                'ENTRATO',
+                'USCITO'
+            )
+
+            ORDER BY
+                COALESCE(orario_uscita, orario_ingresso, data_inizio) DESC
+
+            LIMIT 50
+
+        `);
+
         res.json(r.rows);
+
     } catch (err) {
+
         console.error(err);
-        res.status(500).json({ error: "Errore interno" });
+
+        res.status(500).json({
+            error: "Errore interno"
+        });
     }
 });
 
