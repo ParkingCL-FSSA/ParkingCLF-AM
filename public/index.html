@@ -1,498 +1,369 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta name="google-site-verification" content="vDRg6d5eBw-8Dt3S5DiJxXB4w_pNs9qwMUM9SwIbWxs" />
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestione Parcheggio CL Fontanarossa </title>
-    <link rel="icon" type="image/png" href="LogoCLF.png">
-    <link rel="manifest" href="/manifest.json">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="ParkingCLF">
-    <link rel="apple-touch-icon" href="LogoCLF.png">
-    <style>
-        :root { --blue: #3b82f6; --green: #22c55e; --orange: #f59e0b; --red: #ef4444; --gray: #64748b; --light: #f8fafc; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f1f5f9; display: flex; justify-content: center; padding: 20px; margin: 0; }
-        .card { background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 480px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
-        .card.admin-wide { max-width: 95%; }
+  <meta name="google-site-verification" content="vDRg6d5eBw-8Dt3S5DiJxXB4w_pNs9qwMUM9SwIbWxs" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Gestione Parcheggio CL Fontanarossa</title>
 
-@media (max-width: 768px) {
-    .card.admin-wide { 
-        max-width: 100%; 
-        padding: 10px; 
+  <link rel="icon" type="image/png" href="LogoCLF.png" />
+  <link rel="manifest" href="/manifest.json" />
+
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ParkingCLF" />
+  <link rel="apple-touch-icon" href="LogoCLF.png" />
+
+  <style>
+    :root { --blue:#3b82f6; --green:#22c55e; --orange:#f59e0b; --red:#ef4444; --gray:#64748b; --light:#f8fafc; }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background:#f1f5f9;
+      display:flex;
+      justify-content:center;
+      padding:20px;
+      margin:0;
     }
-    
-    #tab-admin { 
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-        font-size: 10px;
+
+    .card {
+      background:white;
+      padding:25px;
+      border-radius:20px;
+      width:100%;
+      max-width:480px;
+      box-shadow:0 10px 25px rgba(0,0,0,0.05);
+      text-align:center;
     }
-    
-    #tab-admin th, #tab-admin td {
-        padding: 6px 4px;
-        min-width: 40px;
+
+    .card.admin-wide { max-width:95%; }
+
+    @media (max-width: 768px) {
+      .card.admin-wide { max-width:100%; padding:10px; }
+      #tab-admin { display:block; overflow-x:auto; white-space:nowrap; font-size:10px; }
+      #tab-admin th, #tab-admin td { padding:6px 4px; min-width:40px; }
     }
-}
-        .hidden { display: none; }
-        
-        input, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 16px; box-sizing: border-box; transition: 0.3s; }
-        button { border: none; font-weight: bold; cursor: pointer; color: white; background: var(--blue); }
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
-        
-        .btn-green { background: var(--green); } 
-        .btn-orange { background: var(--orange); } 
-        .btn-red { background: var(--red); } 
-        .btn-gray { background: var(--gray); }
 
-        /* Calendario 45gg */
-        #cal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-height: 250px; overflow-y: auto; margin: 15px 0; padding: 5px; border: 1px solid #eee; border-radius: 10px; }
-        .day-slot { padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 13px; background: white; }
-        .selected { background: var(--blue) !important; color: white !important; border-color: var(--blue); }
+    .hidden { display:none; }
 
-        /* Box Successo (Riepilogo) */
-        .summary-box { background: var(--light); padding: 15px; border-radius: 12px; text-align: left; margin: 15px 0; border: 1px solid #e2e8f0; font-size: 14px; line-height: 1.6; }
+    input, button {
+      width:100%;
+      padding:14px;
+      margin:8px 0;
+      border-radius:12px;
+      border:1px solid #e2e8f0;
+      font-size:16px;
+      box-sizing:border-box;
+      transition:0.3s;
+    }
 
-        /* Lista Prenotazioni con Cestino */
-        .pren-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border-radius: 12px; margin-bottom: 8px; border: 1px solid #e2e8f0; text-align: left; }
-        .btn-delete { color: var(--red); cursor: pointer; font-size: 20px; transition: 0.2s; }
-        .btn-delete:hover { transform: scale(1.2); }
+    button {
+      border:none;
+      font-weight:bold;
+      cursor:pointer;
+      color:white;
+      background:var(--blue);
+    }
 
-        /* Piantone & Admin */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
-        
-        @keyframes blink {
-        0% { opacity: 1; }
-        50% { opacity: 0.2; }
-        100% { opacity: 1; }
-        }
-    </style>
+    button:hover { opacity:0.9; transform:translateY(-1px); }
+
+    .btn-green { background:var(--green); }
+    .btn-orange { background:var(--orange); }
+    .btn-red { background:var(--red); }
+    .btn-gray { background:var(--gray); }
+
+    /* Calendario 45gg */
+    #cal-grid {
+      display:grid;
+      grid-template-columns:repeat(4, 1fr);
+      gap:8px;
+      max-height:250px;
+      overflow-y:auto;
+      margin:15px 0;
+      padding:5px;
+      border:1px solid #eee;
+      border-radius:10px;
+    }
+
+    .day-slot {
+      padding:10px;
+      border:1px solid #e2e8f0;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:13px;
+      background:white;
+    }
+
+    .selected {
+      background:var(--blue) !important;
+      color:white !important;
+      border-color:var(--blue);
+    }
+
+    /* Box Successo (Riepilogo) */
+    .summary-box {
+      background:var(--light);
+      padding:15px;
+      border-radius:12px;
+      text-align:left;
+      margin:15px 0;
+      border:1px solid #e2e8f0;
+      font-size:14px;
+      line-height:1.6;
+    }
+
+    /* Piantone & Admin */
+    table { width:100%; border-collapse:collapse; margin-top:15px; font-size:13px; }
+    th, td { padding:12px; border-bottom:1px solid #eee; text-align:left; }
+
+    @keyframes blink {
+      0% { opacity:1; }
+      50% { opacity:0.2; }
+      100% { opacity:1; }
+    }
+  </style>
 </head>
+
 <body>
-        <div class="card">
-            <div id="view-login">
-                <div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-bottom:10px; ">
-        <img src="/LogoCLF.png" alt="Logo CLF" style=" width:70px; height:auto; ">
-        <h1 style="color: var(--blue);">🅿️ CL Fontanarossa</h1>
-    </div>
-            <p style="color: var(--gray); font-size: 14px;">Inserisci il tuo codice identificativo</p>
-            <input type="text" id="in-npass" placeholder="" maxlength="5" style="text-align: center; text-transform: uppercase;">
-            <button id="btn-login">ENTRA</button>
-        </div>
-        <button id="btnInstalla" style="display:none; background-color: #ffffff; color: #3b82f6; border: 2px solid #3b82f6; padding: 12px; border-radius: 10px; width: 100%; margin-bottom: 15px; font-weight: bold; cursor: pointer; font-size: 16px;">
-        📲 INSTALLA APP PARCHEGGIO
-        </button>
+  <div class="card">
 
-        <div id="view-user" class="hidden">
-            <h3 id="user-title">📅 Prenota Posto</h3>
-            <p style="font-size: 14px; color: var(--green);">【Lunga Sosta】</p>
-            <p style="font-size: 12px; color: var(--gray);">Seleziona i giorni (Min 2 | Max 15)</p>
-            <div id="cal-grid"></div>
-            <input type="email" id="u-email" placeholder="Email* (PRIVATA) per ricevere il PASS">
-            <p style="font-size: 10px; color: var(--gray);text-align: justify">(*)Informativa: i dati forniti sono trattati solo per fini organizzativi. Il sistema non profila gli utenti e non cede dati a terzi. 
-             Questo è uno strumento creato per garantire a tutti gli utenti abilitati, la possibilità di sostare presso il CL. L'adesione è su base volontaria.</p>
-            <button id="btn-prenota" class="btn-green">INVIA PRENOTAZIONE</button>
-            <button class="btn-gray" style="margin-top: 10px;" id="btn-reset-days">Reset Selezione</button>
-            <button class="btn-orange" id="btn-mie">LE MIE PRENOTAZIONI</button>
-            <button class="btn-red" style="margin-top: 20px;" id="btn-logout-user">LogOUT</button>
-        </div>
+    <!-- LOGIN -->
+    <div id="view-login">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-bottom:10px;">
+        <img src="/LogoCLF.png" alt="Logo CLF" style="width:70px; height:auto;" />
+        <h1 style="color:var(--blue); margin:0;">🅿️ CL Fontanarossa</h1>
+      </div>
 
-        <div id="view-my-list" class="hidden">
-            <h3>Gestione Prenotazioni</h3>
-            <div style="background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 10px; margin-bottom: 15px; font-size: 11px; color: #92400E; text-align: left;">
-                ⚠️ <strong>Non trovi la mail di conferma?</strong> <br>Controlla la <strong>Posta indesiderata</strong> e segnala come <strong>"Sicura"</strong> o <strong>"Non Spam"</strong>.
-            </div>
-            <div id="my-list-content"></div>
-            <button class="btn-gray" style="margin-top: 15px;" id="btn-back-user">Torna Indietro</button>
-   
-    <!-- GDPR -->
-    <div style="
-        background:#f0fdf4;
-        border:1px solid #86efac;
-        border-radius:12px;
-        padding:14px;
-        font-size:12px;
-        color:#166534;
-        text-align:justify;
-        line-height:1.7;
-    ">
-        🛡️ <strong>Privacy & Sicurezza (GDPR)</strong><br><br>
-        In conformità al GDPR (Regolamento UE 2016/679), 
-        il tuo indirizzo email viene utilizzato esclusivamente 
-        per l’invio della conferma di prenotazione.
-        <br>
-        Le comunicazioni vengono gestite tramite infrastrutture sicure 
-        e protette da sistemi di crittografia avanzata 
-        (Brevo & Google).
-        <br>
-        <strong>Cancellazione garantita:</strong><br>
-        non effettuiamo archiviazione permanente dei dati 
-        né attività di marketing. 
-        Il tuo indirizzo email verrà eliminato automaticamente 
-        al termine della prenotazione.
-        <br>
-        <strong>Zero Spam:</strong><br>
-        i tuoi dati non vengono ceduti a terzi 
-        e non riceverai comunicazioni pubblicitarie.
-    </div>
- </div>           
-<div id="view-success" class="hidden">
-
-    <div style="font-size:60px; color:var(--green); margin-bottom:10px;">
-        ✅
+      <p style="color:var(--gray); font-size:14px;">Inserisci il tuo codice identificativo</p>
+      <input type="text" id="in-npass" maxlength="5" style="text-align:center; text-transform:uppercase;" autocomplete="off" />
+      <button id="btn-login" type="button">ENTRA</button>
     </div>
 
-    <h3 style="margin-bottom:5px;">
-        Prenotazione Confermata!
-    </h3>
+    <!-- INSTALLA APP -->
+    <button
+      id="btnInstalla"
+      type="button"
+      style="
+        display:none;
+        background-color:#ffffff;
+        color:#3b82f6;
+        border:2px solid #3b82f6;
+        padding:12px;
+        border-radius:10px;
+        width:100%;
+        margin-bottom:15px;
+        font-weight:bold;
+        cursor:pointer;
+        font-size:16px;
+      "
+    >
+      📲 INSTALLA APP PARCHEGGIO
+    </button>
 
-    <p style="color:var(--gray); font-size:14px; margin-bottom:15px;">
+    <!-- USER -->
+    <div id="view-user" class="hidden">
+      <h3 id="user-title">📅 Prenota Posto</h3>
+
+      <p style="font-size:14px; color:var(--green); margin:0;">【Lunga Sosta】</p>
+      <p style="font-size:12px; color:var(--gray); margin-top:6px;">Seleziona i giorni (Min 2 | Max 15)</p>
+
+      <div id="cal-grid"></div>
+
+      <input type="email" id="u-email" placeholder="Email* (PRIVATA) per ricevere il PASS" />
+
+      <p style="font-size:10px; color:var(--gray); text-align:justify; line-height:1.5;">
+        (*)Informativa: i dati forniti sono trattati solo per fini organizzativi.
+        Il sistema non profila gli utenti e non cede dati a terzi.
+        Questo è uno strumento creato per garantire a tutti gli utenti abilitati, la possibilità di sostare presso il CL.
+        L'adesione è su base volontaria.
+      </p>
+
+      <button id="btn-prenota" class="btn-green" type="button">INVIA PRENOTAZIONE</button>
+      <button id="btn-reset-days" class="btn-gray" type="button" style="margin-top:10px;">Reset Selezione</button>
+      <button id="btn-mie" class="btn-orange" type="button">LE MIE PRENOTAZIONI</button>
+      <button id="btn-logout-user" class="btn-red" type="button" style="margin-top:20px;">LogOUT</button>
+    </div>
+
+    <!-- LISTA PRENOTAZIONI -->
+    <div id="view-my-list" class="hidden">
+      <h3>Gestione Prenotazioni</h3>
+
+      <div style="background:#FEF3C7; border:1px solid #F59E0B; border-radius:8px; padding:10px; margin-bottom:15px; font-size:11px; color:#92400E; text-align:left;">
+        ⚠️ <strong>Non trovi la mail di conferma?</strong><br />
+        Controlla la <strong>Posta indesiderata</strong> e segnala come <strong>"Sicura"</strong> o <strong>"Non Spam"</strong>.
+      </div>
+
+      <div id="my-list-content"></div>
+
+      <button id="btn-back-user" class="btn-gray" type="button" style="margin-top:15px;">Torna Indietro</button>
+
+      <!-- GDPR -->
+      <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:12px; padding:14px; font-size:12px; color:#166534; text-align:justify; line-height:1.7; margin-top:12px;">
+        🛡️ <strong>Privacy & Sicurezza (GDPR)</strong><br /><br />
+        In conformità al GDPR (Regolamento UE 2016/679), il tuo indirizzo email viene utilizzato esclusivamente per l’invio della conferma di prenotazione.
+        <br />
+        Le comunicazioni vengono gestite tramite infrastrutture sicure e protette da sistemi di crittografia avanzata (Brevo & Google).
+        <br />
+        <strong>Cancellazione garantita:</strong><br />
+        non effettuiamo archiviazione permanente dei dati né attività di marketing. Il tuo indirizzo email verrà eliminato automaticamente al termine della prenotazione.
+        <br />
+        <strong>Zero Spam:</strong><br />
+        i tuoi dati non vengono ceduti a terzi e non riceverai comunicazioni pubblicitarie.
+      </div>
+    </div>
+
+    <!-- SUCCESS -->
+    <div id="view-success" class="hidden">
+      <div style="font-size:60px; color:var(--green); margin-bottom:10px;">✅</div>
+
+      <h3 style="margin-bottom:5px;">Prenotazione Confermata!</h3>
+
+      <p style="color:var(--gray); font-size:14px; margin-bottom:15px;">
         Abbiamo inviato il PASS in PDF alla tua email privata.
-    </p>
+      </p>
 
-    <!-- RIEPILOGO -->
-    <div 
-        class="summary-box" 
-        id="summary-details"
-        style="
-            background:#f8fafc;
-            border:1px solid #dbeafe;
-            border-radius:14px;
-            padding:16px;
-            text-align:left;
-            line-height:1.7;
-            font-size:14px;
-            margin-bottom:18px;
-        ">
+      <div class="summary-box" id="summary-details"
+        style="background:#f8fafc; border:1px solid #dbeafe; border-radius:14px; padding:16px; text-align:left; line-height:1.7; font-size:14px; margin-bottom:18px;">
+      </div>
+
+      <div style="background:#FEF3C7; border:1px solid #F59E0B; border-radius:12px; padding:14px; margin-bottom:18px; font-size:13px; color:#92400E; text-align:left; line-height:1.6;">
+        ⚠️ <strong>Non trovi la mail?</strong><br />
+        Controlla la cartella <strong>Posta indesiderata / Spam</strong> e contrassegna il mittente come <strong>“Sicuro”</strong> o <strong>“Non Spam”</strong>.
+      </div>
+
+      <!-- GDPR -->
+      <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:12px; padding:14px; font-size:12px; color:#166534; text-align:justify; line-height:1.7;">
+        🛡️ <strong>Privacy & Sicurezza (GDPR)</strong><br /><br />
+        In conformità al GDPR (Regolamento UE 2016/679), il tuo indirizzo email viene utilizzato esclusivamente per l’invio della conferma di prenotazione.
+        <br />
+        Le comunicazioni vengono gestite tramite infrastrutture sicure e protette da sistemi di crittografia avanzata (Brevo & Google).
+        <br />
+        <strong>Cancellazione garantita:</strong><br />
+        non effettuiamo archiviazione permanente dei dati né attività di marketing. Il tuo indirizzo email verrà eliminato automaticamente al termine della prenotazione.
+        <br />
+        <strong>Zero Spam:</strong><br />
+        i tuoi dati non vengono ceduti a terzi e non riceverai comunicazioni pubblicitarie.
+      </div>
     </div>
 
-    <!-- ALERT EMAIL -->
-    <div style="
-        background:#FEF3C7;
-        border:1px solid #F59E0B;
-        border-radius:12px;
-        padding:14px;
-        margin-bottom:18px;
-        font-size:13px;
-        color:#92400E;
-        text-align:left;
-        line-height:1.6;
-    ">
-        ⚠️ <strong>Non trovi la mail?</strong><br>
-        Controlla la cartella 
-        <strong>Posta indesiderata / Spam</strong>
-        e contrassegna il mittente come 
-        <strong>“Sicuro”</strong> o 
-        <strong>“Non Spam”</strong>.
-    </div>
-  <!-- GDPR -->
-    <div style="
-        background:#f0fdf4;
-        border:1px solid #86efac;
-        border-radius:12px;
-        padding:14px;
-        font-size:12px;
-        color:#166534;
-        text-align:justify;
-        line-height:1.7;
-    ">
-        🛡️ <strong>Privacy & Sicurezza (GDPR)</strong><br><br>
-        In conformità al GDPR (Regolamento UE 2016/679), 
-        il tuo indirizzo email viene utilizzato esclusivamente 
-        per l’invio della conferma di prenotazione.
-        <br>
-        Le comunicazioni vengono gestite tramite infrastrutture sicure 
-        e protette da sistemi di crittografia avanzata 
-        (Brevo & Google).
-        <br>
-        <strong>Cancellazione garantita:</strong><br>
-        non effettuiamo archiviazione permanente dei dati 
-        né attività di marketing. 
-        Il tuo indirizzo email verrà eliminato automaticamente 
-        al termine della prenotazione.
-        <br>
-        <strong>Zero Spam:</strong><br>
-        i tuoi dati non vengono ceduti a terzi 
-        e non riceverai comunicazioni pubblicitarie.
-    </div>
-</div>
-            
-<div id="view-piantone" class="hidden">
+    <!-- PIANTONE -->
+    <div id="view-piantone" class="hidden">
+      <h3>Controllo Sbarra 🚧</h3>
 
-    <h3>Controllo Sbarra 🚧</h3>
+      <!-- STATUS -->
+      <div id="status-parcheggio"
+        style="margin-bottom:15px; padding:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; color:#166534; font-weight:bold; font-size:14px;">
+        <span id="total-free-display">Calcolo disponibilità...</span>
+      </div>
 
-    <!-- STATUS -->
-    <div id="status-parcheggio"
-        style="
-            margin-bottom:15px;
-            padding:12px;
-            background:#f0fdf4;
-            border:1px solid #bbf7d0;
-            border-radius:12px;
-            color:#166534;
-            font-weight:bold;
-            font-size:14px;
-        ">
-
-        <span id="total-free-display">
-            Calcolo disponibilità...
-        </span>
-
-    </div>
-
-    <!-- RICERCA -->
-    <div style="display:flex; gap:8px; align-items:center;">
-
+      <!-- RICERCA + RESET -->
+      <div style="display:flex; gap:8px; align-items:center;">
         <input
-            type="text"
-            id="search-p"
-            placeholder="CERCA CODICE"
-            style="text-transform:uppercase; flex:1;"
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="characters"
-            spellcheck="false"
+          type="text"
+          id="search-p"
+          placeholder="CERCA CODICE"
+          style="text-transform:uppercase; flex:1;"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="characters"
+          spellcheck="false"
         />
 
-        <button
-            id="btn-cerca"
-            type="button"
-            style="width:auto; padding:0 20px;"
-        >
-            Cerca
+        <button id="btn-cerca" type="button" style="width:auto; padding:0 20px;">
+          Cerca
         </button>
 
-        <button
-            id="btn-reset-search"
-            type="button"
-            style="
-                width:48px;
-                background:#ef4444;
-                color:white;
-                font-weight:bold;
-            "
-        >
-            ✖
+        <button id="btn-reset-search" type="button"
+          style="width:48px; background:#ef4444; color:white; font-weight:bold;">
+          ✖
         </button>
+      </div>
 
-    </div>
-
-    <!-- PANEL -->
-    <div
-        id="panel-piantone"
-        class="hidden"
-        style="
-            margin-top:15px;
-            padding:20px;
-            background:#f8fafc;
-            border-radius:15px;
-            border:1px solid #e2e8f0;
-        "
-    >
-
-        <h4 id="lab-pass" style="margin:0; font-size:18px;">
-            PASS: ---
-        </h4>
-
-        <p
-            id="lab-periodo"
-            style="
-                font-size:12px;
-                color:var(--gray);
-                margin:5px 0 15px 0;
-            "
-        >
-            (Periodo: --/--/----)
+      <!-- PANEL RISULTATO -->
+      <div id="panel-piantone" class="hidden"
+        style="margin-top:15px; padding:20px; background:#f8fafc; border-radius:15px; border:1px solid #e2e8f0;">
+        <h4 id="lab-pass" style="margin:0; font-size:18px;">PASS: ---</h4>
+        <p id="lab-periodo" style="font-size:12px; color:var(--gray); margin:5px 0 15px 0;">
+          (Periodo: --/--/----)
         </p>
 
-        <div
-            style="
-                display:grid;
-                grid-template-columns:1fr 1fr;
-                gap:15px;
-            "
-        >
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+          <div>
+            <button id="btn-ingresso" class="btn-green" type="button" style="height:60px; font-size:18px;">ENTRATA</button>
+            <div id="reg-e" style="font-size:10px; color:var(--gray); margin-top:5px;"></div>
+          </div>
 
-            <div>
-
-                <button
-                    id="btn-ingresso"
-                    class="btn-green"
-                    style="height:60px; font-size:18px;"
-                >
-                    ENTRATA
-                </button>
-
-                <div
-                    id="reg-e"
-                    style="
-                        font-size:10px;
-                        color:var(--gray);
-                        margin-top:5px;
-                    "
-                ></div>
-
-            </div>
-
-            <div>
-
-                <button
-                    id="btn-uscita"
-                    class="btn-orange"
-                    style="height:60px; font-size:18px;"
-                >
-                    USCITA
-                </button>
-
-                <div
-                    id="reg-u"
-                    style="
-                        font-size:10px;
-                        color:var(--gray);
-                        margin-top:5px;
-                    "
-                ></div>
-
-            </div>
-
+          <div>
+            <button id="btn-uscita" class="btn-orange" type="button" style="height:60px; font-size:18px;">USCITA</button>
+            <div id="reg-u" style="font-size:10px; color:var(--gray); margin-top:5px;"></div>
+          </div>
         </div>
+      </div>
 
+      <!-- VEICOLI -->
+      <h4 style="margin-top:25px; text-align:center;">🏎️ Veicoli Dentro</h4>
 
-    <!-- VEICOLI -->
-    <h4 style="margin-top:25px; text-align:center;">
-        🏎️ Veicoli Dentro
-    </h4>
-
-    <button
-        id="btn-arrivi-oggi"
-        class="btn-gray"
-        style="width:320px; padding:6px 0;"
-    >
+      <button id="btn-arrivi-oggi" class="btn-gray" type="button" style="width:320px; padding:6px 0;">
         📋 ARRIVI OGGI
-    </button>
+      </button>
 
-    <div
-        id="box-arrivi-oggi"
-        class="hidden"
-        style="
-            margin-top:15px;
-            background:#f8fafc;
-            border:1px solid #e2e8f0;
-            border-radius:12px;
-            padding:12px;
-        "
-    >
-
-        <h4 style="margin-top:0;">
-            📅 Prenotati in arrivo oggi
-        </h4>
-
+      <div id="box-arrivi-oggi" class="hidden"
+        style="margin-top:15px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px;">
+        <h4 style="margin-top:0;">📅 Prenotati in arrivo oggi</h4>
         <table>
-
-            <thead>
-
-                <tr>
-                    <th>PASS</th>
-                    <th>STATO</th>
-                </tr>
-
-            </thead>
-
-            <tbody id="lista-arrivi-oggi"></tbody>
-
+          <thead>
+            <tr><th>PASS</th><th>STATO</th></tr>
+          </thead>
+          <tbody id="lista-arrivi-oggi"></tbody>
         </table>
+      </div>
 
-    </div>
-
-    <button
-        id="btn-filtro"
-        style="width:320px; padding:8px 0;"
-    >
+      <button id="btn-filtro" type="button" style="width:320px; padding:8px 0;">
         Mostra tutti
-    </button>
+      </button>
 
-    <div
-        id="badge-contatori"
-        style="margin:10px 0; font-size:14px;"
-    ></div>
+      <div id="badge-contatori" style="margin:10px 0; font-size:14px;"></div>
 
-    <div
-        id="stato-tabella"
-        style="
-            margin:12px auto;
-            padding:8px 18px;
-            border-radius:999px;
-            border:2px solid #cbd5e1;
-            background:#f8fafc;
-            font-size:13px;
-            font-weight:bold;
-            color:#334155;
-            box-shadow:0 2px 8px rgba(0,0,0,0.05);
-        "
-    >
+      <div id="stato-tabella"
+        style="margin:12px auto; padding:8px 18px; border-radius:999px; border:2px solid #cbd5e1; background:#f8fafc; font-size:13px; font-weight:bold; color:#334155; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
         📋 ATTIVI
-    </div>
+      </div>
 
-    <table style="font-size:14px; margin-bottom:20px;">
-
+      <table style="font-size:14px; margin-bottom:20px;">
         <thead>
-
-            <tr>
-                <th style="color:var(--blue);">PASS</th>
-                <th style="color:var(--gray);">Data Ingresso</th>
-                <th style="color:var(--green);">ORA</th>
-                <th style="color:var(--gray);">Data Uscita</th>
-                <th style="color:var(--orange);">ORA</th>
-            </tr>
-
-        </thead>
-
-        <tbody id="lista-veicoli"></tbody>
-
-    </table>
-
-    <button
-        class="btn-gray"
-        id="btn-logout-piantone"
-    >
-        LOGOUT
-    </button>
-
-</div>
-
-            
-    <table style="font-size: 14px; margin-bottom: 20px;">
-        <thead>
-            <tr>
-                <th style="color: var(--blue);">PASS</th>
-                <th style="color: var(--gray);">Data Ingresso</th>
-                <th style="color: var(--green);">ORA</th>
-                <th style="color: var(--gray);">Data Uscita</th>
-                <th style="color: var(--orange);">ORA</th>
-            </tr>
+          <tr>
+            <th style="color:var(--blue);">PASS</th>
+            <th style="color:var(--gray);">Data Ingresso</th>
+            <th style="color:var(--green);">ORA</th>
+            <th style="color:var(--gray);">Data Uscita</th>
+            <th style="color:var(--orange);">ORA</th>
+          </tr>
         </thead>
         <tbody id="lista-veicoli"></tbody>
-    </table>
+      </table>
 
-    <button class="btn-gray" id="btn-logout-piantone">
-        LOGOUT
-    </button>
+      <button id="btn-logout-piantone" class="btn-gray" type="button">LOGOUT</button>
     </div>
 
+    <!-- ADMIN -->
     <div id="view-admin" class="hidden">
-    
-            <h3>📊 Disponibilità Posti</h3>
-            <table id="tab-admin"></table>
-            <button id="btn-ritardi">Report Ritardi</button>
-            <button class="btn-red" style="margin-top: 20px;" id="btn-logout-admin">LOGOUT</button>
-        </div>
-        <button id="btnEsciApp" style="background-color: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; padding: 10px; border-radius: 8px; width: 100%; margin-top: 20px; font-weight: bold;">
-        🚪 ESCI DALL'APP
-        </button>
+      <h3>📊 Disponibilità Posti</h3>
+      <table id="tab-admin"></table>
+      <button id="btn-ritardi" type="button">Report Ritardi</button>
+      <button id="btn-logout-admin" class="btn-red" type="button" style="margin-top:20px;">LOGOUT</button>
+    </div>
 
-</div>
-    <script src="script.js"></script>
+    <!-- ESCI APP -->
+    <button
+      id="btnEsciApp"
+      type="button"
+      style="background-color:#f1f5f9; color:#64748b; border:1px solid #cbd5e1; padding:10px; border-radius:8px; width:100%; margin-top:20px; font-weight:bold;"
+    >
+      🚪 ESCI DALL'APP
+    </button>
+
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
