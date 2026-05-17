@@ -544,7 +544,7 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
 
     try {
 
-        const oggi = new Date().toISOString().split('T')[0];
+        //const oggi = new Date().toISOString().split('T')[0];
 
         let whereFiltro = "";
 
@@ -780,11 +780,10 @@ app.get('/api/piantone/liberi', async (req, res) => {
         const oggi = new Date().toISOString().split('T')[0];
 
         const result = await pool.query(`
-            SELECT COUNT(DISTINCT npass) as dentro
-            FROM prenotazioni
-            WHERE stato = 'ENTRATO'
-              AND CURRENT_DATE BETWEEN data_inizio AND data_fine
-        `);
+        SELECT COUNT(DISTINCT npass) as dentro
+        FROM prenotazioni
+        WHERE stato = 'ENTRATO'
+    `);
 
         const dentro = parseInt(result.rows[0].dentro) || 0;
 
@@ -893,7 +892,7 @@ app.get('/api/piantone/storico', async (req, res) => {
         const r = await pool.query(`
             SELECT npass, orario_ingresso, orario_uscita, stato
             FROM prenotazioni
-            WHERE orario_ingresso IS NOT NULL
+            WHERE stato = 'USCITO'
             ORDER BY orario_ingresso DESC
             LIMIT 30
         `);
@@ -923,9 +922,7 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
       LEFT JOIN registro_pass r
         ON UPPER(p.npass) = UPPER(r.npass)
 
-      WHERE
-        CURRENT_DATE BETWEEN p.data_inizio AND p.data_fine
-        AND p.stato = 'PRENOTATO'
+      WHERE p.stato = 'PRENOTATO' AND p.data_inizio <= CURRENT_DATE
 
       ORDER BY
         UPPER(p.npass),
