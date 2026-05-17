@@ -529,7 +529,8 @@ app.get('/api/veicoli-dentro', async (req, res) => {
             )
 
             ORDER BY
-                COALESCE(orario_uscita, orario_ingresso, data_inizio) DESC
+                data_inserimento DESC,
+                id DESC
 
             LIMIT 300
 
