@@ -118,7 +118,7 @@ function toggleScaduti() {
 
     if (filtroPiantone === 'attivi') {
 
-        btn.innerText = "Mostra scaduti";
+        btn.innerText = totaleScaduti > 0 ? "Mostra scaduti" : "Mostra tutti";
     }
 
     else if (filtroPiantone === 'scaduti') {
@@ -641,25 +641,29 @@ dati.forEach(x => {
     badge.innerHTML = `
     🚗 <b>Dentro:</b> ${countDentro}
     &nbsp;&nbsp;|&nbsp;&nbsp;
-    📅 <b>Prenotati:</b> ${countPrenotati}
+    📅 <b>Prenotati oggi:</b> ${countPrenotati}
     &nbsp;&nbsp;|&nbsp;&nbsp;
     🅿️ <b>Liberi:</b> ${120 - countDentro}
-    &nbsp;&nbsp;|&nbsp;&nbsp;
-    <span id="badge-scaduti">
-        ⏰ <b>Scaduti:</b> ${countScaduti}
-    </span>
+    ${
+        countScaduti > 0
+        ? `
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        <span id="badge-scaduti">
+            ⏰ <b>Scaduti:</b> ${countScaduti}
+        </span>
+        `
+        : ''
+    }
 `;
 
     // LAMPEGGIO SOLO SCADUTI
-    const elScaduti = document.getElementById('badge-scaduti');
+const elScaduti = document.getElementById('badge-scaduti');
 
-    if (countScaduti > 0) {
-        elScaduti.style.animation = 'blink 1s infinite';
-        elScaduti.style.color = '#ef4444';
-    } else {
-        elScaduti.style.animation = '';
-        elScaduti.style.color = '';
-    }
+if (elScaduti && countScaduti > 0) {
+
+    elScaduti.style.animation = 'blink 1s infinite';
+    elScaduti.style.color = '#ef4444';
+}
 
     // FILTRI
 const lista = dati
