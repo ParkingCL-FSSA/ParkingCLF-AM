@@ -1357,7 +1357,10 @@ document.getElementById('btn-presente')
 ?.addEventListener('click', async () => {
 
     if (!currentPren) return;
-
+    if (!confirm(
+        'Confermi che il veicolo è presente nel parcheggio?'
+    )) return;
+    
     const res = await fetch(
         '/api/piantone/azione',
         {
