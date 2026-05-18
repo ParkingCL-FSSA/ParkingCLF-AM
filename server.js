@@ -986,6 +986,11 @@ app.post('/api/piantone/non-presente', async (req, res) => {
     }
 });
 
+// avvio immediato
+scadenzaPrenotazioni();
+// ogni 5 minuti
+setInterval(scadenzaPrenotazioni, 5 * 60 * 1000);
+
 app.listen(process.env.PORT || 3000, '0.0.0.0', () => {
     console.log(`Server avviato`);
 });
