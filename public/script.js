@@ -1044,12 +1044,11 @@ let loadingAzione = false;
 
 async function mossa(tipo) {
 
-    if (loadingAzione) return;
-
     const btnIngresso = document.getElementById('btn-ingresso');
     const btnUscita = document.getElementById('btn-uscita');
     const boxVerifica = document.getElementById('box-verifica');
-
+    if (loadingAzione) return;
+    
     let azione = tipo;
 
     if (tipo === 'E') azione = 'ingresso';
