@@ -599,7 +599,12 @@ else if (view === 'scaduti') {
         )
     `;
 }
-    
+ else if (view === 'verificare') {
+
+    whereFiltro = `
+        AND stato = 'DA_VERIFICARE'
+    `;
+}   
     // STORICO = usciti
     else if (view === 'storico') {
     
