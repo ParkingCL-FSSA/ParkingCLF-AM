@@ -589,11 +589,8 @@ boxVerifica?.classList.add('hidden');
                 return;
             }
            
-            if (currentPren.stato === 'DA_VERIFICARE') {
-                boxVerifica.classList.remove('hidden');
-            } else {
-                boxVerifica.classList.add('hidden');
-            }
+            // SEMPRE NASCOSTO ALL'APERTURA
+            boxVerifica.classList.add('hidden');
             
            // RESET
             btnIngresso.disabled = true;
@@ -618,18 +615,15 @@ boxVerifica?.classList.add('hidden');
                 currentPren.stato === 'DA_VERIFICARE'
             ) {
             
-                // ENTRATA nascosto solo qui
-                btnIngresso.style.display = 'none';
+                // ENTRATA visibile
+                btnIngresso.style.display = 'inline-block';
+                btnIngresso.disabled = true;
             
-                // mostra solo VERIFICA
+                // VERIFICATO
                 btnUscita.disabled = false;
                 btnUscita.style.display = 'inline-block';
-            
                 btnUscita.style.background = '#ea580c';
-                btnUscita.innerText = 'VERIFICA';
-            
-                // i bottoni verifica NON visibili subito
-                boxVerifica.classList.add('hidden');
+                btnUscita.innerText = 'VERIFICATO';
             }
             // SCADUTO
             else if (
