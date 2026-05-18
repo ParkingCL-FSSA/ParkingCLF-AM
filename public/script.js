@@ -637,9 +637,9 @@ function getFlags(x) {
 
     // 🔴 VERIFICARE
     const daVerificare =
-        x.stato === 'SCADUTO' &&
-        !x.orario_uscita &&
-        oggi > x.data_fine;
+    x.stato === 'SCADUTO' &&
+    x.orario_ingresso !== null &&
+    x.orario_uscita === null;
 
     const storico = x.stato === 'USCITO';
 
