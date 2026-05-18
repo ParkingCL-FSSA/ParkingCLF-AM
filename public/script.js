@@ -636,7 +636,7 @@ function getFlags(x) {
         oggi <= x.data_fine;
 
     // 🔴 VERIFICARE
-    const daVerificare =
+const daVerificare =
     x.stato === 'SCADUTO' &&
     x.orario_ingresso !== null &&
     x.orario_uscita === null;
@@ -694,6 +694,9 @@ dati.forEach(x => {
     const f = getFlags(x);
         if (f.daVerificare) countVerificare++;
 });
+    totaleScaduti = countScaduti;
+    totaleVerificare = countVerificare;
+    
         let label = "";
         let colore = "#334155";
         let sfondo = "#f8fafc";
@@ -854,8 +857,8 @@ const lista = dati.filter(x => {
 
         const daVerificare =
             x.stato === 'SCADUTO' &&
-            x.orario_ingresso &&
-            !x.orario_uscita;
+            x.orario_ingresso !== null &&
+            x.orario_uscita === null;
         const maiEntrato = x.stato === 'MAI_ENTRATO';
         const storico = x.stato === 'USCITO';
         const uscitoScaduto =
