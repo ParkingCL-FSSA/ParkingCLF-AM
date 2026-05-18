@@ -620,7 +620,36 @@ async function cercaPass(passManuale = null) {
 
 // FIX: tabella a 4 colonne (PASS | Data Accesso | Ora Ingresso | Data e Ora Uscita)
 // con gestione null su orario_ingresso e orario_uscita
+function getFlags(x) {
 
+    const oggi = new Date().toISOString().split('T')[0];
+
+    const entrato = x.stato === 'ENTRATO';
+
+    const scaduto =
+        (x.stato === 'PRENOTATO' && oggi > x.data_fine) ||
+        x.stato === 'MAI_ENTRATO';
+
+    const prenotatoOggi =
+        x.stato === 'PRENOTATO' &&
+        oggi >= x.data_inizio &&
+        oggi <= x.data_fine;
+
+    const daVerificare =
+        x.stato === 'DA_VERIFICARE' ||
+        (entrato && !x.orario_uscita) ||          // mai uscito
+        (entrato && x.data_fine < oggi);          // oltre fine
+
+    const storico = x.stato === 'USCITO';
+
+    return {
+        entrato,
+        scaduto,
+        prenotatoOggi,
+        daVerificare,
+        storico
+    };
+}
 async function aggiornaVeicoli() {
 
     const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
@@ -730,39 +759,29 @@ if (elScaduti && countScaduti > 0) {
 }
 
  // FILTRI
-const lista = dati
-    .filter(x => {
-        const oggi = new Date().toISOString().split('T')[0];
+const lista = dati.filter(x => {
 
-        const prenotatoOggi =
-            x.stato === 'PRENOTATO' &&
-            oggi >= x.data_inizio &&
-            oggi <= x.data_fine;
+    const f = getFlags(x);
 
-        const dentro = x.stato === 'ENTRATO';
-        const daVerificare = x.stato === 'DA_VERIFICARE';
-        const scaduto =
-            (x.stato === 'PRENOTATO' && oggi > x.data_fine) ||
-            x.stato === 'MAI_ENTRATO';
+    if (filtroPiantone === 'attivi')
+        return f.entrato || f.prenotatoOggi;
 
-        if (filtroPiantone === 'attivi')
-            return dentro || prenotatoOggi;
+    if (filtroPiantone === 'scaduti')
+        return f.scaduto;
 
-        if (filtroPiantone === 'scaduti')
-            return scaduto;
+    if (filtroPiantone === 'verificare')
+        return f.daVerificare;
 
-        if (filtroPiantone === 'verificare')
-            return daVerificare;
+    if (filtroPiantone === 'storico')
+        return f.storico;
 
-        if (filtroPiantone === 'storico')
-            return x.stato === 'USCITO';
-
-        return true;
-    })
+    return true;
+});
     .sort((a, b) => {
-
         const prenA = a.stato === 'PRENOTATO';
         const prenB = b.stato === 'PRENOTATO';
+        const fa = getFlags(a);
+        const fb = getFlags(b);
 
         if (prenA && prenB) {
             return new Date(a.data_inizio) - new Date(b.data_inizio);
@@ -821,6 +840,8 @@ const lista = dati
         const uscitoScaduto =
             x.stato === 'USCITO' &&
             x.data_fine < oggi;
+        
+        const f = getFlags(x);
         
            return `<tr style="
         ${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
