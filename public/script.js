@@ -570,13 +570,19 @@ const boxVerifica = document.getElementById('box-verifica');
 btnIngresso.style.display = 'inline-block';
 btnUscita.style.display = 'inline-block';
 
+btnIngresso.disabled = true;
+btnUscita.disabled = true;
+
 btnIngresso.innerText = 'ENTRATA';
 btnUscita.innerText = 'USCITA';
 
 btnIngresso.style.background = '';
 btnUscita.style.background = '';
 
-boxVerifica?.classList.add('hidden');
+// NASCONDI SEMPRE verifica all'apertura
+if (boxVerifica) {
+    boxVerifica.classList.add('hidden');
+}
 
         if (data.trovato) {
 
@@ -588,9 +594,6 @@ boxVerifica?.classList.add('hidden');
             
                 return;
             }
-           
-            // SEMPRE NASCOSTO ALL'APERTURA
-            boxVerifica.classList.add('hidden');
             
            // RESET
             btnIngresso.disabled = true;
@@ -1053,7 +1056,7 @@ async function mossa(tipo) {
 
     if (tipo === 'U') {
 
-        // SOLO DA_VERIFICARE
+        // DA_VERIFICARE
         if (currentPren.stato === 'DA_VERIFICARE') {
 
             // nasconde VERIFICA
