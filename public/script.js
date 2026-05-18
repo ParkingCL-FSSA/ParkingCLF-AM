@@ -1382,18 +1382,25 @@ document.getElementById('btn-presente')
 
     const data = await res.json();
 
-    if (data.success) {
+  if (data.success) {
 
-        alert('Veicolo verificato');
+    alert('Veicolo verificato');
 
-        aggiornaVeicoli();
+    aggiornaVeicoli();
 
-        document
-            .getElementById('panel-piantone')
-            .classList
-            .add('hidden');
-    }
-});
+    // NASCONDI box verifica
+    document
+        .getElementById('box-verifica')
+        ?.classList.add('hidden');
+
+    // MOSTRA VERIFICATO
+    const btnUscita = document.getElementById('btn-uscita');
+
+    btnUscita.style.display = 'inline-block';
+    btnUscita.disabled = true;
+    btnUscita.innerText = 'VERIFICATO';
+    btnUscita.style.background = '#64748b';
+}
 document.getElementById('btn-non-presente')
 ?.addEventListener('click', async () => {
 
@@ -1416,14 +1423,25 @@ document.getElementById('btn-non-presente')
     );
     const data = await res.json();
 
-    if (data.success) {
-        alert('Segnato come USCITO');
-        aggiornaVeicoli();
-        document
-            .getElementById('panel-piantone')
-            .classList
-            .add('hidden');
-    }
+if (data.success) {
+
+    alert('Segnato come USCITO');
+
+    aggiornaVeicoli();
+
+    // NASCONDI box verifica
+    document
+        .getElementById('box-verifica')
+        ?.classList.add('hidden');
+
+    // MOSTRA VERIFICATO
+    const btnUscita = document.getElementById('btn-uscita');
+
+    btnUscita.style.display = 'inline-block';
+    btnUscita.disabled = true;
+    btnUscita.innerText = 'VERIFICATO';
+    btnUscita.style.background = '#64748b';
+}
 });
     document.getElementById('btn-arrivi-oggi')?.addEventListener('click', mostraArriviOggi);
     document.getElementById('btn-ingresso')?.addEventListener('click', () => {
