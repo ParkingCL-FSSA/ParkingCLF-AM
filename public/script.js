@@ -560,15 +560,23 @@ async function cercaPass(passManuale = null) {
         const res = await fetch(
             `/api/piantone/cerca/${encodeURIComponent(p)}?auth=${userPass}&view=${filtroPiantone}`
         );
-        // RESET UI
-        btnIngresso.style.display = 'inline-block';
-        btnUscita.style.display = 'inline-block';
-        
-        document.getElementById('box-verifica')
-            ?.classList.add('hidden');
-        
-        const boxVerifica = document.getElementById('box-verifica');
         const data = await res.json();
+
+const btnIngresso = document.getElementById('btn-ingresso');
+const btnUscita = document.getElementById('btn-uscita');
+const boxVerifica = document.getElementById('box-verifica');
+
+// RESET UI
+btnIngresso.style.display = 'inline-block';
+btnUscita.style.display = 'inline-block';
+
+btnIngresso.innerText = 'ENTRATA';
+btnUscita.innerText = 'USCITA';
+
+btnIngresso.style.background = '';
+btnUscita.style.background = '';
+
+boxVerifica?.classList.add('hidden');
 
         if (data.trovato) {
 
@@ -580,11 +588,7 @@ async function cercaPass(passManuale = null) {
             
                 return;
             }
-
-            const btnIngresso = document.getElementById('btn-ingresso');
-            const btnUscita = document.getElementById('btn-uscita');
-            const boxVerifica = document.getElementById('box-verifica');
-            
+           
             if (currentPren.stato === 'DA_VERIFICARE') {
                 boxVerifica.classList.remove('hidden');
             } else {
