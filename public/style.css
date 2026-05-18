@@ -81,7 +81,13 @@ input {
     gap:6px;
     font-weight:bold;
 }
+.hidden {
+    display: none !important;
+}
 
+#box-verifica {
+    display: flex;
+}
 .dot{
     width:12px;
     height:12px;
