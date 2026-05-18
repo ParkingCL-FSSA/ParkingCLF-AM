@@ -670,8 +670,16 @@ dati.forEach(x => {
         oggi >= x.data_inizio &&
         oggi <= x.data_fine;
 
-    const dentro =
-        x.stato === 'ENTRATO';
+    Const dentro =
+    (
+        x.stato === 'ENTRATO'
+        ||
+        (
+            x.stato === 'SCADUTO' &&
+            x.orario_ingresso &&
+            !x.orario_uscita
+        )
+    );
     
     const maiEntrato =
         x.stato === 'MAI_ENTRATO';
@@ -844,7 +852,10 @@ const lista = dati.filter(x => {
             (x.stato === 'PRENOTATO' && oggi > x.data_fine) ||
             x.stato === 'MAI_ENTRATO';
 
-        const daVerificare = x.stato === 'SCADUTO';
+        const daVerificare =
+            x.stato === 'SCADUTO' &&
+            x.orario_ingresso &&
+            !x.orario_uscita;
         const maiEntrato = x.stato === 'MAI_ENTRATO';
         const storico = x.stato === 'USCITO';
         const uscitoScaduto =
