@@ -1401,48 +1401,78 @@ document.getElementById('btn-presente')
     btnUscita.innerText = 'VERIFICATO';
     btnUscita.style.background = '#64748b';
 }
+// PRESENTE
+
+document.getElementById('btn-presente')
+?.addEventListener('click', async () => {
+
+    if (!currentPren) return;
+
+    if (!confirm(
+        'Confermi che il veicolo è presente nel parcheggio?'
+    )) return;
+
+    const res = await fetch('/api/piantone/azione', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            id: currentPren.id,
+            azione: 'uscita',
+            npass: userPass
+        })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+
+        alert('Veicolo verificato');
+
+        await aggiornaVeicoli();
+
+        document
+            .getElementById('box-verifica')
+            ?.classList.add('hidden');
+
+        const btnUscita = document.getElementById('btn-uscita');
+
+        btnUscita.style.display = 'inline-block';
+        btnUscita.disabled = true;
+        btnUscita.innerText = 'VERIFICATO';
+        btnUscita.style.background = '#64748b';
+    }
+});
+
+
+// NON PRESENTE
+
 document.getElementById('btn-non-presente')
 ?.addEventListener('click', async () => {
 
     if (!currentPren) return;
+
     if (!confirm(
         'Confermi che il veicolo NON è presente nel parcheggio?'
     )) return;
 
-    const res = await fetch(
-        '/api/piantone/non-presente',
-        {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                id: currentPren.id
-            })
-        }
-    );
+    const res = await fetch('/api/piantone/non-presente', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            id: currentPren.id
+        })
+    });
+
     const data = await res.json();
 
-if (data.success) {
+    if (data.success) {
 
-    alert('Segnato come USCITO');
-
-    aggiornaVeicoli();
-
-    // NASCONDI box verifica
-    document
-        .getElementById('box-verifica')
-        ?.classList.add('hidden');
-
-    // MOSTRA VERIFICATO
-    const btnUscita = document.getElementById('btn-uscita');
-
-    btnUscita.style.display = 'inline-block';
-    btnUscita.disabled = true;
-    btnUscita.innerText = 'VERIFICATO';
-    btnUscita.style.background = '#64748b';
-}
 });
+    
     document.getElementById('btn-arrivi-oggi')?.addEventListener('click', mostraArriviOggi);
     document.getElementById('btn-ingresso')?.addEventListener('click', () => {
         mossa('E');
