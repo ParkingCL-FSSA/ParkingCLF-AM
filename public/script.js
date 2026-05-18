@@ -1043,28 +1043,31 @@ async function mossa(tipo) {
 
     if (loadingAzione) return;
 
+    const btnIngresso = document.getElementById('btn-ingresso');
+    const btnUscita = document.getElementById('btn-uscita');
+    const boxVerifica = document.getElementById('box-verifica');
+
     let azione = tipo;
 
     if (tipo === 'E') azione = 'ingresso';
+
     if (tipo === 'U') {
 
-    // caso DA_VERIFICARE
-   if (currentPren.stato === 'DA_VERIFICARE') {
+        // SOLO DA_VERIFICARE
+        if (currentPren.stato === 'DA_VERIFICARE') {
 
-    // nasconde VERIFICA
-    btnUscita.style.display = 'none';
+            // nasconde VERIFICA
+            btnUscita.style.display = 'none';
 
-    // mostra PRESENTE / NON PRESENTE
-    document
-        .getElementById('box-verifica')
-        ?.classList.remove('hidden');
+            // mostra PRESENTE / NON PRESENTE
+            boxVerifica.classList.remove('hidden');
 
-    return;
-}
+            return;
+        }
 
-    azione = 'uscita';
+        azione = 'uscita';
     }
-    
+
     // 🚫 uscita senza ingresso
     if (
         tipo === 'U' &&
@@ -1077,14 +1080,12 @@ async function mossa(tipo) {
         alert("Auto ancora non entrata");
         return;
     }
-    const btnIngresso = document.getElementById('btn-ingresso');
-    const btnUscita = document.getElementById('btn-uscita');
 
     btnIngresso.disabled = true;
     btnUscita.disabled = true;
 
     loadingAzione = true;
-
+    
     try {
 
         const res = await fetch('/api/piantone/azione', {
