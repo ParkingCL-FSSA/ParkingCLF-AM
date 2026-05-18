@@ -618,11 +618,12 @@ else if (view === 'scaduti') {
     
         whereFiltro = `
             AND stato IN (
-                'PRENOTATO',
-                'ENTRATO',
-                'USCITO',
-                'SCADUTO'
-            )
+    'PRENOTATO',
+    'ENTRATO',
+    'USCITO',
+    'DA_VERIFICARE',
+    'MAI_ENTRATO'
+)
         `;
     }
         const query = `
