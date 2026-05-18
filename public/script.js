@@ -1039,52 +1039,51 @@ const lista = dati.filter(x => {
 
 });
 }
-    
+
 let loadingAzione = false;
 
 async function mossa(tipo) {
 
-  const btnIngresso = document.getElementById('btn-ingresso');
-  const btnUscita = document.getElementById('btn-uscita');
-  const boxVerifica = document.getElementById('box-verifica');
+    const btnIngresso = document.getElementById('btn-ingresso');
+    const btnUscita = document.getElementById('btn-uscita');
+    const boxVerifica = document.getElementById('box-verifica');
 
-  if (loadingAzione) return;
+    if (loadingAzione) return;
 
-  // 👉 caso DA_VERIFICARE + click sul bottone "VERIFICA"
-  if (tipo === 'U' && currentPren?.stato === 'DA_VERIFICARE') {
-    // 1) sparisce VERIFICA
-    btnUscita.style.display = 'none';
-    // 2) compaiono ✅/❌
-    boxVerifica?.classList.remove('hidden');
-    return;
-  }
+    // DA VERIFICARE → mostra PRESENTE / NON PRESENTE
+    if (
+        tipo === 'U' &&
+        currentPren?.stato === 'DA_VERIFICARE'
+    ) {
 
-  let azione = tipo;
-  if (tipo === 'E') azione = 'ingresso';
-  if (tipo === 'U') azione = 'uscita';
+        btnUscita.style.display = 'none';
 
-  // 🚫 uscita senza ingresso (solo NON DA_VERIFICARE)
-  if (
-    tipo === 'U' &&
-    currentPren?.stato !== 'DA_VERIFICARE' &&
-    (currentPren?.stato === 'PRENOTATO' || !currentPren?.orario_ingresso)
-  ) {
-    alert("Auto ancora non entrata");
-    return;
-  }
+        boxVerifica?.classList.remove('hidden');
+
+        return;
+    }
+
+    let azione = tipo;
+
+    if (tipo === 'E') {
+        azione = 'ingresso';
+    }
+
+    if (tipo === 'U') {
         azione = 'uscita';
     }
 
-    // 🚫 uscita senza ingresso
+    // blocca uscita senza ingresso
     if (
         tipo === 'U' &&
-        currentPren.stato !== 'DA_VERIFICARE' &&
+        currentPren?.stato !== 'DA_VERIFICARE' &&
         (
-            currentPren.stato === 'PRENOTATO' ||
-            !currentPren.orario_ingresso
+            currentPren?.stato === 'PRENOTATO' ||
+            !currentPren?.orario_ingresso
         )
     ) {
-        alert("Auto ancora non entrata");
+
+        alert('Auto ancora non entrata');
         return;
     }
 
@@ -1092,50 +1091,40 @@ async function mossa(tipo) {
     btnUscita.disabled = true;
 
     loadingAzione = true;
-    
+
     try {
 
         const res = await fetch('/api/piantone/azione', {
-
             method: 'POST',
-
             headers: {
                 'Content-Type': 'application/json'
             },
-
             body: JSON.stringify({
                 id: currentPren.id,
-                azione: azione,
+                azione,
                 npass: userPass
             })
-
         });
 
         const data = await res.json();
 
         if (!data.success) {
-
-            alert(data.error || "Errore operazione");
+            alert(data.error || 'Errore operazione');
             return;
-
         }
 
-        // 🔊 suoni
+        // suoni
         if (tipo === 'E') {
-
             beepIngresso.play();
-
         } else {
-
             beepUscita.play();
-
         }
 
         ultimoAggiornato = currentPren.npass;
 
         await aggiornaVeicoli();
 
-        // uscita
+        // USCITA
         if (tipo === 'U') {
 
             document
@@ -1147,17 +1136,18 @@ async function mossa(tipo) {
 
             currentPren = null;
 
+            boxVerifica?.classList.add('hidden');
+
         } else {
 
             await cercaPass();
-
         }
 
     } catch (err) {
 
         console.error(err);
 
-        alert("Errore rete/server");
+        alert('Errore rete/server');
 
     } finally {
 
@@ -1165,9 +1155,150 @@ async function mossa(tipo) {
 
         btnIngresso.disabled = false;
         btnUscita.disabled = false;
-
     }
 }
+```
+
+---
+
+# 2) SISTEMA GLI EVENTI `PRESENTE` e `NON PRESENTE`
+
+Nel tuo file hai:
+
+```js
+btn-non-presente
+```
+
+messo DENTRO il click di `btn-presente`.
+
+Va separato.
+
+---
+
+# ELIMINA COMPLETAMENTE QUESTO BLOCCO
+
+Da:
+
+```js
+document.getElementById('btn-presente')
+```
+
+fino alla fine del blocco:
+
+```js
+});
+```
+
+---
+
+# INCOLLA QUESTO BLOCCO AL SUO POSTO
+
+```js
+// PRESENTE
+
+document.getElementById('btn-presente')
+?.addEventListener('click', async () => {
+
+    if (!currentPren) return;
+
+    if (!confirm(
+        'Confermi che il veicolo è presente nel parcheggio?'
+    )) return;
+
+    const res = await fetch('/api/piantone/azione', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            id: currentPren.id,
+            azione: 'uscita',
+            npass: userPass
+        })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+
+        alert('Veicolo verificato');
+
+        await aggiornaVeicoli();
+
+        document
+            .getElementById('box-verifica')
+            ?.classList.add('hidden');
+
+        const btnUscita = document.getElementById('btn-uscita');
+
+        btnUscita.style.display = 'inline-block';
+        btnUscita.disabled = true;
+        btnUscita.innerText = 'VERIFICATO';
+        btnUscita.style.background = '#64748b';
+    }
+});
+
+
+// NON PRESENTE
+
+document.getElementById('btn-non-presente')
+?.addEventListener('click', async () => {
+
+    if (!currentPren) return;
+
+    if (!confirm(
+        'Confermi che il veicolo NON è presente nel parcheggio?'
+    )) return;
+
+    const res = await fetch('/api/piantone/non-presente', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            id: currentPren.id
+        })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+
+        alert('Segnato come USCITO');
+
+        await aggiornaVeicoli();
+
+        document
+            .getElementById('box-verifica')
+            ?.classList.add('hidden');
+
+        const btnUscita = document.getElementById('btn-uscita');
+
+        btnUscita.style.display = 'inline-block';
+        btnUscita.disabled = true;
+        btnUscita.innerText = 'VERIFICATO';
+        btnUscita.style.background = '#64748b';
+    }
+});
+```
+
+---
+
+# RISULTATO FINALE
+
+Adesso avrai:
+
+* Login funzionante
+* Nessun errore JS
+* `VERIFICA` che sparisce dopo il click
+* Comparsa dei tasti:
+
+  * ✅ PRESENTE
+  * ❌ NON PRESENTE
+* Stato `VERIFICATO` dopo la conferma
+* Nessun annidamento errato
+* Nessun blocco duplicato
+
 
 async function mostraRitardi() {
     const res = await fetch('/api/admin/ritardi');
