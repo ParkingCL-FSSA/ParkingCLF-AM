@@ -779,7 +779,7 @@ const lista = dati.filter(x => {
         return f.storico;
 
     return true;
-});
+})
     .sort((a, b) => {
         const prenA = a.stato === 'PRENOTATO';
         const prenB = b.stato === 'PRENOTATO';
