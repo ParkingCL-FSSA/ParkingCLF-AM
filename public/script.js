@@ -256,7 +256,11 @@ async function doLogin() {
                 .value
                 .trim()
                 .toUpperCase();
-    
+        if (data.valid) {
+        // Nascondi l'avviso quando il login ha successo
+        const avviso = document.getElementById('avviso-manutenzione');
+        if (avviso) avviso.style.display = 'none';
+        }
             if (!userPass) return;
     
             const res = await fetch('/api/valida-pass', {
