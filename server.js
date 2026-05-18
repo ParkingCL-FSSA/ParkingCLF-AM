@@ -527,6 +527,7 @@ app.get('/api/veicoli-dentro', async (req, res) => {
                 data_fine,
                 orario_ingresso,
                 orario_uscita,
+                data_inserimento,
                 stato
 
             FROM prenotazioni
@@ -593,8 +594,7 @@ else if (view === 'scaduti') {
 
     whereFiltro = `
         AND (
-            stato = 'SCADUTO'
-            OR stato = 'DA_VERIFICARE'
+            stato = 'DA_VERIFICARE'
             OR stato = 'MAI_ENTRATO'
         )
     `;
