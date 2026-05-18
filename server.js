@@ -757,7 +757,11 @@ app.post('/api/piantone/azione', async (req, res) => {
                 `
                 UPDATE prenotazioni
                 SET
-                    stato = 'USCITO',
+                    stato = CASE
+                        WHEN stato = 'DA_VERIFICARE'
+                        THEN 'SCADUTO'
+                        ELSE 'USCITO'
+                    END,
                     orario_uscita = $1
                 WHERE id = $2
                 `,
