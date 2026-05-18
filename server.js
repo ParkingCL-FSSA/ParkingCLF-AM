@@ -589,19 +589,16 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
         `;
     }   
    // SCADUTI
-    else if (view === 'scaduti') {
-    
-        whereFiltro = `
-            AND (
-                stato = 'SCADUTO'
-                OR (
-                    stato = 'ENTRATO'
-                    AND CURRENT_DATE > data_fine
-                    AND orario_uscita IS NULL
-                )
-            )
-        `;
-    }
+else if (view === 'scaduti') {
+
+    whereFiltro = `
+        AND (
+            stato = 'SCADUTO'
+            OR stato = 'DA_VERIFICARE'
+            OR stato = 'MAI_ENTRATO'
+        )
+    `;
+}
     
     // STORICO = usciti
     else if (view === 'storico') {
