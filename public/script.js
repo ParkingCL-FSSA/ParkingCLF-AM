@@ -1157,43 +1157,7 @@ async function mossa(tipo) {
         btnUscita.disabled = false;
     }
 }
-```
 
----
-
-# 2) SISTEMA GLI EVENTI `PRESENTE` e `NON PRESENTE`
-
-Nel tuo file hai:
-
-```js
-btn-non-presente
-```
-
-messo DENTRO il click di `btn-presente`.
-
-Va separato.
-
----
-
-# ELIMINA COMPLETAMENTE QUESTO BLOCCO
-
-Da:
-
-```js
-document.getElementById('btn-presente')
-```
-
-fino alla fine del blocco:
-
-```js
-});
-```
-
----
-
-# INCOLLA QUESTO BLOCCO AL SUO POSTO
-
-```js
 // PRESENTE
 
 document.getElementById('btn-presente')
@@ -1280,25 +1244,6 @@ document.getElementById('btn-non-presente')
         btnUscita.style.background = '#64748b';
     }
 });
-```
-
----
-
-# RISULTATO FINALE
-
-Adesso avrai:
-
-* Login funzionante
-* Nessun errore JS
-* `VERIFICA` che sparisce dopo il click
-* Comparsa dei tasti:
-
-  * ✅ PRESENTE
-  * ❌ NON PRESENTE
-* Stato `VERIFICATO` dopo la conferma
-* Nessun annidamento errato
-* Nessun blocco duplicato
-
 
 async function mostraRitardi() {
     const res = await fetch('/api/admin/ritardi');
