@@ -670,7 +670,7 @@ dati.forEach(x => {
         oggi >= x.data_inizio &&
         oggi <= x.data_fine;
 
-    Const dentro =
+    const dentro =
     (
         x.stato === 'ENTRATO'
         ||
