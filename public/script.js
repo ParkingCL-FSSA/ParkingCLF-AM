@@ -611,19 +611,23 @@ boxVerifica?.classList.add('hidden');
             
                 btnUscita.disabled = false;
             }
-            else if (
+           else if (
                 currentPren.stato === 'DA_VERIFICARE'
             ) {
             
-                // ENTRATA visibile
+                // ENTRATA visibile ma disabilitato
                 btnIngresso.style.display = 'inline-block';
                 btnIngresso.disabled = true;
             
-                // VERIFICATO
+                // mostra VERIFICA
                 btnUscita.disabled = false;
                 btnUscita.style.display = 'inline-block';
+            
                 btnUscita.style.background = '#ea580c';
-                btnUscita.innerText = 'VERIFICATO';
+                btnUscita.innerText = 'VERIFICA';
+            
+                // NASCONDI i pulsanti presenti/non presente
+                boxVerifica.classList.add('hidden');
             }
             // SCADUTO
             else if (
@@ -1047,8 +1051,8 @@ async function mossa(tipo) {
     // caso DA_VERIFICARE
    if (currentPren.stato === 'DA_VERIFICARE') {
 
-    // nasconde il bottone VERIFICA
-    document.getElementById('btn-uscita').style.display = 'none';
+    // nasconde VERIFICA
+    btnUscita.style.display = 'none';
 
     // mostra PRESENTE / NON PRESENTE
     document
