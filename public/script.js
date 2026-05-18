@@ -672,11 +672,7 @@ dati.forEach(x => {
 
     const dentro =
         x.stato === 'ENTRATO';
-
-    const f = getFlags(x);
     
-    if (f.daVerificare) countVerificare++;
-
     const maiEntrato =
         x.stato === 'MAI_ENTRATO';
 
@@ -687,7 +683,8 @@ dati.forEach(x => {
     if (dentro) countDentro++;
     if (prenotatoOggi) countPrenotati++;
     if (scaduto) countScaduti++;
-    if (daVerificare) countVerificare++;
+    const f = getFlags(x);
+        if (f.daVerificare) countVerificare++;
 });
         let label = "";
         let colore = "#334155";
