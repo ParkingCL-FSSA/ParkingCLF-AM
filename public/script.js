@@ -537,7 +537,7 @@ async function eliminaPren(id) {
 async function cercaPass(passManuale = null) {
 
     const input = document.getElementById('search-p');
-
+    document.getElementById('box-verifica')?.classList.add('hidden');
     if (!input) {
         alert("Campo ricerca non trovato");
         return;
@@ -561,7 +561,7 @@ async function cercaPass(passManuale = null) {
             `/api/piantone/cerca/${encodeURIComponent(p)}?auth=${userPass}&view=${filtroPiantone}`
         );
         // RESET UI
-        btnEntrata.style.display = 'inline-block';
+        btnIngresso.style.display = 'inline-block';
         btnUscita.style.display = 'inline-block';
         
         document.getElementById('box-verifica')
@@ -581,9 +581,10 @@ async function cercaPass(passManuale = null) {
                 return;
             }
 
-            const btnEntrata = document.getElementById('btn-ingresso');
+            const btnIngresso = document.getElementById('btn-ingresso');
             const btnUscita = document.getElementById('btn-uscita');
             const boxVerifica = document.getElementById('box-verifica');
+            
             if (currentPren.stato === 'DA_VERIFICARE') {
                 boxVerifica.classList.remove('hidden');
             } else {
@@ -591,7 +592,7 @@ async function cercaPass(passManuale = null) {
             }
             
            // RESET
-            btnEntrata.disabled = true;
+            btnIngresso.disabled = true;
             btnUscita.disabled = true;
             
             // PRENOTATO
@@ -599,7 +600,7 @@ async function cercaPass(passManuale = null) {
                 currentPren.stato === 'PRENOTATO'
             ) {
             
-                btnEntrata.disabled = false;
+                btnIngresso.disabled = false;
             }
             
             // ENTRATO
@@ -614,7 +615,7 @@ async function cercaPass(passManuale = null) {
             ) {
             
                 // nasconde ingresso
-                btnEntrata.style.display = 'none';
+                btnIngresso.style.display = 'none';
             
                 // bottone verifica
                 btnUscita.disabled = false;
@@ -638,7 +639,7 @@ async function cercaPass(passManuale = null) {
                 currentPren.stato === 'USCITO'
             ) {
             
-                btnEntrata.disabled = true;
+                btnIngresso.disabled = true;
                 btnUscita.disabled = true;
             }
             // UI
