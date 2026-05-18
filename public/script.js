@@ -552,7 +552,15 @@ async function cercaPass(passManuale = null) {
             
                 btnUscita.disabled = false;
             }
+            else if (
+                currentPren.stato === 'DA_VERIFICARE'
+            ) {
             
+                btnUscita.disabled = false;
+            
+                btnUscita.style.background = '#ea580c';
+                btnUscita.innerText = 'VERIFICATO';
+            }
             // SCADUTO
             else if (
                 currentPren.stato === 'SCADUTO'
