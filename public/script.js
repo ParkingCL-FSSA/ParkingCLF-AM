@@ -637,9 +637,10 @@ function getFlags(x) {
 
     // 🔴 VERIFICARE
 const daVerificare =
-    x.stato === 'ENTRATO' &&
+    x.stato === 'DA_VERIFICARE' &&
     x.orario_ingresso !== null &&
-    x.orario_uscita === null;
+    x.orario_uscita === null &&
+    oggi > x.data_fine;
 
     const storico = x.stato === 'USCITO';
 
@@ -856,9 +857,10 @@ const lista = dati.filter(x => {
             x.stato === 'MAI_ENTRATO';
 
         const daVerificare =
-            x.stato === 'ENTRATO' &&
+            x.stato === 'DA_VERIFICARE' &&
             x.orario_ingresso !== null &&
-            x.orario_uscita === null;
+            x.orario_uscita === null &&
+            oggi > x.data_fine;
         const maiEntrato = x.stato === 'MAI_ENTRATO';
         const storico = x.stato === 'USCITO';
         const uscitoScaduto =
