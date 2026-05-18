@@ -635,10 +635,11 @@ function getFlags(x) {
         oggi >= x.data_inizio &&
         oggi <= x.data_fine;
 
+    // 🔴 QUESTO è il vero caso che ti mancava
     const daVerificare =
         x.stato === 'DA_VERIFICARE' ||
-        (entrato && !x.orario_uscita) ||          // mai uscito
-        (entrato && x.data_fine < oggi);          // oltre fine
+        (entrato && !x.orario_uscita) ||          // dentro ma mai uscito
+        (entrato && oggi > x.data_fine);          // dentro oltre fine prenotazione
 
     const storico = x.stato === 'USCITO';
 
@@ -650,6 +651,7 @@ function getFlags(x) {
         storico
     };
 }
+
 async function aggiornaVeicoli() {
 
     const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
@@ -671,8 +673,9 @@ dati.forEach(x => {
     const dentro =
         x.stato === 'ENTRATO';
 
-    const daVerificare =
-        x.stato === 'DA_VERIFICARE';
+    const f = getFlags(x);
+    
+    if (f.daVerificare) countVerificare++;
 
     const maiEntrato =
         x.stato === 'MAI_ENTRATO';
