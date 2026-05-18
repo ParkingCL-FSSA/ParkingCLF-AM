@@ -1417,6 +1417,23 @@ document.getElementById('btn-non-presente')
 
     if (data.success) {
 
+        alert('Veicolo segnato come NON presente');
+
+        await aggiornaVeicoli();
+
+        document
+            .getElementById('box-verifica')
+            ?.classList.add('hidden');
+
+        document
+            .getElementById('panel-piantone')
+            ?.classList.add('hidden');
+
+        currentPren = null;
+
+        document.getElementById('search-p').value = '';
+    }
+
 });
     
     document.getElementById('btn-arrivi-oggi')?.addEventListener('click', mostraArriviOggi);
