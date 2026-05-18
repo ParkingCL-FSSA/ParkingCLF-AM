@@ -63,6 +63,9 @@ function fmtData(isoStr) {
     const p = isoStr.toString().split('T')[0].split('-');
     return `${p[2]}/${p[1]}/${p[0]}`;
 }
+function formattaDataIT(data) {
+    return fmtData(data);
+}
 function resetSelezione() {
 
     selectedDays = [];
