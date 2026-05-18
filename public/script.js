@@ -635,11 +635,11 @@ function getFlags(x) {
         oggi >= x.data_inizio &&
         oggi <= x.data_fine;
 
-    // 🔴 QUESTO è il vero caso che ti mancava
+    // 🔴 VERIFICARE
     const daVerificare =
-        x.stato === 'DA_VERIFICARE' ||
-        (entrato && !x.orario_uscita) ||          // dentro ma mai uscito
-        (entrato && oggi > x.data_fine);          // dentro oltre fine prenotazione
+        x.stato === 'SCADUTO' &&
+        !x.orario_uscita &&
+        oggi > x.data_fine;
 
     const storico = x.stato === 'USCITO';
 
@@ -729,14 +729,23 @@ dati.forEach(x => {
         statoTabella.style.background = sfondo;
         statoTabella.style.borderColor = colore;
     }
-    badge.innerHTML = `
+    
+   badge.innerHTML = `
+<div>
     🚗 <b>Dentro:</b> ${countDentro}
     &nbsp;&nbsp;|&nbsp;&nbsp;
     📅 <b>Prenotati oggi:</b> ${countPrenotati}
     &nbsp;&nbsp;|&nbsp;&nbsp;
     🅿️ <b>Liberi:</b> ${120 - countDentro}
-    &nbsp;&nbsp;|&nbsp;&nbsp;
+</div>
+
+<div style="
+    margin-top:6px;
+    font-size:15px;
+    font-weight:bold;
+">
     🚨 <b>Da verificare:</b> ${countVerificare}
+
     ${
         countScaduti > 0
         ? `
@@ -747,6 +756,7 @@ dati.forEach(x => {
         `
         : ''
     }
+</div>
 `;
 
     // LAMPEGGIO SOLO SCADUTI
@@ -834,7 +844,7 @@ const lista = dati.filter(x => {
             (x.stato === 'PRENOTATO' && oggi > x.data_fine) ||
             x.stato === 'MAI_ENTRATO';
 
-        const daVerificare = x.stato === 'DA_VERIFICARE';
+        const daVerificare = x.stato === 'SCADUTO';
         const maiEntrato = x.stato === 'MAI_ENTRATO';
         const storico = x.stato === 'USCITO';
         const uscitoScaduto =
