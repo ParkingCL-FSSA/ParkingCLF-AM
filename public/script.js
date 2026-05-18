@@ -867,7 +867,11 @@ const lista = dati.filter(x => {
     const f = getFlags(x);
 
     if (filtroPiantone === 'attivi')
-        return f.entrato || f.prenotatoOggi;
+    return (
+        f.entrato ||
+        f.prenotatoOggi ||
+        f.daVerificare
+    );
 
     if (filtroPiantone === 'scaduti')
         return f.scaduto;
