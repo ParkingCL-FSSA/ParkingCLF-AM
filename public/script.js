@@ -1044,29 +1044,34 @@ let loadingAzione = false;
 
 async function mossa(tipo) {
 
-    const btnIngresso = document.getElementById('btn-ingresso');
-    const btnUscita = document.getElementById('btn-uscita');
-    const boxVerifica = document.getElementById('box-verifica');
-    if (loadingAzione) return;
-    
-    let azione = tipo;
+  const btnIngresso = document.getElementById('btn-ingresso');
+  const btnUscita = document.getElementById('btn-uscita');
+  const boxVerifica = document.getElementById('box-verifica');
 
-    if (tipo === 'E') azione = 'ingresso';
+  if (loadingAzione) return;
 
-    if (tipo === 'U') {
+  // 👉 caso DA_VERIFICARE + click sul bottone "VERIFICA"
+  if (tipo === 'U' && currentPren?.stato === 'DA_VERIFICARE') {
+    // 1) sparisce VERIFICA
+    btnUscita.style.display = 'none';
+    // 2) compaiono ✅/❌
+    boxVerifica?.classList.remove('hidden');
+    return;
+  }
 
-        // DA_VERIFICARE
-        if (currentPren.stato === 'DA_VERIFICARE') {
+  let azione = tipo;
+  if (tipo === 'E') azione = 'ingresso';
+  if (tipo === 'U') azione = 'uscita';
 
-            // nasconde VERIFICA
-            btnUscita.style.display = 'none';
-
-            // mostra PRESENTE / NON PRESENTE
-            boxVerifica.classList.remove('hidden');
-
-            return;
-        }
-
+  // 🚫 uscita senza ingresso (solo NON DA_VERIFICARE)
+  if (
+    tipo === 'U' &&
+    currentPren?.stato !== 'DA_VERIFICARE' &&
+    (currentPren?.stato === 'PRENOTATO' || !currentPren?.orario_ingresso)
+  ) {
+    alert("Auto ancora non entrata");
+    return;
+  }
         azione = 'uscita';
     }
 
