@@ -751,11 +751,11 @@ dati.forEach(x => {
         oggi <= x.data_fine;
 
     const dentro =
+(
+    x.stato === 'ENTRATO'
+    ||
     (
-        x.stato === 'ENTRATO'
-        ||
-        (
-            x.stato === 'SCADUTO' &&
+        x.stato === 'DA_VERIFICARE' &&
             x.orario_ingresso &&
             !x.orario_uscita
         )
