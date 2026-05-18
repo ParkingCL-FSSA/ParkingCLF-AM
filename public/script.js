@@ -89,11 +89,6 @@ function toggleScaduti() {
     // ATTIVI
     if (filtroPiantone === 'attivi') {
 
-        // priorità:
-        // 1) scaduti mai entrati
-        // 2) da verificare
-        // 3) tutti
-
         if (totaleScaduti > 0) {
 
             filtroPiantone = 'scaduti';
@@ -117,7 +112,8 @@ function toggleScaduti() {
 
             filtroPiantone = 'verificare';
 
-        } else {
+        } 
+        else {
 
             filtroPiantone = 'tutti';
         }
@@ -143,7 +139,8 @@ function toggleScaduti() {
 
     const btn = document.getElementById('btn-filtro');
 
-    // TESTO PULSANTE
+    // ===== TESTO PULSANTE =====
+
     if (filtroPiantone === 'attivi') {
 
         if (totaleScaduti > 0) {
@@ -168,7 +165,8 @@ function toggleScaduti() {
 
             btn.innerText = "Mostra verificare";
 
-        } else {
+        } 
+        else {
 
             btn.innerText = "Mostra tutti";
         }
@@ -187,6 +185,58 @@ function toggleScaduti() {
     else {
 
         btn.innerText = "Mostra attivi";
+    }
+
+    // ===== LABEL STATO =====
+
+    const statoTabella = document.getElementById('stato-tabella');
+
+    if (statoTabella) {
+
+        // ATTIVI
+        if (filtroPiantone === 'attivi') {
+
+            statoTabella.innerHTML = "📋 ATTIVI";
+            statoTabella.style.color = "#2563eb";
+            statoTabella.style.background = "#dbeafe";
+            statoTabella.style.borderColor = "#2563eb";
+        }
+
+        // SCADUTI
+        else if (filtroPiantone === 'scaduti') {
+
+            statoTabella.innerHTML = "⏰ SCADUTI";
+            statoTabella.style.color = "#dc2626";
+            statoTabella.style.background = "#fee2e2";
+            statoTabella.style.borderColor = "#dc2626";
+        }
+
+        // DA VERIFICARE
+        else if (filtroPiantone === 'verificare') {
+
+            statoTabella.innerHTML = "🚨 DA VERIFICARE";
+            statoTabella.style.color = "#ea580c";
+            statoTabella.style.background = "#ffedd5";
+            statoTabella.style.borderColor = "#ea580c";
+        }
+
+        // TUTTI
+        else if (filtroPiantone === 'tutti') {
+
+            statoTabella.innerHTML = "📑 TUTTI";
+            statoTabella.style.color = "#7c3aed";
+            statoTabella.style.background = "#ede9fe";
+            statoTabella.style.borderColor = "#7c3aed";
+        }
+
+        // STORICO
+        else {
+
+            statoTabella.innerHTML = "🕘 STORICO";
+            statoTabella.style.color = "#475569";
+            statoTabella.style.background = "#e2e8f0";
+            statoTabella.style.borderColor = "#475569";
+        }
     }
 
     aggiornaVeicoli();
