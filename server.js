@@ -33,6 +33,16 @@ pool.on('error', (err) => {
 
 const LOGO_URL = "https://parkingclf-am.onrender.com/LogoCLF.png";
 
+// Aggiungi questa funzione all'inizio del file del server
+function formattaDataIT(isoStr) {
+    if (!isoStr) return '--/--/----';
+    const d = new Date(isoStr);
+    const giorno = String(d.getDate()).padStart(2, '0');
+    const mese = String(d.getMonth() + 1).padStart(2, '0');
+    const anno = d.getFullYear();
+    return `${giorno}/${mese}/${anno}`;
+}
+
 function clean(input) {
     return input
         .replace(/[^a-zA-Z0-9]/g, '')
