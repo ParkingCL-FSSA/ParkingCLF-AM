@@ -560,7 +560,14 @@ async function cercaPass(passManuale = null) {
         const res = await fetch(
             `/api/piantone/cerca/${encodeURIComponent(p)}?auth=${userPass}&view=${filtroPiantone}`
         );
-
+        // RESET UI
+        btnEntrata.style.display = 'inline-block';
+        btnUscita.style.display = 'inline-block';
+        
+        document.getElementById('box-verifica')
+            ?.classList.add('hidden');
+        
+        const boxVerifica = document.getElementById('box-verifica');
         const data = await res.json();
 
         if (data.trovato) {
@@ -606,10 +613,14 @@ async function cercaPass(passManuale = null) {
                 currentPren.stato === 'DA_VERIFICARE'
             ) {
             
-                btnUscita.disabled = false;
+                // nasconde ingresso
+                btnEntrata.style.display = 'none';
             
+                // bottone verifica
+                btnUscita.disabled = false;
+                btnUscita.style.display = 'inline-block';
                 btnUscita.style.background = '#ea580c';
-                btnUscita.innerText = 'VERIFICATO';
+                btnUscita.innerText = 'VERIFICA';
             }
             // SCADUTO
             else if (
@@ -1024,11 +1035,25 @@ async function mossa(tipo) {
     let azione = tipo;
 
     if (tipo === 'E') azione = 'ingresso';
-    if (tipo === 'U') azione = 'uscita';
+    if (tipo === 'U') {
 
+    // caso DA_VERIFICARE
+    if (currentPren.stato === 'DA_VERIFICARE') {
+
+        document
+            .getElementById('box-verifica')
+            ?.classList.remove('hidden');
+
+        return;
+    }
+
+    azione = 'uscita';
+    }
+    
     // 🚫 uscita senza ingresso
     if (
         tipo === 'U' &&
+        currentPren.stato !== 'DA_VERIFICARE' &&
         (
             currentPren.stato === 'PRENOTATO' ||
             !currentPren.orario_ingresso
@@ -1037,7 +1062,6 @@ async function mossa(tipo) {
         alert("Auto ancora non entrata");
         return;
     }
-
     const btnIngresso = document.getElementById('btn-ingresso');
     const btnUscita = document.getElementById('btn-uscita');
 
@@ -1309,6 +1333,40 @@ document.getElementById('btn-reset-search')
 
     document.getElementById('panel-piantone')?.classList.add('hidden');
 
+});
+document.getElementById('btn-presente')
+?.addEventListener('click', async () => {
+
+    if (!currentPren) return;
+
+    const res = await fetch(
+        '/api/piantone/azione',
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id: currentPren.id,
+                azione: 'uscita',
+                npass: userPass
+            })
+        }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+
+        alert('Veicolo verificato');
+
+        aggiornaVeicoli();
+
+        document
+            .getElementById('panel-piantone')
+            .classList
+            .add('hidden');
+    }
 });
 document.getElementById('btn-non-presente')
 ?.addEventListener('click', async () => {
