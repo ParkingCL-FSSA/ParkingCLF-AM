@@ -89,13 +89,17 @@ function show(id) {
 
 function toggleScaduti() {
 
+    // 🌟 RESETTIAMO LA UI DEL PANNELLO QUANDO SI CAMBIA SCHEDA
+    document.getElementById('box-verifica')?.classList.add('hidden');
+    document.getElementById('panel-piantone')?.classList.add('hidden');
+    const inputSearch = document.getElementById('search-p');
+    if (inputSearch) inputSearch.value = '';
+    currentPren = null;
+
     // ATTIVI
     if (filtroPiantone === 'attivi') {
-
         if (totaleScaduti > 0) {
-
             filtroPiantone = 'scaduti';
-
         } 
         else if (totaleVerificare > 0) {
 
@@ -1050,16 +1054,9 @@ const lista = dati.filter(x => {
 let loadingAzione = false;
 
 async function mossa(tipo) {
-
     const btnIngresso = document.getElementById('btn-ingresso');
     const btnUscita = document.getElementById('btn-uscita');
-    
     const boxVerifica = document.getElementById('box-verifica');
-    if (filtroPiantone === 'verificare') {
-        boxVerifica.classList.remove('hidden');
-    } else {
-        boxVerifica.classList.add('hidden'); // Forza la chiusura negli altri casi
-    }
     
     if (loadingAzione) return;
 
@@ -1068,16 +1065,13 @@ async function mossa(tipo) {
         tipo === 'U' &&
         currentPren?.stato === 'DA_VERIFICARE'
     ) {
-
         btnUscita.style.display = 'none';
-
         boxVerifica?.classList.remove('hidden');
-
         return;
     }
 
     let azione = tipo;
-
+    
     if (tipo === 'E') {
         azione = 'ingresso';
     }
@@ -1356,8 +1350,9 @@ document.getElementById('btn-reset-search')
 
     currentPren = null;
 
+    // Nasconde sia il pannello che i bottoni di verifica
     document.getElementById('panel-piantone')?.classList.add('hidden');
-
+    document.getElementById('box-verifica')?.classList.add('hidden'); 
 });
 
 // PRESENTE
