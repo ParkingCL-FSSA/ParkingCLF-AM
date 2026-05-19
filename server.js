@@ -551,8 +551,8 @@ app.get('/api/veicoli-dentro', async (req, res) => {
             )
 
             ORDER BY 
-            p.data_inizio ASC, 
-            p.orario_ingresso ASC
+            data_inizio ASC, 
+            orario_ingresso ASC
 
             LIMIT 300
 
