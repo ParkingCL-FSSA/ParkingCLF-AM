@@ -550,9 +550,9 @@ app.get('/api/veicoli-dentro', async (req, res) => {
                 'MAI_ENTRATO'
             )
 
-            ORDER BY
-                data_inserimento DESC,
-                id DESC
+            ORDER BY 
+            p.data_inizio ASC, 
+            p.orario_ingresso ASC
 
             LIMIT 300
 
@@ -971,8 +971,11 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
         p.id DESC
 
     `);
+// 🌟 ORDINA L'ARRAY RISULTANTE IN BASE ALLA DATA INIZIO CRONOLOGICA
+    const righeOrdinate = r.rows.sort((a, b) => new Date(a.data_inizio) - new Date(b.data_inizio));
 
-    res.json(r.rows);
+    res.json(righeOrdinate);
+   // res.json(r.rows);
 
   } catch (e) {
 
