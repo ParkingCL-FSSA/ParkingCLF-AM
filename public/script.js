@@ -1055,7 +1055,7 @@ async function mossa(tipo) {
     const btnUscita = document.getElementById('btn-uscita');
     
     const boxVerifica = document.getElementById('box-verifica');
-    if (filtroPiantone === 'verificare' {
+    if (filtroPiantone === 'verificare') {
         boxVerifica.classList.remove('hidden');
     } else {
         boxVerifica.classList.add('hidden'); // Forza la chiusura negli altri casi
