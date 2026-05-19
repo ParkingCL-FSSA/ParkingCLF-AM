@@ -1,6 +1,6 @@
 let userPass = ""; let selectedDays = []; 
 let deferredPrompt; let currentPren = null;
-let filtroPiantone = 'attivi'; let totaleScaduti = 0;
+let filtroPiantone = 'verificare'; let totaleScaduti = 0;
 let ultimoAggiornato = null;let totaleVerificare = 0;
 // attivi = dentro (default)
 // scaduti = solo scaduti
@@ -199,16 +199,14 @@ function toggleScaduti() {
     const statoTabella = document.getElementById('stato-tabella');
 
     if (statoTabella) {
+        // DA VERIFICARE
+        if (filtroPiantone === 'verificare') {
 
-        // ATTIVI
-        if (filtroPiantone === 'attivi') {
-
-            statoTabella.innerHTML = "📋 ATTIVI";
-            statoTabella.style.color = "#2563eb";
-            statoTabella.style.background = "#dbeafe";
-            statoTabella.style.borderColor = "#2563eb";
+            statoTabella.innerHTML = "🚨 DA VERIFICARE";
+            statoTabella.style.color = "#ea580c";
+            statoTabella.style.background = "#ffedd5";
+            statoTabella.style.borderColor = "#ea580c";
         }
-
         // SCADUTI
         else if (filtroPiantone === 'scaduti') {
 
@@ -217,16 +215,14 @@ function toggleScaduti() {
             statoTabella.style.background = "#fee2e2";
             statoTabella.style.borderColor = "#dc2626";
         }
+        // ATTIVI
+        else if (filtroPiantone === 'attivi') {
 
-        // DA VERIFICARE
-        else if (filtroPiantone === 'verificare') {
-
-            statoTabella.innerHTML = "🚨 DA VERIFICARE";
-            statoTabella.style.color = "#ea580c";
-            statoTabella.style.background = "#ffedd5";
-            statoTabella.style.borderColor = "#ea580c";
+            statoTabella.innerHTML = "📋 ATTIVI";
+            statoTabella.style.color = "#2563eb";
+            statoTabella.style.background = "#dbeafe";
+            statoTabella.style.borderColor = "#2563eb";
         }
-
         // TUTTI
         else if (filtroPiantone === 'tutti') {
 
@@ -235,7 +231,6 @@ function toggleScaduti() {
             statoTabella.style.background = "#ede9fe";
             statoTabella.style.borderColor = "#7c3aed";
         }
-
         // STORICO
         else {
 
