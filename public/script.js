@@ -1053,8 +1053,14 @@ async function mossa(tipo) {
 
     const btnIngresso = document.getElementById('btn-ingresso');
     const btnUscita = document.getElementById('btn-uscita');
+    
     const boxVerifica = document.getElementById('box-verifica');
-
+    if (filtroPiantone === 'da-verificare' {
+        boxVerifica.classList.remove('hidden');
+    } else {
+        boxVerifica.classList.add('hidden'); // Forza la chiusura negli altri casi
+    }
+    
     if (loadingAzione) return;
 
     // DA VERIFICARE → mostra PRESENTE / NON PRESENTE
