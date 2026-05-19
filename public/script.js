@@ -96,144 +96,98 @@ function toggleScaduti() {
     if (inputSearch) inputSearch.value = '';
     currentPren = null;
 
-    // ATTIVI
-    if (filtroPiantone === 'attivi') {
-        if (totaleScaduti > 0) {
-            filtroPiantone = 'scaduti';
-        } 
-        else if (totaleVerificare > 0) {
-
-            filtroPiantone = 'verificare';
-
-        } 
-        else {
-
-            filtroPiantone = 'tutti';
-        }
-    }
-
-    // SCADUTI
-    else if (filtroPiantone === 'scaduti') {
-
-        if (totaleVerificare > 0) {
-
-            filtroPiantone = 'verificare';
-
-        } 
-        else {
-
-            filtroPiantone = 'tutti';
-        }
-    }
-
+    // === LOGICA DI TRANSIZIONE DEGLI STATI ===
+    
     // DA VERIFICARE
-    else if (filtroPiantone === 'verificare') {
-
+    if (filtroPiantone === 'verificare') {
         filtroPiantone = 'tutti';
     }
-
+    // SCADUTI
+    else if (filtroPiantone === 'scaduti') {
+        if (totaleVerificare > 0) {
+            filtroPiantone = 'verificare';
+        } else {
+            filtroPiantone = 'tutti';
+        }
+    }
+    // ATTIVI
+    else if (filtroPiantone === 'attivi') {
+        if (totaleScaduti > 0) {
+            filtroPiantone = 'scaduti';
+        } else if (totaleVerificare > 0) {
+            filtroPiantone = 'verificare';
+        } else {
+            filtroPiantone = 'tutti';
+        }
+    }
     // TUTTI
     else if (filtroPiantone === 'tutti') {
-
         filtroPiantone = 'storico';
     }
-
     // STORICO
     else {
-
         filtroPiantone = 'attivi';
     }
 
+    // === TESTO DEL PULSANTE "Mostra..." ===
     const btn = document.getElementById('btn-filtro');
 
-    // ===== TESTO PULSANTE =====
-
     if (filtroPiantone === 'attivi') {
-
         if (totaleScaduti > 0) {
-
             btn.innerText = "Mostra scaduti";
-
-        } 
-        else if (totaleVerificare > 0) {
-
+        } else if (totaleVerificare > 0) {
             btn.innerText = "Mostra verificare";
-
-        } 
-        else {
-
+        } else {
             btn.innerText = "Mostra tutti";
         }
     }
-
     else if (filtroPiantone === 'scaduti') {
-
         if (totaleVerificare > 0) {
-
             btn.innerText = "Mostra verificare";
-
-        } 
-        else {
-
+        } else {
             btn.innerText = "Mostra tutti";
         }
     }
-
     else if (filtroPiantone === 'verificare') {
-
         btn.innerText = "Mostra tutti";
     }
-
     else if (filtroPiantone === 'tutti') {
-
         btn.innerText = "Mostra storico";
     }
-
     else {
-
+        // Se sei in Storico, il prossimo passo è Attivi
         btn.innerText = "Mostra attivi";
     }
 
-    // ===== LABEL STATO =====
-
+    // === AGGIORNAMENTO DEL BADGE COLORATO ===
     const statoTabella = document.getElementById('stato-tabella');
 
     if (statoTabella) {
-        // DA VERIFICARE
         if (filtroPiantone === 'verificare') {
-
             statoTabella.innerHTML = "🚨 DA VERIFICARE";
             statoTabella.style.color = "#ea580c";
             statoTabella.style.background = "#ffedd5";
             statoTabella.style.borderColor = "#ea580c";
         }
-        // SCADUTI
         else if (filtroPiantone === 'scaduti') {
-
             statoTabella.innerHTML = "⏰ SCADUTI";
             statoTabella.style.color = "#dc2626";
             statoTabella.style.background = "#fee2e2";
             statoTabella.style.borderColor = "#dc2626";
         }
-        // ATTIVI
         else if (filtroPiantone === 'attivi') {
-
             statoTabella.innerHTML = "📋 ATTIVI";
             statoTabella.style.color = "#2563eb";
             statoTabella.style.background = "#dbeafe";
             statoTabella.style.borderColor = "#2563eb";
         }
-        // TUTTI
         else if (filtroPiantone === 'tutti') {
-
             statoTabella.innerHTML = "📑 TUTTI";
             statoTabella.style.color = "#7c3aed";
             statoTabella.style.background = "#ede9fe";
             statoTabella.style.borderColor = "#7c3aed";
         }
-        // STORICO
         else {
-
             statoTabella.innerHTML = "🕘 STORICO";
             statoTabella.style.color = "#475569";
             statoTabella.style.background = "#e2e8f0";
@@ -241,6 +195,7 @@ function toggleScaduti() {
         }
     }
 
+    // Ricarica la lista veicoli in base al nuovo filtro
     aggiornaVeicoli();
 }
 
