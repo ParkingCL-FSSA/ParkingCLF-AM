@@ -97,66 +97,68 @@ function toggleScaduti() {
     currentPren = null;
 
     // === LOGICA DI TRANSIZIONE DEGLI STATI ===
-    
+    // Ordine: VERIFICARE -> SCADUTI -> ATTIVI -> TUTTI -> STORICO -> (ricomincia)
+
     // DA VERIFICARE
     if (filtroPiantone === 'verificare') {
-        filtroPiantone = 'tutti';
+        if (totaleScaduti > 0) {
+            filtroPiantone = 'scaduti';
+        } else {
+            filtroPiantone = 'attivi';
+        }
     }
     // SCADUTI
     else if (filtroPiantone === 'scaduti') {
-        if (totaleVerificare > 0) {
-            filtroPiantone = 'verificare';
-        } else {
-            filtroPiantone = 'tutti';
-        }
+        filtroPiantone = 'attivi';
     }
     // ATTIVI
     else if (filtroPiantone === 'attivi') {
-        if (totaleScaduti > 0) {
-            filtroPiantone = 'scaduti';
-        } else if (totaleVerificare > 0) {
-            filtroPiantone = 'verificare';
-        } else {
-            filtroPiantone = 'tutti';
-        }
+        filtroPiantone = 'tutti';
     }
     // TUTTI
     else if (filtroPiantone === 'tutti') {
         filtroPiantone = 'storico';
     }
-    // STORICO
+    // STORICO (Ricomincia il ciclo)
     else {
-        filtroPiantone = 'attivi';
+        if (totaleVerificare > 0) {
+            filtroPiantone = 'verificare';
+        } else if (totaleScaduti > 0) {
+            filtroPiantone = 'scaduti';
+        } else {
+            filtroPiantone = 'attivi';
+        }
     }
 
     // === TESTO DEL PULSANTE "Mostra..." ===
+    // Il testo deve anticipare la scheda in cui andrai cliccando
     const btn = document.getElementById('btn-filtro');
 
-    if (filtroPiantone === 'attivi') {
+    if (filtroPiantone === 'verificare') {
         if (totaleScaduti > 0) {
             btn.innerText = "Mostra scaduti";
-        } else if (totaleVerificare > 0) {
-            btn.innerText = "Mostra verificare";
         } else {
-            btn.innerText = "Mostra tutti";
+            btn.innerText = "Mostra attivi";
         }
     }
     else if (filtroPiantone === 'scaduti') {
-        if (totaleVerificare > 0) {
-            btn.innerText = "Mostra verificare";
-        } else {
-            btn.innerText = "Mostra tutti";
-        }
+        btn.innerText = "Mostra attivi";
     }
-    else if (filtroPiantone === 'verificare') {
+    else if (filtroPiantone === 'attivi') {
         btn.innerText = "Mostra tutti";
     }
     else if (filtroPiantone === 'tutti') {
         btn.innerText = "Mostra storico";
     }
-    else {
-        // Se sei in Storico, il prossimo passo è Attivi
-        btn.innerText = "Mostra attivi";
+    else { 
+        // STORICO: prepara il pulsante per il prossimo ciclo
+        if (totaleVerificare > 0) {
+            btn.innerText = "Mostra verificare";
+        } else if (totaleScaduti > 0) {
+            btn.innerText = "Mostra scaduti";
+        } else {
+            btn.innerText = "Mostra attivi";
+        }
     }
 
     // === AGGIORNAMENTO DEL BADGE COLORATO ===
