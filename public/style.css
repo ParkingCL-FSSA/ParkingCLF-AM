@@ -81,12 +81,15 @@ input {
     gap:6px;
     font-weight:bold;
 }
-.hidden {
-    display: none !important;
-}
 
 #box-verifica {
     display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 10px;
+}
+.hidden {
+    display: none !important;
 }
 .dot{
     width:12px;
