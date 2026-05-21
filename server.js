@@ -577,78 +577,79 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
     const view = req.query.view || 'attivi';
 
     if (!await verificaRuolo(authPass, ['piantone', 'admin'])) {
-
         return res.status(403).json({
             error: "Accesso non autorizzato"
         });
     }
 
     try {
-
-        //const oggi = new Date().toISOString().split('T')[0];
-
         let whereFiltro = "";
 
-    // ATTIVI = dentro OR prenotati validi oggi
-       if (view === 'attivi') {
-    
-        whereFiltro = `
-            AND (
-                stato = 'PRENOTATO'
-                OR stato = 'ENTRATO'
-            )
-        `;
-    }   
-   // SCADUTI
-else if (view === 'scaduti') {
+        // ATTIVI = dentro OR prenotati validi oggi
+        if (view === 'attivi') {
+            whereFiltro = `
+                AND (
+                    stato = 'PRENOTATO'
+                    OR stato = 'ENTRATO'
+                )
+            `;
+        }   
+        // SCADUTI
+        else if (view === 'scaduti') {
+            whereFiltro = `
+                AND (
+                    stato = 'DA_VERIFICARE'
+                    OR stato = 'MAI_ENTRATO'
+                )
+            `;
+        }
+        else if (view === 'verificare') {
+            whereFiltro = `
+                AND stato = 'DA_VERIFICARE'
+            `;
+        }    
+        // STORICO = usciti
+        else if (view === 'storico') {
+            whereFiltro = `
+                AND stato = 'USCITO'
+            `;
+        }
+        // TUTTI
+        else {
+            whereFiltro = `
+                AND stato IN (
+                    'PRENOTATO',
+                    'ENTRATO',
+                    'USCITO',
+                    'DA_VERIFICARE',
+                    'MAI_ENTRATO'
+                )
+            `;
+        }
 
-    whereFiltro = `
-        AND (
-            stato = 'DA_VERIFICARE'
-            OR stato = 'MAI_ENTRATO'
-        )
-    `;
-}
- else if (view === 'verificare') {
-
-    whereFiltro = `
-        AND stato = 'DA_VERIFICARE'
-    `;
-}   
-    // STORICO = usciti
-    else if (view === 'storico') {
-    
-        whereFiltro = `
-            AND stato = 'USCITO'
-        `;
-    }
-    
-    // TUTTI
-    else {
-    
-        whereFiltro = `
-            AND stato IN (
-    'PRENOTATO',
-    'ENTRATO',
-    'USCITO',
-    'DA_VERIFICARE',
-    'MAI_ENTRATO'
-)
-        `;
-    }
+        // 🌟 MODIFICATO: Inserito l'ORDER BY con logica di precedenza CASE WHEN
         const query = `
-
             SELECT *
-
             FROM prenotazioni
-
             WHERE
                 UPPER(npass) = $1
                 ${whereFiltro}
+            ORDER BY
+                CASE
+                    -- 1. Precedenza assoluta se il veicolo è già dentro o da verificare
+                    WHEN stato IN ('ENTRATO', 'DA_VERIFICARE') THEN 1
 
-           ORDER BY
-            data_inserimento DESC,
-            id DESC
+                    -- 2. Poi precedenza se ha una prenotazione attiva/valida per OGGI
+                    WHEN CURRENT_DATE BETWEEN data_inizio AND data_fine AND stato = 'PRENOTATO' THEN 2
+
+                    -- 3. Poi le prenotazioni future più vicine a livello cronologico
+                    WHEN data_inizio >= CURRENT_DATE AND stato = 'PRENOTATO' THEN 3
+
+                    -- 4. Tutto il resto (prenotazioni passate o vecchie)
+                    ELSE 4
+                END ASC,
+                data_inizio ASC, -- A parità di blocco, mostra prima quella che inizia prima
+                id DESC
         `;
 
         const r = await pool.query(query, [
@@ -656,22 +657,20 @@ else if (view === 'scaduti') {
         ]);
 
         if (!r.rows.length) {
-
             return res.json({
                 trovato: false
             });
         }
 
+        // r.rows[0] conterrà ora la prenotazione che ha vinto l'ordinamento prioritario
         return res.json({
-        trovato: true,
-        prenotazione: r.rows[0],
-        storico: r.rows
+            trovato: true,
+            prenotazione: r.rows[0],
+            storico: r.rows
         });
 
     } catch (err) {
-
         console.error("ERRORE CERCA PASS:", err);
-
         return res.status(500).json({
             error: "Errore interno server"
         });
