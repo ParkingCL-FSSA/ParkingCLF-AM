@@ -701,157 +701,147 @@ async function aggiornaVeicoli() {
     const dati = await res.json();
     const oggi = new Date().toISOString().split('T')[0];
 
-let countDentro = 0;
-let countPrenotati = 0;
-let countScaduti = 0;
-let countVerificare = 0;
+    let countDentro = 0;
+    let countPrenotati = 0;
+    let countScaduti = 0;
+    let countVerificare = 0;
     
-dati.forEach(x => {
+    dati.forEach(x => {
 
-    const prenotatoOggi =
-        x.stato === 'PRENOTATO' &&
-        oggi >= x.data_inizio &&
-        oggi <= x.data_fine;
+        const prenotatoOggi =
+            x.stato === 'PRENOTATO' &&
+            oggi >= x.data_inizio &&
+            oggi <= x.data_fine;
 
-    const dentro =
-(
-    x.stato === 'ENTRATO'
-    ||
-    (
-        x.stato === 'DA_VERIFICARE' &&
-            x.orario_ingresso &&
-            !x.orario_uscita
-        )
-    );
-    
-    const maiEntrato =
-        x.stato === 'MAI_ENTRATO';
+        const dentro =
+        (
+            x.stato === 'ENTRATO'
+            ||
+            (
+                x.stato === 'DA_VERIFICARE' &&
+                x.orario_ingresso &&
+                !x.orario_uscita
+            )
+        );
+        
+        const maiEntrato =
+            x.stato === 'MAI_ENTRATO';
 
-    const scaduto =
-        (x.stato === 'PRENOTATO' && oggi > x.data_fine) ||
-        x.stato === 'MAI_ENTRATO';
+        const scaduto =
+            (x.stato === 'PRENOTATO' && oggi > x.data_fine) ||
+            x.stato === 'MAI_ENTRATO';
 
-    if (dentro) countDentro++;
-    if (prenotatoOggi) countPrenotati++;
-    if (scaduto) countScaduti++;
-    const f = getFlags(x);
+        if (dentro) countDentro++;
+        if (prenotatoOggi) countPrenotati++;
+        if (scaduto) countScaduti++;
+        const f = getFlags(x);
         if (f.daVerificare) countVerificare++;
-});
+    });
+    
     totaleScaduti = countScaduti;
     totaleVerificare = countVerificare;
     
-let label = "";
-let colore = "#334155";
-let sfondo = "#f8fafc";
+    let label = "";
+    let colore = "#334155";
+    let sfondo = "#f8fafc";
 
-if (filtroPiantone === 'attivi') {
-
-    label = "📋 ATTIVI";
-    colore = "#2563eb";
-    sfondo = "#dbeafe";
-}
-
-else if (filtroPiantone === 'scaduti') {
-
-    label = "⏰ SCADUTI";
-    colore = "#dc2626";
-    sfondo = "#fee2e2";
-}
-
-else if (filtroPiantone === 'verificare') {
-
-    label = "🚨 DA VERIFICARE";
-    colore = "#ea580c";
-    sfondo = "#ffedd5";
-}
-
-else if (filtroPiantone === 'storico') {
-
-    label = "🕘 STORICO";
-    colore = "#475569";
-    sfondo = "#e2e8f0";
-}
-
-else {
-
-    label = "📑 TUTTI";
-    colore = "#7c3aed";
-    sfondo = "#ede9fe";
-}
+    if (filtroPiantone === 'attivi') {
+        label = "📋 ATTIVI";
+        colore = "#2563eb";
+        sfondo = "#dbeafe";
+    }
+    else if (filtroPiantone === 'scaduti') {
+        label = "⏰ SCADUTI";
+        colore = "#dc2626";
+        sfondo = "#fee2e2";
+    }
+    else if (filtroPiantone === 'verificare') {
+        label = "🚨 DA VERIFICARE";
+        colore = "#ea580c";
+        sfondo = "#ffedd5";
+    }
+    else if (filtroPiantone === 'storico') {
+        label = "🕘 STORICO";
+        colore = "#475569";
+        sfondo = "#e2e8f0";
+    }
+    else {
+        label = "📑 TUTTI";
+        colore = "#7c3aed";
+        sfondo = "#ede9fe";
+    }
+    
     // BADGE
     const badge = document.getElementById('badge-contatori');
     const statoTabella = document.getElementById('stato-tabella');
     
     if (statoTabella) {
-    
         statoTabella.innerHTML = label;
-    
         statoTabella.style.color = colore;
         statoTabella.style.background = sfondo;
         statoTabella.style.borderColor = colore;
     }
     
-   badge.innerHTML = `
-<div>
-    🚗 <b>Dentro:</b> ${countDentro}
-    &nbsp;&nbsp;|&nbsp;&nbsp;
-    📅 <b>Prenotati oggi:</b> ${countPrenotati}
-    &nbsp;&nbsp;|&nbsp;&nbsp;
-    🅿️ <b>Liberi:</b> ${120 - countDentro}
-</div>
-
-<div style="
-    margin-top:6px;
-    font-size:15px;
-    font-weight:bold;
-">
-    🚨 <b>Da verificare:</b> ${countVerificare}
-
-    ${
-        countScaduti > 0
-        ? `
+    badge.innerHTML = `
+    <div>
+        🚗 <b>Dentro:</b> ${countDentro}
         &nbsp;&nbsp;|&nbsp;&nbsp;
-        <span id="badge-scaduti">
-            ⏰ <b>Scaduti:</b> ${countScaduti}
-        </span>
-        `
-        : ''
-    }
-</div>
-`;
+        📅 <b>Prenotati oggi:</b> ${countPrenotati}
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        🅿️ <b>Liberi:</b> ${120 - countDentro}
+    </div>
+
+    <div style="
+        margin-top:6px;
+        font-size:15px;
+        font-weight:bold;
+    ">
+        🚨 <b>Da verificare:</b> ${countVerificare}
+
+        ${
+            countScaduti > 0
+            ? `
+            &nbsp;&nbsp;|&nbsp;&nbsp;
+            <span id="badge-scaduti">
+                ⏰ <b>Scaduti:</b> ${countScaduti}
+            </span>
+            `
+            : ''
+        }
+    </div>
+    `;
 
     // LAMPEGGIO SOLO SCADUTI
-const elScaduti = document.getElementById('badge-scaduti');
+    const elScaduti = document.getElementById('badge-scaduti');
 
-if (elScaduti && countScaduti > 0) {
+    if (elScaduti && countScaduti > 0) {
+        elScaduti.style.animation = 'blink 1s infinite';
+        elScaduti.style.color = '#ef4444';
+    }
 
-    elScaduti.style.animation = 'blink 1s infinite';
-    elScaduti.style.color = '#ef4444';
-}
+    // FILTRI
+    const lista = dati.filter(x => {
 
- // FILTRI
-const lista = dati.filter(x => {
+        const f = getFlags(x);
 
-    const f = getFlags(x);
+        if (filtroPiantone === 'attivi')
+        return (
+            f.entrato ||
+            f.prenotatoOggi ||
+            f.daVerificare
+        );
 
-    if (filtroPiantone === 'attivi')
-    return (
-        f.entrato ||
-        f.prenotatoOggi ||
-        f.daVerificare
-    );
+        if (filtroPiantone === 'scaduti')
+            return f.scaduto;
 
-    if (filtroPiantone === 'scaduti')
-        return f.scaduto;
+        if (filtroPiantone === 'verificare')
+            return f.daVerificare;
 
-    if (filtroPiantone === 'verificare')
-        return f.daVerificare;
+        if (filtroPiantone === 'storico')
+            return f.storico;
 
-    if (filtroPiantone === 'storico')
-        return f.storico;
-
-    return true;
-})
+        return true;
+    })
     .sort((a, b) => {
         const prenA = a.stato === 'PRENOTATO';
         const prenB = b.stato === 'PRENOTATO';
@@ -922,31 +912,31 @@ const lista = dati.filter(x => {
         
         const f = getFlags(x);
         
-           return `<tr style="
-        ${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
-        ${uscitoScaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
-        ${storico ? 'background:#f1f5f9;' : ''}
-        ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
-        ${daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
-        ${maiEntrato ? 'background:#fee2e2; color:#991b1b;' : ''}
-    ">
-<td>
-    <button
-        class="btn-pass"
-        data-pass="${x.npass}"
-        type="button"
-        style="
-            border:none;
-            background:none;
-            color:#2563eb;
-            font-weight:bold;
-            cursor:pointer;
-            text-decoration:underline;
-        "
-    >
-        ${x.npass}
-    </button>
-</td>
+        return `<tr style="
+            ${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
+            ${uscitoScaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
+            ${storico ? 'background:#f1f5f9;' : ''}
+            ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
+            ${daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
+            ${maiEntrato ? 'background:#fee2e2; color:#991b1b;' : ''}
+        ">
+            <td>
+                <button
+                    class="btn-pass"
+                    data-pass="${x.npass}"
+                    type="button"
+                    style="
+                        border:none;
+                        background:none;
+                        color:#2563eb;
+                        font-weight:bold;
+                        cursor:pointer;
+                        text-decoration:underline;
+                    "
+                >
+                    ${x.npass}
+                </button>
+            </td>
             <td>
                 ${dataIng}
             </td>
@@ -977,30 +967,50 @@ const lista = dati.filter(x => {
             </td>
         </tr>
     `;
+
     document.querySelectorAll('.btn-pass').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const pass = btn.dataset.pass;
+            document.getElementById('search-p').value = pass;
+            await cercaPass(pass);
 
-    btn.addEventListener('click', async () => {
-
-        const pass = btn.dataset.pass;
-
-        document.getElementById('search-p').value = pass;
-
-        await cercaPass(pass);
-
-        setTimeout(() => {
-
-            document
-                .getElementById('panel-piantone')
-                ?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-
-        }, 100);
-
+            setTimeout(() => {
+                document
+                    .getElementById('panel-piantone')
+                    ?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+            }, 100);
+        });
     });
 
-});
+    // 🌟 ALLINEAMENTO INIZIALE E DINAMICO DEL TESTO DEL PULSANTE
+    const btn = document.getElementById('btn-filtro');
+    if (btn) {
+        if (filtroPiantone === 'verificare') {
+            if (totaleScaduti > 0) {
+                btn.innerText = "Mostra scaduti";
+            } else {
+                btn.innerText = "Mostra attivi";
+            }
+        } else if (filtroPiantone === 'scaduti') {
+            btn.innerText = "Mostra attivi";
+        } else if (filtroPiantone === 'attivi') {
+            btn.innerText = "Mostra tutti";
+        } else if (filtroPiantone === 'tutti') {
+            btn.innerText = "Mostra storico";
+        } else {
+            // Caso 'storico' (ricomincia il giro)
+            if (totaleVerificare > 0) {
+                btn.innerText = "Mostra verificare";
+            } else if (totaleScaduti > 0) {
+                btn.innerText = "Mostra scaduti";
+            } else {
+                btn.innerText = "Mostra attivi";
+            }
+        }
+    }
 }
 
 let loadingAzione = false;
