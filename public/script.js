@@ -819,17 +819,19 @@ async function aggiornaVeicoli() {
         elScaduti.style.color = '#ef4444';
     }
 
-    // FILTRI
+    // 🌟 FILTRO E SUPER-FILTRO RICERCA IN TEMPO REALE
+    const valoreCercato = document.getElementById('search-p')?.value?.trim()?.toUpperCase() || "";
+
     const lista = dati.filter(x => {
+        // Se il piantone ha digitato qualcosa nel box di ricerca, mostra SOLO quel pass
+        if (valoreCercato !== "" && x.npass?.toUpperCase() !== valoreCercato) {
+            return false;
+        }
 
         const f = getFlags(x);
 
         if (filtroPiantone === 'attivi')
-        return (
-            f.entrato ||
-            f.prenotatoOggi ||
-            f.daVerificare
-        );
+            return (f.entrato || f.prenotatoOggi || f.daVerificare);
 
         if (filtroPiantone === 'scaduti')
             return f.scaduto;
@@ -842,21 +844,26 @@ async function aggiornaVeicoli() {
 
         return true;
     })
+    // 🌟 ORDINAMENTO SPECIFICO PER OGNI LISTA ASSEGNATA
     .sort((a, b) => {
-        const prenA = a.stato === 'PRENOTATO';
-        const prenB = b.stato === 'PRENOTATO';
-        const fa = getFlags(a);
-        const fb = getFlags(b);
-
-        if (prenA && prenB) {
-            return new Date(a.data_inizio) - new Date(b.data_inizio);
+        if (filtroPiantone === 'verificare') {
+            // Ordine di ingresso (dal più vecchio al più recente)
+            const dataA = a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0);
+            const dataB = b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0);
+            return dataA - dataB;
         }
-
-        if (prenA && !prenB) return -1;
-        if (!prenA && prenB) return 1;
-
-        return new Date(b.data_inserimento || 0) -
-               new Date(a.data_inserimento || 0);
+        else if (filtroPiantone === 'storico') {
+            // Ordine ingresso desc (dal più recente al più vecchio)
+            const dataA = a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0);
+            const dataB = b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0);
+            return dataB - dataA;
+        }
+        else {
+            // Per 'scaduti', 'attivi', 'tutti': Ordine alfabetico / numerico npass crescente
+            const passA = a.npass || "";
+            const passB = b.npass || "";
+            return passA.localeCompare(passB, undefined, { numeric: true, sensitivity: 'base' });
+        }
     });
     
     // RENDER
@@ -985,7 +992,7 @@ async function aggiornaVeicoli() {
         });
     });
 
-    // 🌟 ALLINEAMENTO INIZIALE E DINAMICO DEL TESTO DEL PULSANTE
+    // ALLINEAMENTO INIZIALE E DINAMICO DEL TESTO DEL PULSANTE
     const btn = document.getElementById('btn-filtro');
     if (btn) {
         if (filtroPiantone === 'verificare') {
@@ -1001,7 +1008,6 @@ async function aggiornaVeicoli() {
         } else if (filtroPiantone === 'tutti') {
             btn.innerText = "Mostra storico";
         } else {
-            // Caso 'storico' (ricomincia il giro)
             if (totaleVerificare > 0) {
                 btn.innerText = "Mostra verificare";
             } else if (totaleScaduti > 0) {
