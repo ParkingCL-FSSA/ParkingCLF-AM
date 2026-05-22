@@ -1428,6 +1428,8 @@ document.getElementById('btn-non-presente')
     });
 
     document.getElementById('btn-filtro')?.addEventListener('click', toggleScaduti);
+    document.getElementById('search-p')?.addEventListener('input', aggiornaVeicoli);
+    
     document.getElementById('btn-logout-piantone')?.addEventListener('click', () => {
         location.reload();
     });
