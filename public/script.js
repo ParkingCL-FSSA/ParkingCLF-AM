@@ -224,7 +224,13 @@ async function doLogin() {
                     npass: userPass
                 })
             });
-    
+            
+            if (datiDelPass && datiDelPass.note) {
+            document.getElementById('u-note').value = datiDelPass.note;
+            } else {
+            document.getElementById('u-note').value = '';
+            }
+        
             const data = await res.json();
     
            // console.log("LOGIN:", data);
@@ -1432,6 +1438,39 @@ document.getElementById('btn-non-presente')
     
     document.getElementById('btn-logout-piantone')?.addEventListener('click', () => {
         location.reload();
+    })
+    
+    // 🌟 GESTIONE INVIO SUGGERIMENTI UTENTE
+    document.getElementById('btn-invia-nota')?.addEventListener('click', async () => {
+        const notaTesto = document.getElementById('u-note').value.trim();
+        const emailUtente = document.getElementById('u-email')?.value.trim() || '';
+
+        if (!notaTesto) {
+            alert('Scrivi qualcosa nel campo suggerimenti prima di inviare!');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/user/salva-nota', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    npass: userPass, // Variabile globale del pass utente loggato
+                    nota: notaTesto,
+                    email: emailUtente
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                alert('Suggerimento inviato con successo! Grazie per il tuo contributo. 💡');
+            } else {
+                alert('Errore durante l'invio: ' + (data.error || 'Riprova più tardi.'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Errore di connessione al server.');
+        }
     });
     
     // ADMIN
