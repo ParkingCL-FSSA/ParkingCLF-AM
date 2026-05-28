@@ -235,13 +235,11 @@ async function doLogin() {
             return;
         }
 
-        // 3. ORA popoliamo il campo note usando l'oggetto 'data' (e non datiDelPass)
-        if (data.note) {
-            document.getElementById('u-note').value = data.note;
-        } else {
-            document.getElementById('u-note').value = '';
+        // 3. ORA popoliamo il campo note (con controllo di sicurezza)
+        const campoNote = document.getElementById('u-note');
+        if (campoNote) {
+            campoNote.value = data.note ? data.note : '';
         }
-   
         // Nascondi l'avviso quando il login ha successo
         const avviso = document.getElementById('avviso-manutenzione');
         if (avviso) avviso.style.display = 'none';
