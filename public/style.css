@@ -57,6 +57,17 @@ button {
     font-size: 16px;
 }
 
+#u-email {
+    padding: 18px 14px !important; /* Diventa più alta e spaziosa */
+    margin: 10px 0;
+}
+
+#btn-reset-days {
+    padding: 8px 14px !important;  /* Riduce l'altezza (8px invece di 14px) */
+    font-size: 14px;               /* Testo leggermente più piccolo e proporzionato */
+    margin: 6px 0 12px 0;          /* Gestisce meglio lo spazio intorno */
+}
+
 input { 
     width: 100%; 
     padding: 12px; 
