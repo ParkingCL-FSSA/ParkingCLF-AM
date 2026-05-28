@@ -203,79 +203,73 @@ function toggleScaduti() {
 
 async function doLogin() {
     const card = document.querySelector('.card');
-        if (card) {
-            card.classList.remove('admin-wide');
-        }
+    if (card) {
+        card.classList.remove('admin-wide');
+    }
+    
     try {
-            userPass = document
-                .getElementById('in-npass')
-                .value
-                .trim()
-                .toUpperCase();
-        
-            if (!userPass) return;
+        userPass = document
+            .getElementById('in-npass')
+            .value
+            .trim()
+            .toUpperCase();
     
-            const res = await fetch('/api/valida-pass', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    npass: userPass
-                })
-            });
-            
-            if (datiDelPass && datiDelPass.note) {
-            document.getElementById('u-note').value = datiDelPass.note;
-            } else {
+        if (!userPass) return;
+
+        const res = await fetch('/api/valida-pass', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                npass: userPass
+            })
+        });
+        
+        // 1. PRIMA attendiamo ed estraiamo i dati dal server
+        const data = await res.json();
+
+        // 2. POI controlliamo se il pass è valido
+        if (!data.valid) {
+            alert("Accesso Negato");
+            return;
+        }
+
+        // 3. ORA popoliamo il campo note usando l'oggetto 'data' (e non datiDelPass)
+        if (data.note) {
+            document.getElementById('u-note').value = data.note;
+        } else {
             document.getElementById('u-note').value = '';
-            }
-        
-            const data = await res.json();
-    
-           // console.log("LOGIN:", data);
-    
-            if (!data.valid) {
-                alert("Accesso Negato");
-                return;
-            }
-       if (data.valid) {
+        }
+   
         // Nascondi l'avviso quando il login ha successo
         const avviso = document.getElementById('avviso-manutenzione');
         if (avviso) avviso.style.display = 'none';
+        
+        // Gestione dei ruoli
+        if (data.ruolo === 'piantone') {
+            show('view-piantone');
+            try { aggiornaVeicoli(); } catch(e){ console.log(e); }
+            try { aggiornaPostiLiberiPiantone(); } catch(e){ console.log(e); }
         }
-            if (data.ruolo === 'piantone') {
-    
-                show('view-piantone');
-    
-                try { aggiornaVeicoli(); } catch(e){ console.log(e); }
-                try { aggiornaPostiLiberiPiantone(); } catch(e){ console.log(e); }
-               // try { caricaStorico(); } catch(e){ console.log(e); }
-    
+        else if (data.ruolo === 'admin') { 
+            if (card) {
+                card.classList.add('admin-wide');
             }
-            else if (data.ruolo === 'admin') { 
-                if (card) {
-                    card.classList.add('admin-wide');
-                }
-                show('view-admin'); 
-                try { mostraAdmin(); } catch(e){ console.log(e); }
-            }
-
+            show('view-admin'); 
+            try { mostraAdmin(); } catch(e){ console.log(e); }
+        }
         else {
-
             show('view-user');
-
             try { buildCal(); } catch(e){ console.log(e); }
-
         }
 
     } catch (err) {
-
         console.error("ERRORE LOGIN:", err);
         alert("Errore login");
-
     }
 }
+
 // ✅ Nuova funzione per visualizzazione posti liberi totali al piantone
 async function aggiornaPostiLiberiPiantone() {
     const res = await fetch(`/api/piantone/liberi?npass=${userPass}`);
