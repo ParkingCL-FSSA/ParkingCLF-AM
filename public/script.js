@@ -1290,7 +1290,8 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // 🌟 GESTIONE INVIO SUGGERIMENTI UTENTE
     document.getElementById('btn-invia-nota')?.addEventListener('click', async () => {
-        const notaTesto = document.getElementById('u-note').value.trim();
+        const notaInput = document.getElementById('u-note'); // Prendiamo il riferimento all'elemento intero
+        const notaTesto = notaInput ? notaInput.value.trim() : '';
         const emailUtente = document.getElementById('u-email')?.value.trim() || '';
 
         if (!notaTesto) {
@@ -1312,8 +1313,12 @@ window.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (data.success) {
                 alert('Suggerimento inviato con successo! Grazie per il tuo contributo. 💡');
+                
+                // ✅ NOVITÀ: Svuota la casella di testo a schermo dopo l'invio riuscito
+                if (notaInput) {
+                    notaInput.value = '';
+                }
             } else {
-                // ✅ RISOLTO: Inserito il backslash prima dell'apice per evitare il crash
                 alert('Errore durante l\'invio: ' + (data.error || 'Riprova più tardi.'));
             }
         } catch (err) {
