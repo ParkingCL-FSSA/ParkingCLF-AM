@@ -516,6 +516,43 @@ app.post('/api/elimina-prenotazione', async (req, res) => {
     }
 });
 
+// 🌟 API SALVATAGGIO SUGGERIMENTO / NOTA ED INVIO EMAIL
+app.post('/api/user/salva-nota', async (req, res) => {
+    const { npass, nota, email } = req.body;
+
+    if (!npass) {
+        return res.status(400).json({ success: false, error: 'Pass mancante' });
+    }
+
+    try {
+        // 1. Aggiorna l'ultimo suggerimento nel campo note di registro_pass
+        await pool.query(`
+            UPDATE registro_pass 
+            SET note = $1 
+            WHERE UPPER(npass) = UPPER($2)
+        `, [nota, npass]);
+
+        // 2. LOGICA INVIO EMAIL A PARKINGCLF.AM@GMAIL.COM
+        // Nota: Qui usa il modulo/trasportatore (es. nodemailer o axios/mailgun) che hai già configurato nel tuo server.js
+        const testoEmail = `Nuovo suggerimento ricevuto dall'utente del Pass: ${npass.toUpperCase()}\nEmail Utente: ${email || 'Non fornita'}\n\nCommento:\n${nota}`;
+        
+        console.log("✉️ Invio email a parkingclf.am@gmail.com per il suggerimento del pass:", npass);
+        
+        /* [Sotto-inteso: Inserisci qui la tua funzione mail esistente, esempio:]
+        await inviaEmailAttuale({
+            to: 'parkingclf.am@gmail.com',
+            subject: `💡 Suggerimento App - Pass ${npass.toUpperCase()}`,
+            text: testoEmail
+        });
+        */
+
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Errore durante il salvataggio del suggerimento:', e);
+        res.status(500).json({ success: false, error: 'Errore interno del server' });
+    }
+});
+
 // --- 5. VEICOLI DENTRO ---
 app.get('/api/veicoli-dentro', async (req, res) => {
 
