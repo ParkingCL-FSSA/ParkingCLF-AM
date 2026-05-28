@@ -1313,146 +1313,108 @@ window.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 alert('Suggerimento inviato con successo! Grazie per il tuo contributo. 💡');
             } else {
-                alert('Errore durante l'invio: ' + (data.error || 'Riprova più tardi.'));
+                // ✅ RISOLTO: Inserito il backslash prima dell'apice per evitare il crash
+                alert('Errore durante l\'invio: ' + (data.error || 'Riprova più tardi.'));
             }
         } catch (err) {
             console.error(err);
             alert('Errore di connessione al server.');
         }
     });
+
     document.getElementById('btn-logout-user')?.addEventListener('click', () => {
         location.reload();
     });
     
-// PIANTONE
-
-const inputSearch = document.getElementById('search-p');
-document.getElementById('btn-cerca')?.addEventListener('click', () => {
-    cercaPass();
-
-});
-inputSearch?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
+    // PIANTONE
+    const inputSearch = document.getElementById('search-p');
+    document.getElementById('btn-cerca')?.addEventListener('click', () => {
         cercaPass();
-    }
-
-});
-
-document.getElementById('btn-reset-search')
-?.addEventListener('click', () => {
-    if (inputSearch) {
-        inputSearch.value = '';
-        inputSearch.focus();
-    }
-
-    currentPren = null;
-
-    // Nasconde sia il pannello che i bottoni di verifica
-    document.getElementById('panel-piantone')?.classList.add('hidden');
-    document.getElementById('box-verifica')?.classList.add('hidden'); 
-});
-
-// PRESENTE
-
-document.getElementById('btn-presente')
-?.addEventListener('click', async () => {
-
-    if (!currentPren) return;
-
-    if (!confirm(
-        'Confermi che il veicolo è presente nel parcheggio?'
-    )) return;
-
-    const res = await fetch('/api/piantone/azione', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            id: currentPren.id,
-            azione: 'uscita',
-            npass: userPass
-        })
     });
 
-    const data = await res.json();
-
-    if (data.success) {
-
-        alert('Veicolo verificato');
-
-        await aggiornaVeicoli();
-
-        document
-            .getElementById('box-verifica')
-            ?.classList.add('hidden');
-
-        const btnUscita = document.getElementById('btn-uscita');
-
-        btnUscita.style.display = 'inline-block';
-        btnUscita.disabled = true;
-        btnUscita.innerText = 'VERIFICATO';
-        btnUscita.style.background = '#64748b';
-    }
-});
-
-
-// NON PRESENTE
-
-document.getElementById('btn-non-presente')
-?.addEventListener('click', async () => {
-
-    if (!currentPren) return;
-
-    if (!confirm(
-        'Confermi che il veicolo NON è presente nel parcheggio?'
-    )) return;
-
-    const res = await fetch('/api/piantone/non-presente', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            id: currentPren.id
-        })
+    inputSearch?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            cercaPass();
+        }
     });
 
-    const data = await res.json();
-
-    if (data.success) {
-
-        alert('Veicolo segnato come NON presente');
-
-        await aggiornaVeicoli();
-
-        document
-            .getElementById('box-verifica')
-            ?.classList.add('hidden');
-
-        document
-            .getElementById('panel-piantone')
-            ?.classList.add('hidden');
-
+    document.getElementById('btn-reset-search')?.addEventListener('click', () => {
+        if (inputSearch) {
+            inputSearch.value = '';
+            inputSearch.focus();
+        }
         currentPren = null;
+        // Nasconde sia il pannello che i bottoni di verifica
+        document.getElementById('panel-piantone')?.classList.add('hidden');
+        document.getElementById('box-verifica')?.classList.add('hidden'); 
+    });
 
-        document.getElementById('search-p').value = '';
-    }
+    // PRESENTE
+    document.getElementById('btn-presente')?.addEventListener('click', async () => {
+        if (!currentPren) return;
 
-});
+        if (!confirm('Confermi che il veicolo è presente nel parcheggio?')) return;
+
+        const res = await fetch('/api/piantone/azione', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: currentPren.id,
+                azione: 'uscita',
+                npass: userPass
+            })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            alert('Veicolo verificato');
+            await aggiornaVeicoli();
+            document.getElementById('box-verifica')?.classList.add('hidden');
+
+            const btnUscita = document.getElementById('btn-uscita');
+            btnUscita.style.display = 'inline-block';
+            btnUscita.disabled = true;
+            btnUscita.innerText = 'VERIFICATO';
+            btnUscita.style.background = '#64748b';
+        }
+    });
+
+    // NON PRESENTE
+    document.getElementById('btn-non-presente')?.addEventListener('click', async () => {
+        if (!currentPren) return;
+
+        if (!confirm('Confermi che il veicolo NON è presente nel parcheggio?')) return;
+
+        const res = await fetch('/api/piantone/non-presente', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: currentPren.id })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            alert('Veicolo segnato come NON presente');
+            await aggiornaVeicoli();
+            document.getElementById('box-verifica')?.classList.add('hidden');
+            document.getElementById('panel-piantone')?.classList.add('hidden');
+            currentPren = null;
+            if (inputSearch) inputSearch.value = '';
+        }
+    });
     
     document.getElementById('btn-arrivi-oggi')?.addEventListener('click', mostraArriviOggi);
     document.getElementById('btn-ingresso')?.addEventListener('click', () => {
         mossa('E');
     });
+
     const btnHomeSuccess = document.getElementById('btn-home-success');
-    
     if (btnHomeSuccess) {
         btnHomeSuccess.addEventListener('click', () => {
             location.reload();
         });
     }
+
     document.getElementById('btn-uscita')?.addEventListener('click', () => {
         mossa('U');
     });
@@ -1462,13 +1424,11 @@ document.getElementById('btn-non-presente')
     
     document.getElementById('btn-logout-piantone')?.addEventListener('click', () => {
         location.reload();
-    })
+    });
     
     // ADMIN
     document.getElementById('btn-ritardi')?.addEventListener('click', mostraRitardi);
-
     document.getElementById('btn-logout-admin')?.addEventListener('click', () => {
         location.reload();
     });
-
 });
