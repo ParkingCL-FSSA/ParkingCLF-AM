@@ -58,27 +58,22 @@ button {
 }
 
 input { 
-/* Caselle di input più alte e leggibili */
-input { 
     width: 100%; 
-    padding: 16px 12px !important;
+    padding: 12px; 
     margin: 10px 0; 
     border: 1px solid #cbd5e1; 
     border-radius: 10px; 
     box-sizing: border-box;
 }
-
-/* Pulsante Reset Selezione più sottile e con testo bianco leggibile */
-#btn-reset-search { 
-    width: 100%; 
-    padding: 8px 15px !important; /* Mantiene il bottone sottile */
-    border: none; 
-    border-radius: 14px; 
-    background: #ef4444; 
-    color: #ffffff;             /* Sostituito 'grey' con bianco per un contrasto perfetto */
-    font-size: 14px; 
-    font-weight: bold; 
-    cursor: pointer; 
+#btn-reset-search{
+    width:50px;
+    border:none;
+    border-radius:14px;
+    background:#ef4444;
+    color: grey;
+    font-size:20px;
+    font-weight:bold;
+    cursor:pointer;
 }
 .badge-stato{
     display:inline-flex;
