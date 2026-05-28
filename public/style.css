@@ -65,15 +65,16 @@ input {
     border-radius: 10px; 
     box-sizing: border-box;
 }
-#btn-reset-search{
-    width:50px;
-    border:none;
-    border-radius:14px;
-    background:#ef4444;
-    color: grey;
-    font-size:20px;
-    font-weight:bold;
-    cursor:pointer;
+#btn-reset-search { 
+  width: 50px; 
+  padding: 5px 0; /* 5px sopra/sotto, 0 a destra/sinistra per ridurlo */
+  border: none; 
+  border-radius: 14px; 
+  background: #ef4444; 
+  color: grey; 
+  font-size: 14px; /* Ridotto per adattarsi al padding stretto */
+  font-weight: bold; 
+  cursor: pointer; 
 }
 .badge-stato{
     display:inline-flex;
