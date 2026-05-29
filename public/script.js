@@ -662,24 +662,19 @@ if (boxVerifica) {
 function getFlags(x) {
     const oggi = new Date().toISOString().split('T')[0];
 
-    // 1. ENTRATO: Il veicolo è fisicamente dentro il parcheggio
+    // 1. ENTRATO: Il veicolo è dentro il parcheggio
     const entrato = x.stato === 'ENTRATO';
 
-    // 2. SCADUTO (Regola corretta):
-    // - Se il periodo di prenotazione è del tutto superato (oggi > data_fine)
-    // - OPPURE se lo stato sul server è esplicitamente 'MAI_ENTRATO'
-    // - OPPURE (LUNGA SOSTA): Se oggi è oltre la data di inizio (oggi > data_inizio) MA il veicolo NON è mai entrato (orario_ingresso è null)
+    // 2. SCADUTO: Solo se il periodo è terminato del tutto o se forzato dal sistema
     const scaduto =
         (x.stato === 'PRENOTATO' && oggi > x.data_fine) ||
-        x.stato === 'MAI_ENTRATO' ||
-        (x.stato === 'PRENOTATO' && oggi > x.data_inizio && !x.orario_ingresso);
+        x.stato === 'MAI_ENTRATO';
 
-    // 3. PRENOTATO OGGI: Valido solo se oggi rientra nel periodo E non è ancora scaduto per mancato ingresso
+    // 3. PRENOTATO OGGI: In corso di validità (Blu)
     const prenotatoOggi =
         x.stato === 'PRENOTATO' &&
         oggi >= x.data_inizio &&
-        oggi <= x.data_fine &&
-        !scaduto; // Se è già saltato come scaduto per mancato ingresso, non deve apparire qui
+        oggi <= x.data_fine;
 
     // 4. DA VERIFICARE
     const daVerificare =
@@ -699,6 +694,7 @@ function getFlags(x) {
         storico
     };
 }
+
 async function aggiornaVeicoli() {
 
     const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
