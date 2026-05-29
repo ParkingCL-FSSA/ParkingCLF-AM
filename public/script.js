@@ -484,27 +484,27 @@ async function cercaPass(passManuale = null, idRecord = null) {
         const res = await fetch(url);
         const data = await res.json();
 
-const btnIngresso = document.getElementById('btn-ingresso');
-const btnUscita = document.getElementById('btn-uscita');
-const boxVerifica = document.getElementById('box-verifica');
+        const btnIngresso = document.getElementById('btn-ingresso');
+        const btnUscita = document.getElementById('btn-uscita');
+        const boxVerifica = document.getElementById('box-verifica');
 
-// RESET UI
-btnIngresso.style.display = 'inline-block';
-btnUscita.style.display = 'inline-block';
+        // RESET UI
+        btnIngresso.style.display = 'inline-block';
+        btnUscita.style.display = 'inline-block';
 
-btnIngresso.disabled = true;
-btnUscita.disabled = true;
+        btnIngresso.disabled = true;
+        btnUscita.disabled = true;
 
-btnIngresso.innerText = 'ENTRATA';
-btnUscita.innerText = 'USCITA';
+        btnIngresso.innerText = 'ENTRATA';
+        btnUscita.innerText = 'USCITA';
 
-btnIngresso.style.background = '';
-btnUscita.style.background = '';
+        btnIngresso.style.background = '';
+        btnUscita.style.background = '';
 
-// NASCONDI SEMPRE verifica all'apertura
-if (boxVerifica) {
-    boxVerifica.classList.add('hidden');
-}
+        // NASCONDI SEMPRE verifica all'apertura
+        if (boxVerifica) {
+            boxVerifica.classList.add('hidden');
+        }
 
        if (data.trovato) {
 
@@ -635,6 +635,7 @@ async function aggiornaVeicoli() {
     const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
     const dati = await res.json();
     const oggi = new Date().toISOString().split('T')[0];
+    const inputSearch = document.getElementById('search-p'); // Recupero riferimento
 
     let countDentro = 0;
     let countPrenotati = 0;
@@ -755,7 +756,7 @@ async function aggiornaVeicoli() {
     }
 
    // 🌟 FILTRO E SUPER-FILTRO RICERCA IN TEMPO REALE CON PRIORITÀ STATO
-    const valoreCercato = document.getElementById('search-p')?.value?.trim()?.toUpperCase() || "";
+    const valoreCercato = inputSearch?.value?.trim()?.toUpperCase() || "";
 
     const lista = dati.filter(x => {
         // SE IL PIANTONE CERCA QUALCOSA: Mostra il pass a prescindere dalla scheda!
@@ -901,8 +902,6 @@ async function aggiornaVeicoli() {
         const uscitoScaduto =
             x.stato === 'USCITO' &&
             x.data_fine < oggi;
-        
-        const f = getFlags(x);
         
         return `<tr style="
             ${scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
@@ -1244,7 +1243,7 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // 🌟 GESTIONE INVIO SUGGERIMENTI UTENTE
     document.getElementById('btn-invia-nota')?.addEventListener('click', async () => {
-        const notaInput = document.getElementById('u-note'); // Prendiamo il riferimento all'elemento intero
+        const notaInput = document.getElementById('u-note'); 
         const notaTesto = notaInput ? notaInput.value.trim() : '';
         const emailUtente = document.getElementById('u-email')?.value.trim() || '';
 
@@ -1258,7 +1257,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    npass: userPass, // Variabile globale del pass utente loggato
+                    npass: userPass, 
                     nota: notaTesto,
                     email: emailUtente
                 })
@@ -1268,7 +1267,6 @@ window.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 alert('Suggerimento inviato con successo! Grazie per il tuo contributo. 💡');
                 
-                // ✅ NOVITÀ: Svuota la casella di testo a schermo dopo l'invio riuscito
                 if (notaInput) {
                     notaInput.value = '';
                 }
