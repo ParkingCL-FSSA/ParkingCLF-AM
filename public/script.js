@@ -817,25 +817,26 @@ async function aggiornaVeicoli() {
         elScaduti.style.color = '#ef4444';
     }
 
-    // 🌟 FILTRO E SUPER-FILTRO RICERCA IN TEMPO REALE
+    // 🌟 FILTRO E SUPER-FILTRO RICERCA IN TEMPO REALE (OTTIMIZZATO)
     const valoreCercato = document.getElementById('search-p')?.value?.trim()?.toUpperCase() || "";
 
     const lista = dati.filter(x => {
-        // Se il piantone ha digitato qualcosa nel box di ricerca, mostra SOLO quel pass
-        if (valoreCercato !== "" && x.npass?.toUpperCase() !== valoreCercato) {
-            return false;
+        // 🚀 SE IL PIANTONE CERCA QUALCOSA: Mostra il pass a prescindere dalla scheda/filtro attivo!
+        if (valoreCercato !== "") {
+            return x.npass?.toUpperCase() === valoreCercato;
         }
 
+        // SE IL BOX DI RICERCA È VUOTO: Applica il normale filtro delle schede
         const f = getFlags(x);
 
-        if (filtroPiantone === 'attivi')
-            return (f.entrato || f.prenotatoOggi || f.daVerificare);
+        if (filtroPiantone === 'verificare')
+            return f.daVerificare;
 
         if (filtroPiantone === 'scaduti')
             return f.scaduto;
 
-        if (filtroPiantone === 'verificare')
-            return f.daVerificare;
+        if (filtroPiantone === 'attivi')
+            return (f.entrato || f.prenotatoOggi || f.daVerificare);
 
         if (filtroPiantone === 'storico')
             return f.storico;
@@ -845,24 +846,48 @@ async function aggiornaVeicoli() {
     // 🌟 ORDINAMENTO SPECIFICO PER OGNI LISTA ASSEGNATA
     .sort((a, b) => {
         if (filtroPiantone === 'verificare') {
-            // Ordine di ingresso (dal più vecchio al più recente)
             const dataA = a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0);
             const dataB = b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0);
             return dataA - dataB;
         }
         else if (filtroPiantone === 'storico') {
-            // Ordine ingresso desc (dal più recente al più vecchio)
             const dataA = a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0);
             const dataB = b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0);
             return dataB - dataA;
         }
         else {
-            // Per 'scaduti', 'attivi', 'tutti': Ordine alfabetico / numerico npass crescente
             const passA = a.npass || "";
             const passB = b.npass || "";
             return passA.localeCompare(passB, undefined, { numeric: true, sensitivity: 'base' });
         }
     });
+
+    // 🚀 AGGIORNAMENTO DINAMICO DEL BADGE STATO SE STIAMO CERCANDO UN PASS SPECIFICO
+    if (valoreCercato !== "" && lista.length > 0) {
+        const veicoloTrovato = lista[0];
+        const f = getFlags(veicoloTrovato);
+        
+        if (f.daVerificare) {
+            label = "🚨 DA VERIFICARE (Trovato da Ricerca)";
+            colore = "#ea580c"; sfondo = "#ffedd5";
+        } else if (f.scaduto || veicoloTrovato.stato === 'MAI_ENTRATO') {
+            label = "⏰ SCADUTO (Trovato da Ricerca)";
+            colore = "#dc2626"; sfondo = "#fee2e2";
+        } else if (f.entrato || f.prenotatoOggi) {
+            label = "📋 ATTIVO (Trovato da Ricerca)";
+            colore = "#2563eb"; sfondo = "#dbeafe";
+        } else if (f.storico) {
+            label = "🕘 STORICO (Trovato da Ricerca)";
+            colore = "#475569"; sfondo = "#e2e8f0";
+        }
+        
+        if (statoTabella) {
+            statoTabella.innerHTML = label;
+            statoTabella.style.color = colore;
+            statoTabella.style.background = sfondo;
+            statoTabella.style.borderColor = colore;
+        }
+    }
     
     // RENDER
     document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
