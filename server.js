@@ -33,23 +33,6 @@ pool.on('error', (err) => {
 
 const LOGO_URL = "https://parkingclf-am.onrender.com/LogoCLF.png";
 
-// CONFIGURAZIONE CRON JOB
-cron.schedule('1 0 * * *', async () => {
-    const oggi = new Date().toISOString().split('T')[0];
-    try {
-        await db.run(`
-            UPDATE prenotazioni 
-            SET stato = 'ARCHIVIATO' 
-            WHERE stato = 'PRENOTATO' 
-              AND data_fine < ? 
-              AND orario_ingresso IS NULL
-        `, [oggi]);
-        console.log("Archiviazione automatica pass scaduti completata con successo.");
-    } catch (err) {
-        console.error("Errore nel cron job di archiviazione:", err);
-    }
-});
-
 function formattaDataIT(isoStr) {
     if (!isoStr) return '--/--/----';
     const d = new Date(isoStr);
