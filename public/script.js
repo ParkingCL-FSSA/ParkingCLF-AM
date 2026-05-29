@@ -895,7 +895,6 @@ async function aggiornaVeicoli() {
     if (btn) {
         btn.innerText = "MOSTRA STATI";
     }
-}
 
 let loadingAzione = false;
 
