@@ -464,7 +464,7 @@ async function eliminaPren(id) {
     }
 }
 
-// 🌟 AGGIORNATO: Ora accetta in maniera solida l'idRecord per discriminare tra pass identici
+// 🌟 AGGIORNATO: Ora accetta in maniera solida l'idRecord per discriminare tra pass identici e ripulito da MAI_ENTRATO
 async function cercaPass(passManuale = null, idRecord = null) {
 
     const input = document.getElementById('search-p');
@@ -507,7 +507,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
             boxVerifica.classList.add('hidden');
         }
 
-       if (data.trovato) {
+        if (data.trovato) {
 
             currentPren = data.prenotazione;
             
@@ -551,12 +551,12 @@ async function cercaPass(passManuale = null, idRecord = null) {
             
                 boxVerifica.classList.add('hidden');
             }
-            // SCADUTO o MAI ENTRATO
-            else if (currentPren.stato === 'SCADUTO' || currentPren.stato === 'MAI_ENTRATO') {
+            // 🚀 OTTIMIZZATO: Gestione unica dello stato SCADUTO (Rimosso MAI_ENTRATO)
+            else if (currentPren.stato === 'SCADUTO') {
                 // Se la vettura non è mai entrata ed è scaduta, blocca l'uscita
                 if (!currentPren.orario_ingresso) {
                     btnUscita.disabled = true;
-                    btnUscita.innerText = 'MAI ENTRATO / SCADUTO';
+                    btnUscita.innerText = 'NON ENTRATO / SCADUTO';
                     btnUscita.style.background = '#64748b';
                 } else {
                     btnUscita.disabled = false;
