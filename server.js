@@ -864,7 +864,7 @@ app.get('/api/piantone/liberi', async (req, res) => {
 
         res.json({
             dentro,
-            totaleLiberi: 120 - dentro
+            totaleLiberi: 90 - dentro
         });
 
     } catch (err) {
@@ -931,7 +931,7 @@ app.get('/api/admin/cruscotto', async (req, res) => {
 
         const output = Object.values(grouped).map(day => ({
             ...day,
-            totaleLiberi: 120 - day.totaleOccupati
+            totaleLiberi: 90 - day.totaleOccupati
         }));
 
         res.json(output);
