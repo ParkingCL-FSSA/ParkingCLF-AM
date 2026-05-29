@@ -757,7 +757,7 @@ async function aggiornaVeicoli() {
         &nbsp;&nbsp;|&nbsp;&nbsp;
         📅 <b>Prenotati oggi:</b> ${countPrenotati}
         &nbsp;&nbsp;|&nbsp;&nbsp;
-        🅿️ <b>Liberi:</b> ${120 - countDentro}
+        🅿️ <b>Liberi:</b> ${90 - countDentro}
     </div>
 
     <div style="
@@ -1154,7 +1154,7 @@ async function mostraAdmin() {
     header += `</tr>`;
 
     const rows = dati.map(x => {
-        let row = `<tr><td>${fmtData(x.data)}</td><td style="font-weight:bold; color:var(--green);">${x.totaleLiberi}/120</td>`;
+        let row = `<tr><td>${fmtData(x.data)}</td><td style="font-weight:bold; color:var(--green);">${x.totaleLiberi}/90</td>`;
         enti.forEach(ente => {
             const info = x.enti[ente] || { liberi: 0, totale: 0 };
             // Rosso se 0, Arancione se < 4
