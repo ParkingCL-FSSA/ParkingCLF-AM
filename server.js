@@ -33,7 +33,6 @@ pool.on('error', (err) => {
 
 const LOGO_URL = "https://parkingclf-am.onrender.com/LogoCLF.png";
 
-// Aggiungi questa funzione all'inizio del file del server
 function formattaDataIT(isoStr) {
     if (!isoStr) return '--/--/----';
     const d = new Date(isoStr);
@@ -565,9 +564,15 @@ app.get('/api/veicoli-dentro', async (req, res) => {
     }
 
     try {
-
+        // 🚀 Archiviazione automatica: sposta in 'ARCHIVIATO' le prenotazioni passate mai usate
+        const oggi = new Date().toISOString().split('T')[0];
+        await db.run(`
+            UPDATE prenotazioni 
+            SET stato = 'ARCHIVIATO' 
+            WHERE stato = 'PRENOTATO' AND data_fine < ? AND orario_ingresso IS NULL
+        `, [oggi]);
+        
         const r = await pool.query(`
-
             SELECT
                 npass,
                 data_inizio,
