@@ -663,4 +663,55 @@ app.get('/api/piantone/storico', async (req, res) => {
         const r = await pool.query(`
             SELECT npass, orario_ingresso, orario_uscita, stato
             FROM prenotazioni
-            WHERE stato = 'USCIT
+            WHERE stato = 'USCITO' OR stato = 'ARCHIVIATO'
+            ORDER BY orario_ingresso DESC
+            LIMIT 30
+        `);
+        res.json(r.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Errore interno" });
+    }
+});
+
+// --- PIANTONE ARRIVI OGGI ---
+app.get('/api/piantone/arrivi-oggi', async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT DISTINCT ON (UPPER(p.npass))
+        UPPER(p.npass) AS npass,
+        r.ente,
+        'PRENOTATO' AS stato,
+        p.data_inizio
+      FROM prenotazioni p
+      LEFT JOIN registro_pass r ON UPPER(p.npass) = UPPER(r.npass)
+      WHERE CURRENT_DATE BETWEEN p.data_inizio AND p.data_fine AND p.stato = 'PRENOTATO'
+      ORDER BY UPPER(p.npass), p.data_inizio DESC, p.id DESC
+    `);
+
+    const righeOrdinate = r.rows.sort((a, b) => new Date(a.data_inizio) - new Date(b.b.data_inizio));
+    res.json(righeOrdinate);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Errore server' });
+  }
+});
+
+app.post('/api/piantone/non-presente', async (req, res) => {
+    const { id } = req.body;
+    try {
+        await pool.query(`UPDATE prenotazioni SET stato = 'USCITO' WHERE id = $1`, [id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// avvio immediato job scadenze
+scadenzaPrenotazioni();
+// ogni 5 minuti
+setInterval(scadenzaPrenotazioni, 5 * 60 * 1000);
+
+app.listen(process.env.PORT || 3000, '0.0.0.0', () => {
+    console.log(`Server avviato`);
+});
