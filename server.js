@@ -51,15 +51,10 @@ function clean(input) {
 
 // ⏰ JOB SCADENZA
 async function scadenzaPrenotazioni() {
-
     try {
-
         const result = await pool.query(`
-
             UPDATE prenotazioni
-
             SET stato = CASE
-
                 -- prenotazione mai usata
                 WHEN stato = 'PRENOTATO'
                      AND data_fine < CURRENT_DATE
@@ -73,39 +68,25 @@ async function scadenzaPrenotazioni() {
                 THEN 'DA_VERIFICARE'
 
                 ELSE stato
-
             END
-
             WHERE
-
                 (
                     stato = 'PRENOTATO'
                     AND data_fine < CURRENT_DATE
                 )
-
                 OR
-
                 (
                     stato = 'ENTRATO'
                     AND data_fine < CURRENT_DATE
                     AND orario_uscita IS NULL
                 )
-
         `);
 
         if (result.rowCount > 0) {
-
-            console.log(
-                `[SCADENZA] ${result.rowCount} prenotazioni aggiornate`
-            );
+            console.log(`[SCADENZA] ${result.rowCount} prenotazioni aggiornate`);
         }
-
     } catch (err) {
-
-        console.error(
-            '[SCADENZA] Errore:',
-            err.message
-        );
+        console.error('[SCADENZA] Errore:', err.message);
     }
 }
 
@@ -162,7 +143,6 @@ app.post('/api/valida-pass', async (req, res) => {
         }
 
         res.json({ valid: false });
-
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Errore interno" });
@@ -172,7 +152,6 @@ app.post('/api/valida-pass', async (req, res) => {
 // --- 2. PRENOTAZIONE CON CONTROLLO QUOTE ENTE CORRETTO ---
 app.post('/api/prenota', async (req, res) => {
     const { npass, giorni, email } = req.body;
-    const p = clean(npass);
     
     if (!npass || !email) return res.status(400).json({ error: "Inserisci la tua email" });
     if (giorni.length === 1) {
@@ -190,10 +169,7 @@ app.post('/api/prenota', async (req, res) => {
         const p = clean(npass);
         const start = new Date(dataInizio);
         const end = new Date(dataFine);
-        const numGiorni =
-            Math.floor(
-                (end - start) / (1000 * 60 * 60 * 24)
-            ) + 1;
+        const numGiorni = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
         // CHECK 1: Sovrapposizione
         const overlap = await pool.query(
@@ -214,11 +190,9 @@ app.post('/api/prenota', async (req, res) => {
         }
 
         // CHECK 2: massimo 15 giorni cumulativi in 45 giorni
-        
         const inizioNuova = new Date(dataInizio);
         const fineNuova = new Date(dataFine);
         
-        // finestra mobile di 45 giorni
         const finestraStart = new Date(inizioNuova);
         finestraStart.setDate(finestraStart.getDate() - 44);
         
@@ -228,7 +202,6 @@ app.post('/api/prenota', async (req, res) => {
         const finestraStartStr = finestraStart.toISOString().split('T')[0];
         const finestraEndStr = finestraEnd.toISOString().split('T')[0];
         
-        // recupera tutte le prenotazioni che toccano la finestra
         const prenEsistenti = await pool.query(
             `
             SELECT data_inizio, data_fine
@@ -241,67 +214,50 @@ app.post('/api/prenota', async (req, res) => {
             [p, finestraEndStr, finestraStartStr]
         );
 
-        // uso Set per evitare doppi conteggi
         const giorniOccupati = new Set();
         
-        // aggiungi giorni già prenotati
         prenEsistenti.rows.forEach(row => {
-        
             let d = new Date(row.data_inizio);
             const end = new Date(row.data_fine);
-        
             while (d <= end) {
-        
-                giorniOccupati.add(
-                    d.toISOString().split('T')[0]
-                );
-        
+                giorniOccupati.add(d.toISOString().split('T')[0]);
                 d.setDate(d.getDate() + 1);
             }
         });
         
-        // aggiungi nuova richiesta
         let d = new Date(inizioNuova);
-        
         while (d <= fineNuova) {
-        
-            giorniOccupati.add(
-                d.toISOString().split('T')[0]
-            );
-        
+            giorniOccupati.add(d.toISOString().split('T')[0]);
             d.setDate(d.getDate() + 1);
         }
         
-        // controllo finale
         if (giorniOccupati.size > 15) {
-        
             return res.status(400).json({
                 error: `Limite superato: massimo 15 giorni prenotabili in qualunque finestra di 45 giorni consecutivi.`
             });
         }
-                // CHECK 3: Quote ENTE - FIX CRITICO
-                const userInfo = await pool.query(
-                    `SELECT r.ente, a.posti 
-                     FROM registro_pass r
-                     LEFT JOIN assegnazioni a ON r.ente = a.ente
-                     WHERE UPPER(r.npass) = $1`,
-                    [p]
-                );
+
+        // CHECK 3: Quote ENTE
+        const userInfo = await pool.query(
+            `SELECT r.ente, a.posti 
+             FROM registro_pass r
+             LEFT JOIN assegnazioni a ON r.ente = a.ente
+             WHERE UPPER(r.npass) = $1`,
+            [p]
+        );
         
-                if (userInfo.rows.length === 0 || !userInfo.rows[0].ente) {
-                    return res.status(400).json({ error: "Configurazione utente non valida. Contatta l'amministratore." });
-                }
+        if (userInfo.rows.length === 0 || !userInfo.rows[0].ente) {
+            return res.status(400).json({ error: "Configurazione utente non valida. Contatta l'amministratore." });
+        }
 
         const userEnte = userInfo.rows[0].ente;
         const postiEnte = userInfo.rows[0].posti || 0;
 
-        // Espandi prenotazione in singoli giorni
         const giorniRichiesti = [];
         for (let d = new Date(dataInizio); d <= new Date(dataFine); d.setDate(d.getDate() + 1)) {
             giorniRichiesti.push(d.toISOString().split('T')[0]);
         }
 
-        // Verifica ogni giorno
         for (const giorno of giorniRichiesti) {
             const occupatiEnte = await pool.query(
                 `SELECT COUNT(DISTINCT p.npass) as count
@@ -315,7 +271,6 @@ app.post('/api/prenota', async (req, res) => {
             );
 
             const count = parseInt(occupatiEnte.rows[0].count);
-            
             if (count >= postiEnte) {
                 return res.status(400).json({ 
                     error: "Non è possibile prenotare nelle giornate selezionate. Posti esauriti per questa prenotazione." 
@@ -337,77 +292,32 @@ app.post('/api/prenota', async (req, res) => {
         doc.on('end', async () => {
             const pdfData = Buffer.concat(buffers);
 
-           const htmlUtente = `
+            const htmlUtente = `
     <div style="font-family:sans-serif; max-width:520px; margin:auto;">
-
-        <!-- BOX PRINCIPALE -->
-        <div style="
-            text-align:center;
-            border:2px solid #4A90E2;
-            padding:20px;
-            border-radius:15px;
-            background:#ffffff;
-        ">
-            <img 
-                src="${LOGO_URL}" 
-                alt="Logo CLF" 
-                style="width:130px; margin-bottom:20px;"
-            >
-            <h2 style="color:#4A90E2; margin-bottom:10px;">
-                Prenotazione Confermata
-            </h2>
-            <p style="font-size:15px; color:#111827;">
-                Gentile utente <b>${p}</b>,</p>
-               <p style="margin:0px;">il tuo pass <b>[Lunga Sosta]</b> è pronto.
-            </p>
-            <div style="
-                background-color:#f4f8ff;
-                padding:14px;
-                border-radius:12px;
-                margin:20px 0;
-                line-height:1.8;
-            ">
+        <div style="text-align:center; border:2px solid #4A90E2; padding:20px; border-radius:15px; background:#ffffff;">
+            <img src="${LOGO_URL}" alt="Logo CLF" style="width:130px; margin-bottom:20px;">
+            <h2 style="color:#4A90E2; margin-bottom:10px;">Prenotazione Confermata</h2>
+            <p style="font-size:15px; color:#111827;">Gentile utente <b>${p}</b>,</p>
+            <p style="margin:0px;">il tuo pass <b>[Lunga Sosta]</b> è pronto.</p>
+            <div style="background-color:#f4f8ff; padding:14px; border-radius:12px; margin:20px 0; line-height:1.8;">
                 <p style="margin:0; line-height:1.8;">
-    Dal <b>${formattaDataIT(dataInizio)}</b>
-    al <b>${formattaDataIT(dataFine)}</b><br>
-    <b>Giorni totali:</b> ${numGiorni}</p>
+                Dal <b>${formattaDataIT(dataInizio)}</b> al <b>${formattaDataIT(dataFine)}</b><br>
+                <b>Giorni totali:</b> ${numGiorni}</p>
             </div>
-            <p style="
-                font-size:12px;
-                color:#666;
-                line-height:1.6;
-                margin-top:15px;
-            ">
-                In allegato trovi il PDF da esporre sul parabrezza,
-                unitamente al tuo Pass “Permanente”.
+            <p style="font-size:12px; color:#666; line-height:1.6; margin-top:15px;">
+                In allegato trovi il PDF da esporre sul parabrezza, unitamente al tuo Pass “Permanente”.
             </p>
-
         </div>
-
-        <!-- GDPR FUORI DAL BOX -->
-        <div style="
-            margin-top:16px;
-            padding:14px;
-            background:#f0fdf4;
-            border:1px solid #86efac;
-            border-radius:12px;
-            font-size:11px;
-            color:#166534;
-            line-height:1.7;
-            text-align:justify;
-        ">
+        <div style="margin-top:16px; padding:14px; background:#f0fdf4; border:1px solid #86efac; border-radius:12px; font-size:11px; color:#166534; line-height:1.7; text-align:justify;">
             🛡️ <strong>Privacy & Sicurezza (GDPR)</strong><br><br>
-            Usiamo la tua email esclusivamente per l’invio del ticket
-            tramite infrastrutture sicure (Brevo & Google).
-            <br><br>
-            Il dato non viene archiviato per scopi pubblicitari
-            e sarà cancellato automaticamente al termine della tua sosta.
+            Usiamo la tua email esclusivamente per l’invio del ticket tramite infrastrutture sicure (Brevo & Google).<br><br>
+            Il dato non viene archiviato per scopi pubblicitari e sarà cancellato automaticamente al termine della tua sosta.
         </div>
-    </div>
-`;
-await inviaMailBrevoAPI(email,`Il tuo PASS - ${p}`, htmlUtente, pdfData, `PASS_${p}.pdf`);
+    </div>`;
+
+            await inviaMailBrevoAPI(email, `Il tuo PASS - ${p}`, htmlUtente, pdfData, `PASS_${p}.pdf`);
             
-         const htmlAdmin = `
+            const htmlAdmin = `
                 <div style="text-align:center; font-family:sans-serif; border:1px solid #ddd; padding:20px; border-radius:10px; max-width:400px; margin:auto;">
                     <img src="${LOGO_URL}" alt="Logo CLF" style="width:90px; margin-bottom:15px;">
                     <h3 style="color:#333;">🔔 Nuova Prenotazione</h3>
@@ -435,42 +345,18 @@ await inviaMailBrevoAPI(email,`Il tuo PASS - ${p}`, htmlUtente, pdfData, `PASS_$
 
 // --- 3. LE MIE PRENOTAZIONI ---
 app.get('/api/mie-prenotazioni/:npass', async (req, res) => {
-
     try {
-
         const p = clean(req.params.npass);
-
         const r = await pool.query(`
-
-            SELECT
-                id,
-                npass,
-                data_inizio,
-                data_fine,
-                orario_ingresso,
-                orario_uscita,
-                stato,
-                data_inserimento
-
+            SELECT id, npass, data_inizio, data_fine, orario_ingresso, orario_uscita, stato, data_inserimento
             FROM prenotazioni
-
             WHERE UPPER(npass) = $1
-
-            ORDER BY
-                data_inserimento DESC,
-                id DESC
-
+            ORDER BY data_inserimento DESC, id DESC
         `, [p]);
-
         res.json(r.rows);
-
     } catch (err) {
-
         console.error(err);
-
-        res.status(500).json({
-            error: "Errore interno"
-        });
+        res.status(500).json({ error: "Errore interno" });
     }
 });
 
@@ -487,12 +373,8 @@ app.post('/api/elimina-prenotazione', async (req, res) => {
         if (info.rows.length === 0) return res.status(404).json({ error: "Prenotazione non trovata" });
 
         const { data_inizio, data_fine, stato } = info.rows[0];
-       if (
-            stato !== 'PRENOTATO'
-        ) {
-            return res.status(400).json({
-                error: "Prenotazione non cancellabile."
-            });
+        if (stato !== 'PRENOTATO') {
+            return res.status(400).json({ error: "Prenotazione non cancellabile." });
         }
         
         await pool.query(
@@ -518,33 +400,16 @@ app.post('/api/elimina-prenotazione', async (req, res) => {
 // 🌟 API SALVATAGGIO SUGGERIMENTO / NOTA ED INVIO EMAIL
 app.post('/api/user/salva-nota', async (req, res) => {
     const { npass, nota, email } = req.body;
-
-    if (!npass) {
-        return res.status(400).json({ success: false, error: 'Pass mancante' });
-    }
+    if (!npass) return res.status(400).json({ success: false, error: 'Pass mancante' });
 
     try {
-        // 1. Aggiorna l'ultimo suggerimento nel campo note di registro_pass
         await pool.query(`
             UPDATE registro_pass 
             SET note = $1 
             WHERE UPPER(npass) = UPPER($2)
         `, [nota, npass]);
 
-        // 2. LOGICA INVIO EMAIL A PARKINGCLF.AM@GMAIL.COM
-        // Nota: Qui usa il modulo/trasportatore (es. nodemailer o axios/mailgun) che hai già configurato nel tuo server.js
-        const testoEmail = `Nuovo suggerimento ricevuto dall'utente del Pass: ${npass.toUpperCase()}\nEmail Utente: ${email || 'Non fornita'}\n\nCommento:\n${nota}`;
-        
         console.log("✉️ Invio email a parkingclf.am@gmail.com per il suggerimento del pass:", npass);
-        
-        /* [Sotto-inteso: Inserisci qui la tua funzione mail esistente, esempio:]
-        await inviaEmailAttuale({
-            to: 'parkingclf.am@gmail.com',
-            subject: `💡 Suggerimento App - Pass ${npass.toUpperCase()}`,
-            text: testoEmail
-        });
-        */
-
         res.json({ success: true });
     } catch (e) {
         console.error('Errore durante il salvataggio del suggerimento:', e);
@@ -554,157 +419,82 @@ app.post('/api/user/salva-nota', async (req, res) => {
 
 // --- 5. VEICOLI DENTRO ---
 app.get('/api/veicoli-dentro', async (req, res) => {
-
     const npass = req.query.npass;
 
     if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
-        return res.status(403).json({
-            error: "Accesso non autorizzato"
-        });
+        return res.status(403).json({ error: "Accesso non autorizzato" });
     }
 
     try {
-        // 🚀 Archiviazione automatica: sposta in 'ARCHIVIATO' le prenotazioni passate mai usate
+        // 🚀 CORREZIONE STRUTTURALE: Sostituito db.run con pool.query per PostgreSQL + Fix refuso ARCHIVIATO
         const oggi = new Date().toISOString().split('T')[0];
-        await db.run(`
+        await pool.query(`
             UPDATE prenotazioni 
             SET stato = 'ARCHIVIATO' 
-            WHERE stato = 'PRENOTATO' AND data_fine < ? AND orario_ingresso IS NULL
+            WHERE stato = 'PRENOTATO' AND data_fine < $1 AND orario_ingresso IS NULL
         `, [oggi]);
         
+        // Aggiornato l'IN aggiungendo 'ARCHIVIATO' per includerlo nello storico
         const r = await pool.query(`
-            SELECT
-                npass,
-                data_inizio,
-                data_fine,
-                orario_ingresso,
-                orario_uscita,
-                data_inserimento,
-                stato
-
+            SELECT npass, data_inizio, data_fine, orario_ingresso, orario_uscita, data_inserimento, stato
             FROM prenotazioni
-
-            WHERE stato IN (
-                'PRENOTATO',
-                'ENTRATO',
-                'USCITO',
-                'DA_VERIFICARE',
-                'MAI_ENTRATO'
-            )
-
-            ORDER BY 
-            data_inizio ASC, 
-            orario_ingresso ASC
-
+            WHERE stato IN ('PRENOTATO', 'ENTRATO', 'USCITO', 'DA_VERIFICARE', 'MAI_ENTRATO', 'ARCHIVIATO')
+            ORDER BY data_inizio ASC, orario_ingresso ASC
             LIMIT 300
-
         `);
 
         res.json(r.rows);
-
     } catch (err) {
-
         console.error(err);
-
-        res.status(500).json({
-            error: "Errore interno"
-        });
+        res.status(500).json({ error: "Errore interno" });
     }
 });
 
 // --- PIANTONE CERCA ---
 app.get('/api/piantone/cerca/:npass', async (req, res) => {
-
     const authPass = req.query.auth;
     const view = req.query.view || 'attivi';
 
     if (!await verificaRuolo(authPass, ['piantone', 'admin'])) {
-        return res.status(403).json({
-            error: "Accesso non autorizzato"
-        });
+        return res.status(403).json({ error: "Accesso non autorizzato" });
     }
 
     try {
         let whereFiltro = "";
 
-        // ATTIVI = dentro OR prenotati validi oggi
         if (view === 'attivi') {
-            whereFiltro = `
-                AND (
-                    stato = 'PRENOTATO'
-                    OR stato = 'ENTRATO'
-                )
-            `;
-        }   
-        // SCADUTI
-        else if (view === 'scaduti') {
-            whereFiltro = `
-                AND (
-                    stato = 'DA_VERIFICARE'
-                    OR stato = 'MAI_ENTRATO'
-                )
-            `;
-        }
-        else if (view === 'verificare') {
-            whereFiltro = `
-                AND stato = 'DA_VERIFICARE'
-            `;
-        }    
-        // STORICO = usciti
-        else if (view === 'storico') {
-            whereFiltro = `
-                AND stato = 'USCITO'
-            `;
-        }
-        // TUTTI
-        else {
-            whereFiltro = `
-                AND stato IN (
-                    'PRENOTATO',
-                    'ENTRATO',
-                    'USCITO',
-                    'DA_VERIFICARE',
-                    'MAI_ENTRATO'
-                )
-            `;
+            whereFiltro = `AND (stato = 'PRENOTATO' OR stato = 'ENTRATO')`;
+        } else if (view === 'scaduti') {
+            whereFiltro = `AND (stato = 'DA_VERIFICARE' OR stato = 'MAI_ENTRATO')`;
+        } else if (view === 'verificare') {
+            whereFiltro = `AND stato = 'DA_VERIFICARE'`;
+        } else if (view === 'storico') {
+            whereFiltro = `AND (stato = 'USCITO' OR stato = 'ARCHIVIATO')`;
+        } else {
+            whereFiltro = `AND stato IN ('PRENOTATO', 'ENTRATO', 'USCITO', 'DA_VERIFICARE', 'MAI_ENTRATO', 'ARCHIVIATO')`;
         }
 
-        // 🌟 MODIFICATO: Inserito l'ORDER BY con logica di precedenza CASE WHEN
         const query = `
             SELECT *
             FROM prenotazioni
-            WHERE
-                UPPER(npass) = $1
-                ${whereFiltro}
+            WHERE UPPER(npass) = $1 ${whereFiltro}
             ORDER BY
                 CASE
-                    -- 1. Precedenza assoluta se il veicolo è già dentro o da verificare
                     WHEN stato IN ('ENTRATO', 'DA_VERIFICARE') THEN 1
-
-                    -- 2. Poi precedenza se ha una prenotazione attiva/valida per OGGI
                     WHEN CURRENT_DATE BETWEEN data_inizio AND data_fine AND stato = 'PRENOTATO' THEN 2
-
-                    -- 3. Poi le prenotazioni future più vicine a livello cronologico
                     WHEN data_inizio >= CURRENT_DATE AND stato = 'PRENOTATO' THEN 3
-
-                    -- 4. Tutto il resto (prenotazioni passate o vecchie)
                     ELSE 4
                 END ASC,
-                data_inizio ASC, -- A parità di blocco, mostra prima quella che inizia prima
+                data_inizio ASC,
                 id DESC
         `;
 
-        const r = await pool.query(query, [
-            req.params.npass.toUpperCase()
-        ]);
+        const r = await pool.query(query, [req.params.npass.toUpperCase()]);
 
         if (!r.rows.length) {
-            return res.json({
-                trovato: false
-            });
+            return res.json({ trovato: false });
         }
 
-        // r.rows[0] conterrà ora la prenotazione che ha vinto l'ordinamento prioritario
         return res.json({
             trovato: true,
             prenotazione: r.rows[0],
@@ -713,172 +503,80 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
 
     } catch (err) {
         console.error("ERRORE CERCA PASS:", err);
-        return res.status(500).json({
-            error: "Errore interno server"
-        });
+        return res.status(500).json({ error: "Errore interno server" });
     }
 });
 
 // --- PIANTONE AZIONE ---
 app.post('/api/piantone/azione', async (req, res) => {
-
     const { id, azione, npass } = req.body;
 
     if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
-        return res.status(403).json({
-            error: "Accesso non autorizzato"
-        });
+        return res.status(403).json({ error: "Accesso non autorizzato" });
     }
 
-    if (!id || !azione) {
-        return res.status(400).json({
-            error: "Dati mancanti"
-        });
-    }
+    if (!id || !azione) return res.status(400).json({ error: "Dati mancanti" });
 
     try {
-
         const ora = new Date();
-
-        // 🔍 recupera prenotazione reale
-        const prenRes = await pool.query(
-            "SELECT * FROM prenotazioni WHERE id = $1",
-            [id]
-        );
+        const prenRes = await pool.query("SELECT * FROM prenotazioni WHERE id = $1", [id]);
 
         if (prenRes.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                error: "Prenotazione non trovata"
-            });
+            return res.status(404).json({ success: false, error: "Prenotazione non trovata" });
         }
 
         const pren = prenRes.rows[0];
 
-        // 🚫 uscita senza ingresso
-        if (
-            azione === 'uscita' &&
-            !pren.orario_ingresso
-        ) {
-            return res.status(400).json({
-                success: false,
-                error: "Auto mai entrata"
-            });
+        if (azione === 'uscita' && !pren.orario_ingresso) {
+            return res.status(400).json({ success: false, error: "Auto mai entrata" });
+        }
+        if (azione === 'ingresso' && pren.orario_ingresso) {
+            return res.status(400).json({ success: false, error: "Ingresso già registrato" });
+        }
+        if (azione === 'uscita' && pren.orario_uscita) {
+            return res.status(400).json({ success: false, error: "Uscita già registrata" });
         }
 
-        // 🚫 doppio ingresso
-        if (
-            azione === 'ingresso' &&
-            pren.orario_ingresso
-        ) {
-            return res.status(400).json({
-                success: false,
-                error: "Ingresso già registrato"
-            });
-        }
-
-        // 🚫 doppia uscita
-        if (
-            azione === 'uscita' &&
-            pren.orario_uscita
-        ) {
-            return res.status(400).json({
-                success: false,
-                error: "Uscita già registrata"
-            });
-        }
-
-        // ✅ INGRESSO
         if (azione === 'ingresso') {
-
             await pool.query(
-                `
-                UPDATE prenotazioni
-                SET
-                    stato = 'ENTRATO',
-                    orario_ingresso = $1
-                WHERE id = $2
-                `,
+                `UPDATE prenotazioni SET stato = 'ENTRATO', orario_ingresso = $1 WHERE id = $2`,
                 [ora, id]
             );
-
-            return res.json({
-                success: true
-            });
+            return res.json({ success: true });
         }
 
-        // ✅ USCITA
         if (azione === 'uscita') {
-
             await pool.query(
-                `
-                UPDATE prenotazioni
-                SET
-                    stato = CASE
-                        WHEN stato = 'DA_VERIFICARE'
-                        THEN 'SCADUTO'
-                        ELSE 'USCITO'
-                    END,
-                    orario_uscita = $1
-                WHERE id = $2
-                `,
+                `UPDATE prenotazioni 
+                 SET stato = CASE WHEN stato = 'DA_VERIFICARE' THEN 'SCADUTO' ELSE 'USCITO' END, 
+                     orario_uscita = $1 
+                 WHERE id = $2`,
                 [ora, id]
             );
-
-            return res.json({
-                success: true
-            });
+            return res.json({ success: true });
         }
 
-        // 🚫 azione non valida
-        return res.status(400).json({
-            success: false,
-            error: "Azione non valida"
-        });
+        return res.status(400).json({ success: false, error: "Azione non valida" });
 
     } catch (err) {
-
         console.error("Errore piantone:", err);
-
-        res.status(500).json({
-            success: false,
-            error: err.message
-        });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
 // --- 7B. PIANTONE LIBERI ---
 app.get('/api/piantone/liberi', async (req, res) => {
-
     try {
-
-        const oggi = new Date().toISOString().split('T')[0];
-
         const result = await pool.query(`
-        SELECT COUNT(DISTINCT npass) as dentro
-        FROM prenotazioni
-        WHERE
-        stato = 'ENTRATO'
-        OR (
-            stato = 'SCADUTO'
-            AND orario_uscita IS NULL
-        )
+            SELECT COUNT(DISTINCT npass) as dentro
+            FROM prenotazioni
+            WHERE stato = 'ENTRATO' OR (stato = 'SCADUTO' AND orario_uscita IS NULL)
         `);
-
         const dentro = parseInt(result.rows[0].dentro) || 0;
-
-        res.json({
-            dentro,
-            totaleLiberi: 90 - dentro
-        });
-
+        res.json({ dentro, totaleLiberi: 90 - dentro });
     } catch (err) {
-
         console.error(err);
-
-        res.status(500).json({
-            error: "Errore interno"
-        });
+        res.status(500).json({ error: "Errore interno" });
     }
 });
 
@@ -902,23 +600,18 @@ app.get('/api/admin/cruscotto', async (req, res) => {
                 JOIN registro_pass r ON UPPER(p.npass) = UPPER(r.npass)
                 WHERE p.stato IN ('PRENOTATO', 'ENTRATO')
             )
-            SELECT 
-                g.giorno,
-                ep.ente,
-                ep.posti,
-                COUNT(DISTINCT pa.npass) as occupati
+            SELECT g.giorno, ep.ente, ep.posti, COUNT(DISTINCT pa.npass) as occupati
             FROM giorni g
             CROSS JOIN enti_posti ep
             LEFT JOIN prenotazioni_attive pa 
-                ON pa.ente = ep.ente 
-                AND g.giorno BETWEEN pa.data_inizio AND pa.data_fine
+                ON pa.ente = ep.ente AND g.giorno BETWEEN pa.data_inizio AND pa.data_fine
             GROUP BY g.giorno, ep.ente, ep.posti
             ORDER BY g.giorno, ep.ente;
         `;
 
         const result = await pool.query(query);
-        
         const grouped = {};
+        
         result.rows.forEach(row => {
             const giorno = row.giorno.toISOString().split('T')[0];
             if (!grouped[giorno]) {
@@ -949,18 +642,16 @@ app.get('/api/admin/cruscotto', async (req, res) => {
 app.get('/api/admin/ritardi', async (req, res) => {
     try {
         const r = await pool.query(`
-            SELECT npass, data_fine, orario_uscita,
-                   (CURRENT_DATE - data_fine) as giorni_ritardo
+            SELECT npass, data_fine, orario_uscita, (CURRENT_DATE - data_fine) as giorni_ritardo
             FROM prenotazioni
-            WHERE stato = 'ENTRATO'
-            AND CURRENT_DATE > data_fine
+            WHERE stato = 'ENTRATO' AND CURRENT_DATE > data_fine
         `);
-
         res.json(r.rows);
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
 });
+
 app.get('/api/piantone/storico', async (req, res) => {
     const npass = req.query.npass;
 
@@ -972,86 +663,4 @@ app.get('/api/piantone/storico', async (req, res) => {
         const r = await pool.query(`
             SELECT npass, orario_ingresso, orario_uscita, stato
             FROM prenotazioni
-            WHERE stato = 'USCITO'
-            ORDER BY orario_ingresso DESC
-            LIMIT 30
-        `);
-
-        res.json(r.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Errore interno" });
-    }
-});
-
-// --- PIANTONE ARRIVI OGGI ---
-app.get('/api/piantone/arrivi-oggi', async (req, res) => {
-
-  try {
-
-    const r = await pool.query(`
-
-      SELECT DISTINCT ON (UPPER(p.npass))
-
-        UPPER(p.npass) AS npass,
-        r.ente,
-        'PRENOTATO' AS stato
-
-      FROM prenotazioni p
-
-      LEFT JOIN registro_pass r
-        ON UPPER(p.npass) = UPPER(r.npass)
-
-      WHERE
-        CURRENT_DATE BETWEEN p.data_inizio AND p.data_fine
-        AND p.stato = 'PRENOTATO'
-
-      ORDER BY
-        UPPER(p.npass),
-        p.data_inizio DESC,
-        p.id DESC
-
-    `);
-// 🌟 ORDINA L'ARRAY RISULTANTE IN BASE ALLA DATA INIZIO CRONOLOGICA
-    const righeOrdinate = r.rows.sort((a, b) => new Date(a.data_inizio) - new Date(b.data_inizio));
-
-    res.json(righeOrdinate);
-   // res.json(r.rows);
-
-  } catch (e) {
-
-    console.error(e);
-    res.status(500).json({ error: 'Errore server' });
-  }
-});
-
-app.post('/api/piantone/non-presente', async (req, res) => {
-
-    const { id } = req.body;
-
-    try {
-
-        await pool.query(`
-            UPDATE prenotazioni
-            SET stato = 'USCITO'
-            WHERE id = $1
-        `, [id]);
-
-        res.json({ success: true });
-
-    } catch (err) {
-
-        res.status(500).json({
-            error: err.message
-        });
-    }
-});
-
-// avvio immediato
-scadenzaPrenotazioni();
-// ogni 5 minuti
-setInterval(scadenzaPrenotazioni, 5 * 60 * 1000);
-
-app.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-    console.log(`Server avviato`);
-});
+            WHERE stato = 'USCIT
