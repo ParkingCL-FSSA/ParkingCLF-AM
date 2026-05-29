@@ -518,8 +518,9 @@ async function cercaPass(passManuale = null) {
 
     try {
 
+        // Cerca la riga della fetch dentro la funzione cercaPass(passManuale = null) e cambiala così:
         const res = await fetch(
-            `/api/piantone/cerca/${encodeURIComponent(p)}?auth=${userPass}&view=${filtroPiantone}`
+            `/api/piantone/cerca/${encodeURIComponent(p)}?auth=${userPass}`
         );
         const data = await res.json();
 
