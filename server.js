@@ -426,19 +426,22 @@ app.get('/api/veicoli-dentro', async (req, res) => {
     }
 
     try {
-        // 🚀 CORREZIONE STRUTTURALE: Sostituito db.run con pool.query per PostgreSQL + Fix refuso ARCHIVIATO
         const oggi = new Date().toISOString().split('T')[0];
+        
+        // 🚀 PULIZIA COMPLETA: Rimosso MAI_ENTRATO. Controlla solo i PRENOTATI scaduti
         await pool.query(`
             UPDATE prenotazioni 
             SET stato = 'ARCHIVIATO' 
-            WHERE stato = 'PRENOTATO' AND data_fine < $1 AND orario_ingresso IS NULL
+            WHERE stato = 'PRENOTATO' 
+              AND data_fine < $1 
+              AND orario_ingresso IS NULL
         `, [oggi]);
         
-        // Aggiornato l'IN aggiungendo 'ARCHIVIATO' per includerlo nello storico
+        // SELECT per la tabella del piantone (senza ARCHIVIATO)
         const r = await pool.query(`
-            SELECT npass, data_inizio, data_fine, orario_ingresso, orario_uscita, data_inserimento, stato
+            SELECT id, npass, data_inizio, data_fine, orario_ingresso, orario_uscita, data_inserimento, stato
             FROM prenotazioni
-            WHERE stato IN ('PRENOTATO', 'ENTRATO', 'USCITO', 'DA_VERIFICARE', 'MAI_ENTRATO', 'ARCHIVIATO')
+            WHERE stato IN ('PRENOTATO', 'ENTRATO', 'USCITO', 'DA_VERIFICARE')
             ORDER BY data_inizio ASC, orario_ingresso ASC
             LIMIT 300
         `);
