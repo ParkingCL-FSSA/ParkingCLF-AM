@@ -707,6 +707,25 @@ app.post('/api/piantone/non-presente', async (req, res) => {
     }
 });
 
+const cron = require('node-cron');
+
+// Pianifica l'esecuzione ogni giorno alle 00:01
+cron.schedule('1 0 * * *', async () => {
+    const oggi = new Date().toISOString().split('T')[0];
+    try {
+        await db.run(`
+            UPDATE prenotazioni 
+            SET stato = 'ARCHIVIATO' 
+            WHERE stato = 'PRENOTATO' 
+              AND data_fine < ? 
+              AND orario_ingresso IS NULL
+        `, [oggi]);
+        console.log("Archiviazione automatica pass scaduti completata con successo.");
+    } catch (err) {
+        console.error("Errore nel cron job di archiviazione:", err);
+    }
+});
+
 // avvio immediato job scadenze
 scadenzaPrenotazioni();
 // ogni 5 minuti
