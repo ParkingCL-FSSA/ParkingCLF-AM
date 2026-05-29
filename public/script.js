@@ -486,8 +486,6 @@ async function cercaPass(passManuale = null) {
     if (!p) return;
 
     try {
-
-        // Cerca la riga della fetch dentro la funzione cercaPass(passManuale = null) e cambiala così:
         const res = await fetch(
             `/api/piantone/cerca/${encodeURIComponent(p)}?auth=${userPass}`
         );
@@ -515,109 +513,84 @@ if (boxVerifica) {
     boxVerifica.classList.add('hidden');
 }
 
-        if (data.trovato) {
+       if (data.trovato) {
 
             currentPren = data.prenotazione;
             
             if (!currentPren) {
-            
                 alert("Prenotazione non trovata");
-            
                 return;
             }
             
-           // RESET
+            // RESET PULSANTI
             btnIngresso.disabled = true;
             btnUscita.disabled = true;
             
-            // PRENOTATO
-            if (
-                currentPren.stato === 'PRENOTATO'
-            ) {
-            
+            // 🚀 BLOCCO SICUREZZA: Controllo data futura (Lunga Sosta)
+            const oggiStr = new Date().toISOString().split('T')[0]; // "2026-05-29"
+            const dataInizioStr = currentPren.data_inizio.split('T')[0]; // "2026-06-05"
+
+            if (oggiStr < dataInizioStr) {
+                // Se oggi è prima della data di inizio, blocca l'ingresso
+                btnIngresso.disabled = true;
+                btnIngresso.innerText = 'PRENOTAZIONE FUTURA';
+                btnIngresso.style.background = '#94a3b8'; // Colore grigio disattivato
+                
+                // Opzionale: un piccolo avviso visivo nel pannello
+                document.getElementById('reg-e').innerHTML = `<span style="color:#ef4444; font-weight:bold;">⚠️ Non è possibile registrare l'ingresso prima del ${fmtData(currentPren.data_inizio)}</span>`;
+            }
+            // PRENOTATO (Se siamo nelle date corrette)
+            else if (currentPren.stato === 'PRENOTATO') {
                 btnIngresso.disabled = false;
             }
-            
             // ENTRATO
-            else if (
-                currentPren.stato === 'ENTRATO'
-            ) {
-            
+            else if (currentPren.stato === 'ENTRATO') {
                 btnUscita.disabled = false;
             }
-           else if (
-                currentPren.stato === 'DA_VERIFICARE'
-            ) {
-            
-                // ENTRATA visibile ma disabilitato
+            // DA VERIFICARE
+            else if (currentPren.stato === 'DA_VERIFICARE') {
                 btnIngresso.style.display = 'inline-block';
                 btnIngresso.disabled = true;
             
-                // mostra VERIFICA
                 btnUscita.disabled = false;
                 btnUscita.style.display = 'inline-block';
-            
                 btnUscita.style.background = '#ea580c';
                 btnUscita.innerText = 'VERIFICA';
             
-                // NASCONDI i pulsanti presenti/non presente
                 boxVerifica.classList.add('hidden');
             }
             // SCADUTO
-            else if (
-                currentPren.stato === 'SCADUTO'
-            ) {
-            
+            else if (currentPren.stato === 'SCADUTO') {
                 btnUscita.disabled = false;
-            
                 btnUscita.style.background = '#ef4444';
                 btnUscita.innerText = 'USCITA (SCADUTO)';
             }
-            
             // USCITO
-            else if (
-                currentPren.stato === 'USCITO'
-            ) {
-            
+            else if (currentPren.stato === 'USCITO') {
                 btnIngresso.disabled = true;
                 btnUscita.disabled = true;
             }
-            // UI
-            document
-                .getElementById('panel-piantone')
-                .classList
-                .remove('hidden');
 
-            document.getElementById('lab-pass').innerHTML =
-                `PASS: ${currentPren.npass}`;
+            // UI PANNELLO (Mostra i dettagli del Pass)
+            document.getElementById('panel-piantone').classList.remove('hidden');
 
-            document.getElementById('lab-periodo').innerHTML =
-                `(Periodo: ${fmtData(currentPren.data_inizio)} - ${fmtData(currentPren.data_fine)})`;
+            document.getElementById('lab-pass').innerHTML = `PASS: ${currentPren.npass}`;
+            document.getElementById('lab-periodo').innerHTML = `(Periodo: ${fmtData(currentPren.data_inizio)} - ${fmtData(currentPren.data_fine)})`;
 
-            document.getElementById('reg-e').innerHTML =
-                currentPren.orario_ingresso
-                    ? `Registrato il ${new Date(currentPren.orario_ingresso).toLocaleString('it-IT', {
-                        dateStyle: 'short',
-                        timeStyle: 'short'
-                    })}`
+            // Mostra gli orari di ingresso/uscita solo se non abbiamo già stampato l'errore della data futura
+            if (oggiStr >= dataInizioStr) {
+                document.getElementById('reg-e').innerHTML = currentPren.orario_ingresso
+                    ? `Registrato il ${new Date(currentPren.orario_ingresso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}`
                     : "";
+            }
 
-            document.getElementById('reg-u').innerHTML =
-                currentPren.orario_uscita
-                    ? `Registrato il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT', {
-                        dateStyle: 'short',
-                        timeStyle: 'short'
-                    })}`
-                    : "";
+            document.getElementById('reg-u').innerHTML = currentPren.orario_uscita
+                ? `Registrato il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}`
+                : "";
 
         } else {
-
             alert("Nessuna prenotazione trovata per questo PASS.");
-
-            document
-                .getElementById('panel-piantone')
-                .classList
-                .add('hidden');
+            document.getElementById('panel-piantone').classList.add('hidden');
         }
 
     } catch (err) {
