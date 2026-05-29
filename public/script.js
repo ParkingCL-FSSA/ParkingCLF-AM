@@ -464,31 +464,24 @@ async function eliminaPren(id) {
     }
 }
 
-async function cercaPass(passManuale = null) {
+async function cercaPass(passManuale = null, idRecord = null) {
 
     const input = document.getElementById('search-p');
     document.getElementById('box-verifica')?.classList.add('hidden');
-    if (!input) {
-        alert("Campo ricerca non trovato");
-        return;
-    }
+    if (!input) return;
 
-    const p = (
-        passManuale ||
-        input.value
-    )
-    .trim()
-    .toUpperCase();
-
-    // aggiorna il campo visivamente
+    const p = (passManuale || input.value).trim().toUpperCase();
     input.value = p;
-
     if (!p) return;
 
     try {
-        const res = await fetch(
-            `/api/piantone/cerca/${encodeURIComponent(p)}?auth=${userPass}`
-        );
+        // 🚀 SE ABBIAMO L'ID, CHIEDIAMO AL SERVER IL RECORD PRECISO, ALTRIMENTI USIAMO IL PASS
+        let url = `/api/piantone/cerca/${encodeURIComponent(p)}?auth=${userPass}`;
+        if (idRecord) {
+            url += `&id=${idRecord}`;
+        }
+
+        const res = await fetch(url);
         const data = await res.json();
 
 const btnIngresso = document.getElementById('btn-ingresso');
@@ -625,8 +618,8 @@ function getFlags(x) {
         x.orario_uscita === null &&
         oggi > x.data_fine;
 
-    // 5. STORICO
-    const storico = x.stato === 'USCITO';
+    // 5. STORICO || ARCHIVIATO
+    const storico = x.stato === 'USCITO' || x.stato === 'ARCHIVIATO';
 
     return {
         entrato,
@@ -920,21 +913,8 @@ async function aggiornaVeicoli() {
             ${maiEntrato ? 'background:#fee2e2; color:#991b1b;' : ''}
         ">
             <td>
-                <button
-                    class="btn-pass"
-                    data-pass="${x.npass}"
-                    type="button"
-                    style="
-                        border:none;
-                        background:none;
-                        color:#2563eb;
-                        font-weight:bold;
-                        cursor:pointer;
-                        text-decoration:underline;
-                    "
-                >
-                    ${x.npass}
-                </button>
+                <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; 
+                cursor:pointer; text-decoration:underline;">${x.npass}</button>
             </td>
             <td>
                 ${dataIng}
@@ -967,19 +947,19 @@ async function aggiornaVeicoli() {
         </tr>
     `;
 
+    // AGGANCIO EVENTI SUI PULSANTI PASS (AGGIORNATO CON ID)
     document.querySelectorAll('.btn-pass').forEach(btn => {
         btn.addEventListener('click', async () => {
             const pass = btn.dataset.pass;
-            document.getElementById('search-p').value = pass;
-            await cercaPass(pass);
+            const idRecord = btn.dataset.id; // Recupera l'ID specifico della riga cliccata
+            
+            if (inputSearch) inputSearch.value = pass;
+            
+            // Passiamo anche l'ID alla funzione di ricerca
+            await cercaPass(pass, idRecord);
 
             setTimeout(() => {
-                document
-                    .getElementById('panel-piantone')
-                    ?.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
+                document.getElementById('panel-piantone')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 100);
         });
     });
