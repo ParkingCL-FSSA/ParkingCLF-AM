@@ -658,30 +658,36 @@ if (boxVerifica) {
     }
 }
 
-// FIX: tabella a 4 colonne (PASS | Data Accesso | Ora Ingresso | Data e Ora Uscita)
-// con gestione null su orario_ingresso e orario_uscita
 function getFlags(x) {
-
     const oggi = new Date().toISOString().split('T')[0];
 
+    // 1. ENTRATO: Il veicolo è fisicamente dentro il parcheggio
     const entrato = x.stato === 'ENTRATO';
 
+    // 2. SCADUTO (Regola corretta):
+    // - Se il periodo di prenotazione è del tutto superato (oggi > data_fine)
+    // - OPPURE se lo stato sul server è esplicitamente 'MAI_ENTRATO'
+    // - OPPURE (LUNGA SOSTA): Se oggi è oltre la data di inizio (oggi > data_inizio) MA il veicolo NON è mai entrato (orario_ingresso è null)
     const scaduto =
         (x.stato === 'PRENOTATO' && oggi > x.data_fine) ||
-        x.stato === 'MAI_ENTRATO';
+        x.stato === 'MAI_ENTRATO' ||
+        (x.stato === 'PRENOTATO' && oggi > x.data_inizio && !x.orario_ingresso);
 
+    // 3. PRENOTATO OGGI: Valido solo se oggi rientra nel periodo E non è ancora scaduto per mancato ingresso
     const prenotatoOggi =
         x.stato === 'PRENOTATO' &&
         oggi >= x.data_inizio &&
-        oggi <= x.data_fine;
+        oggi <= x.data_fine &&
+        !scaduto; // Se è già saltato come scaduto per mancato ingresso, non deve apparire qui
 
-    // 🔴 VERIFICARE
-const daVerificare =
-    x.stato === 'DA_VERIFICARE' &&
-    x.orario_ingresso !== null &&
-    x.orario_uscita === null &&
-    oggi > x.data_fine;
+    // 4. DA VERIFICARE
+    const daVerificare =
+        x.stato === 'DA_VERIFICARE' &&
+        x.orario_ingresso !== null &&
+        x.orario_uscita === null &&
+        oggi > x.data_fine;
 
+    // 5. STORICO
     const storico = x.stato === 'USCITO';
 
     return {
@@ -692,7 +698,6 @@ const daVerificare =
         storico
     };
 }
-
 async function aggiornaVeicoli() {
 
     const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
@@ -1394,15 +1399,22 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.getElementById('btn-reset-search')?.addEventListener('click', () => {
+   document.getElementById('btn-reset-search')?.addEventListener('click', () => {
         if (inputSearch) {
             inputSearch.value = '';
-            inputSearch.focus();
         }
+
         currentPren = null;
-        // Nasconde sia il pannello che i bottoni di verifica
+
+        // 🚀 FORZIAMO IL RITORNO ALLA SCHEDA ATTIVI
+        filtroPiantone = 'attivi'; 
+
+        // Nasconde il pannello di controllo e i bottoni di verifica
         document.getElementById('panel-piantone')?.classList.add('hidden');
         document.getElementById('box-verifica')?.classList.add('hidden'); 
+
+        // Ricarica la tabella mostrando la lista pulita degli attivi
+        aggiornaVeicoli();
     });
 
     // PRESENTE
