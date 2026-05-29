@@ -808,7 +808,7 @@ async function aggiornaVeicoli() {
         }
     });
 
-       if (valoreCercato !== "" && lista.length > 0) {
+    if (valoreCercato !== "" && lista.length > 0) {
         const veicoloTrovato = lista[0]; 
         const f = getFlags(veicoloTrovato);
         
@@ -818,7 +818,7 @@ async function aggiornaVeicoli() {
         } else if (f.daVerificare) {
             label = "🚨 DA VERIFICARE (Trovato da Ricerca)";
             colore = "#ea580c"; sfondo = "#ffedd5";
-        } else if (f.scaduto) { // 🌟 Semplificato: rimosso il controllo sul "MAI_ENTRATO"
+        } else if (f.scaduto) { 
             label = "⏰ SCADUTO (Trovato da Ricerca)";
             colore = "#dc2626"; sfondo = "#fee2e2";
         } else if (f.storico) {
@@ -827,12 +827,11 @@ async function aggiornaVeicoli() {
         }
     }
         
-        if (statoTabella) {
-            statoTabella.innerHTML = label;
-            statoTabella.style.color = colore;
-            statoTabella.style.background = sfondo;
-            statoTabella.style.borderColor = colore;
-        }
+    if (statoTabella) {
+        statoTabella.style.color = colore;
+        statoTabella.style.background = sfondo;
+        statoTabella.style.borderColor = colore;
+        statoTabella.innerHTML = label;
     }
     
     // RENDER TABELLA
@@ -849,8 +848,6 @@ async function aggiornaVeicoli() {
         const evidenzia = x.npass === ultimoAggiornato;
         const f = getFlags(x);
         
-        // Puoi eliminare la variabile const maiEntrato = x.stato === 'MAI_ENTRATO';
-
         return `<tr style="
             ${f.scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
             ${f.storico ? 'background:#f1f5f9;' : ''}
@@ -874,7 +871,7 @@ async function aggiornaVeicoli() {
         </tr>
     `;
 
-    // 🚀 AGGANCIO EVENTI CORRETTO: Ora passiamo esplicitamente l'idRecord alla funzione cercaPass
+    // AGGANCIO EVENTI CORRETTO DOPO IL RENDER
     document.querySelectorAll('.btn-pass').forEach(btn => {
         btn.addEventListener('click', async () => {
             const pass = btn.dataset.pass;
@@ -882,7 +879,6 @@ async function aggiornaVeicoli() {
             
             if (inputSearch) inputSearch.value = pass;
             
-            // Chiamata con ID per differenziare record duplicati dello stesso pass
             await cercaPass(pass, idRecord);
 
             setTimeout(() => {
@@ -891,10 +887,11 @@ async function aggiornaVeicoli() {
         });
     });
 
-    const btn = document.getElementById('btn-filtro');
-    if (btn) {
-        btn.innerText = "MOSTRA STATI";
+    const btnFiltro = document.getElementById('btn-filtro');
+    if (btnFiltro) {
+        btnFiltro.innerText = "MOSTRA STATI";
     }
+}
 
 let loadingAzione = false;
 
