@@ -1014,7 +1014,7 @@ async function aggiornaVeicoli() {
     // ALLINEAMENTO INIZIALE E DINAMICO DEL TESTO DEL PULSANTE
     const btn = document.getElementById('btn-filtro');
     if (btn) {
-        btn.innerText = "Mostra Stati";
+        btn.innerText = "MOSTRA STATI";
     }
 }
 
@@ -1194,7 +1194,7 @@ async function mostraArriviOggi() {
 
         arriviVisible = false;
 
-        btn.innerText = 'Mostra Arrivi Oggi';
+        btn.innerText = '📋 Mostra Arrivi di Oggi';
 
         return;
     }
@@ -1266,7 +1266,7 @@ async function mostraArriviOggi() {
 
         arriviVisible = true;
 
-        btn.innerText = 'Nascondi Arrivi Oggi';
+        btn.innerText = '❌ Nascondi Arrivi di Oggi';
 
     } catch (err) {
 
