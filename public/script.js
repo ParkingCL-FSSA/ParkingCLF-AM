@@ -130,37 +130,6 @@ function toggleScaduti() {
         }
     }
 
-    // === TESTO DEL PULSANTE "Mostra..." ===
-    // Il testo deve anticipare la scheda in cui andrai cliccando
-    const btn = document.getElementById('btn-filtro');
-
-    if (filtroPiantone === 'verificare') {
-        if (totaleScaduti > 0) {
-            btn.innerText = "Mostra scaduti";
-        } else {
-            btn.innerText = "Mostra attivi";
-        }
-    }
-    else if (filtroPiantone === 'scaduti') {
-        btn.innerText = "Mostra attivi";
-    }
-    else if (filtroPiantone === 'attivi') {
-        btn.innerText = "Mostra tutti";
-    }
-    else if (filtroPiantone === 'tutti') {
-        btn.innerText = "Mostra storico";
-    }
-    else { 
-        // STORICO: prepara il pulsante per il prossimo ciclo
-        if (totaleVerificare > 0) {
-            btn.innerText = "Mostra verificare";
-        } else if (totaleScaduti > 0) {
-            btn.innerText = "Mostra scaduti";
-        } else {
-            btn.innerText = "Mostra attivi";
-        }
-    }
-
     // === AGGIORNAMENTO DEL BADGE COLORATO ===
     const statoTabella = document.getElementById('stato-tabella');
 
@@ -1045,27 +1014,7 @@ async function aggiornaVeicoli() {
     // ALLINEAMENTO INIZIALE E DINAMICO DEL TESTO DEL PULSANTE
     const btn = document.getElementById('btn-filtro');
     if (btn) {
-        if (filtroPiantone === 'verificare') {
-            if (totaleScaduti > 0) {
-                btn.innerText = "Mostra scaduti";
-            } else {
-                btn.innerText = "Mostra attivi";
-            }
-        } else if (filtroPiantone === 'scaduti') {
-            btn.innerText = "Mostra attivi";
-        } else if (filtroPiantone === 'attivi') {
-            btn.innerText = "Mostra tutti";
-        } else if (filtroPiantone === 'tutti') {
-            btn.innerText = "Mostra storico";
-        } else {
-            if (totaleVerificare > 0) {
-                btn.innerText = "Mostra verificare";
-            } else if (totaleScaduti > 0) {
-                btn.innerText = "Mostra scaduti";
-            } else {
-                btn.innerText = "Mostra attivi";
-            }
-        }
+        btn.innerText = "Mostra Stati";
     }
 }
 
