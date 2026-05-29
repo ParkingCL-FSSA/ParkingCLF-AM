@@ -604,9 +604,7 @@ function getFlags(x) {
 
     const entrato = x.stato === 'ENTRATO';
 
-    const scaduto =
-        (x.stato === 'PRENOTATO' && oggi > x.data_fine) ||
-        x.stato === 'MAI_ENTRATO';
+    const scaduto = (x.stato === 'PRENOTATO' && oggi > x.data_fine);
 
     const prenotatoOggi =
         x.stato === 'PRENOTATO' &&
@@ -660,9 +658,7 @@ async function aggiornaVeicoli() {
             )
         );
 
-        const scaduto =
-            (x.stato === 'PRENOTATO' && oggi > x.data_fine) ||
-            x.stato === 'MAI_ENTRATO';
+        const scaduto = (x.stato === 'PRENOTATO' && oggi > x.data_fine);
 
         if (dentro) countDentro++;
         if (prenotatoOggi) countPrenotati++;
@@ -812,7 +808,7 @@ async function aggiornaVeicoli() {
         }
     });
 
-    if (valoreCercato !== "" && lista.length > 0) {
+       if (valoreCercato !== "" && lista.length > 0) {
         const veicoloTrovato = lista[0]; 
         const f = getFlags(veicoloTrovato);
         
@@ -822,13 +818,14 @@ async function aggiornaVeicoli() {
         } else if (f.daVerificare) {
             label = "🚨 DA VERIFICARE (Trovato da Ricerca)";
             colore = "#ea580c"; sfondo = "#ffedd5";
-        } else if (f.scaduto || veicoloTrovato.stato === 'MAI_ENTRATO') {
+        } else if (f.scaduto) { // 🌟 Semplificato: rimosso il controllo sul "MAI_ENTRATO"
             label = "⏰ SCADUTO (Trovato da Ricerca)";
             colore = "#dc2626"; sfondo = "#fee2e2";
         } else if (f.storico) {
             label = "🕘 STORICO (Trovato da Ricerca)";
             colore = "#475569"; sfondo = "#e2e8f0";
         }
+    }
         
         if (statoTabella) {
             statoTabella.innerHTML = label;
@@ -852,6 +849,8 @@ async function aggiornaVeicoli() {
         const evidenzia = x.npass === ultimoAggiornato;
         const f = getFlags(x);
         
+        // Puoi eliminare la variabile const maiEntrato = x.stato === 'MAI_ENTRATO';
+
         return `<tr style="
             ${f.scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
             ${f.storico ? 'background:#f1f5f9;' : ''}
@@ -859,15 +858,14 @@ async function aggiornaVeicoli() {
             ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
         ">
             <td>
-                <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; 
-                cursor:pointer; text-decoration:underline;">${x.npass}</button>
+                <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline;">${x.npass}</button>
             </td>
             <td>${dataIng}</td>
             <td style="font-weight:bold;">${oraIng}</td>
-            <td>${f.scaduto && !x.orario_uscita ? 'NON ENTRATO' : dataUsc}</td>
-            <td style="font-weight:bold;">${f.scaduto && !x.orario_uscita ? '' : oraUsc}</td>
+            <td>${f.scaduto ? 'NON ENTRATO' : dataUsc}</td>
+            <td style="font-weight:bold;">${f.scaduto ? '' : oraUsc}</td>
         </tr>`;
-
+        
     }).join('') || `
         <tr>
             <td colspan="5" style="text-align:center; color:black; padding:16px;">
