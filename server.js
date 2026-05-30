@@ -428,21 +428,29 @@ app.get('/api/veicoli-dentro', async (req, res) => {
     try {
         const oggi = new Date().toISOString().split('T')[0];
         
-        // 1. Il server aggiorna a 'ARCHIVIATO' i prenotati scaduti (ma rimangono nel db)
+        // 🚀 NUOVA REGOLA: Se non entri entro la mezzanotte del giorno successivo all'inizio, passi a SCADUTO
+        // (Es: inizio il 28, dal 30 risulta SCADUTO se orario_ingresso è NULL)
+        await pool.query(`
+            UPDATE prenotazioni 
+            SET stato = 'SCADUTO' 
+            WHERE stato = 'PRENOTATO' 
+              AND (data_inizio + INTERVAL '1 day') < $1 
+              AND orario_ingresso IS NULL
+        `, [oggi]);
+
+        // Alla fine del periodo totale, se è ancora PRENOTATO o SCADUTO, lo archiviamo definitivamente
         await pool.query(`
             UPDATE prenotazioni 
             SET stato = 'ARCHIVIATO' 
-            WHERE stato = 'PRENOTATO' 
-              AND data_fine < $1 
-              AND orario_ingresso IS NULL
+            WHERE stato IN ('PRENOTATO', 'SCADUTO') 
+              AND data_fine < $1
         `, [oggi]);
         
-        // 🚀 CORREZIONE: Includiamo di nuovo 'ARCHIVIATO' nella SELECT. 
-        // Sarà lo script.js a filtrarli o mostrarli quando si preme "SCADUTI" o "STORICO"
+        // La SELECT ora deve includere anche gli 'SCADUTI' in modo che il piantone li veda!
         const r = await pool.query(`
             SELECT id, npass, data_inizio, data_fine, orario_ingresso, orario_uscita, data_inserimento, stato
             FROM prenotazioni
-            WHERE stato IN ('PRENOTATO', 'ENTRATO', 'USCITO', 'DA_VERIFICARE', 'ARCHIVIATO')
+            WHERE stato IN ('PRENOTATO', 'ENTRATO', 'USCITO', 'DA_VERIFICARE', 'SCADUTO')
             ORDER BY data_inizio ASC, orario_ingresso ASC
             LIMIT 300
         `);
@@ -484,14 +492,14 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
             if (view === 'attivi') {
                 whereFiltro = `AND stato IN ('PRENOTATO', 'ENTRATO', 'DA_VERIFICARE')`;
             } else if (view === 'scaduti') {
-                whereFiltro = `AND stato = 'ARCHIVIATO' AND orario_ingresso IS NULL`;
+                // 🚀 Ripristinato lo stato SCADUTO reale
+                whereFiltro = `AND stato = 'SCADUTO'`;
             } else if (view === 'verificare') {
                 whereFiltro = `AND stato = 'DA_VERIFICARE'`;
             } else if (view === 'storico') {
                 whereFiltro = `AND stato IN ('USCITO', 'ARCHIVIATO')`;
             } else {
-                // Se cerca globalmente ('all' o altro) includiamo tutti gli stati reali rimasti
-                whereFiltro = `AND stato IN ('PRENOTATO', 'ENTRATO', 'USCITO', 'DA_VERIFICARE', 'ARCHIVIATO')`;
+                whereFiltro = `AND stato IN ('PRENOTATO', 'ENTRATO', 'USCITO', 'DA_VERIFICARE', 'SCADUTO', 'ARCHIVIATO')`;
             }
 
             query = `
