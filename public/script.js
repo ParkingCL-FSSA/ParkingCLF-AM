@@ -718,10 +718,10 @@ async function aggiornaVeicoli() {
     
     dati.forEach(x => {
 
+        // 🎯 LOGICA CORRETTA: Considera arrivi oggi SOLO quelli che iniziano oggi!
         const prenotatoOggi =
             x.stato === 'PRENOTATO' &&
-            oggi >= x.data_inizio &&
-            oggi <= x.data_fine;
+            x.data_inizio === oggi;
 
         const dentro =
         (
@@ -838,7 +838,7 @@ async function aggiornaVeicoli() {
             return f.scaduto;
 
         if (filtroPiantone === 'attivi')
-            return (f.entrato || f.prenotatoOggi || f.daVerificare);
+            return (f.entrato || (x.stato === 'PRENOTATO' && x.data_inizio === oggi) || f.daVerificare);
 
         if (filtroPiantone === 'storico')
             return f.storico;
@@ -849,8 +849,8 @@ async function aggiornaVeicoli() {
         if (valoreCercato !== "") {
             const getPriorita = (item) => {
                 const f = getFlags(item);
-                if (f.entrato || f.prenotatoOggi) return 1; 
-                if (f.daVerificare) return 2;               
+                if (f.entrato || (item.stato === 'PRENOTATO' && item.data_inizio === oggi)) return 1; 
+                if (f.daVerificare) return 2;                
                 if (f.scaduto) return 3;                    
                 if (f.storico) return 4;                    
                 return 5;
@@ -888,7 +888,7 @@ async function aggiornaVeicoli() {
         const veicoloTrovato = lista[0]; 
         const f = getFlags(veicoloTrovato);
         
-        if (f.entrato || f.prenotatoOggi) {
+        if (f.entrato || (veicoloTrovato.stato === 'PRENOTATO' && veicoloTrovato.data_inizio === oggi)) {
             label = "📋 ATTIVO (Trovato da Ricerca)";
             colore = "#2563eb"; sfondo = "#dbeafe";
         } else if (f.daVerificare) {
