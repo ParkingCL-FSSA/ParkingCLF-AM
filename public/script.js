@@ -1097,27 +1097,60 @@ async function mostraArriviOggi() {
         const res = await fetch('/api/piantone/arrivi-oggi');
         const dati = await res.json();
         const lista = document.getElementById('lista-arrivi-oggi');
+        
+        // Svuotiamo completamente la tabella per eliminare vecchi residui o scritte di avviso
         lista.innerHTML = '';
 
-        if (!dati.length) {
-            lista.innerHTML = `<tr><td colspan="2">Nessun arrivo previsto oggi</td></tr>`;
+        if (!dati || !dati.length) {
+            lista.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:12px;">Nessun arrivo previsto oggi</td></tr>`;
         } else {
+            // Costruiamo le righe in una stringa pulita
+            let righeHtml = '';
+            
             dati.forEach(r => {
-                        let badge = '';
-                        
-                        if (r.stato === 'PRENOTATO') {
-                            badge = `<span class="badge-stato"><span class="dot dot-orange"></span>Deve Entrare</span>`;
-                        } else if (r.stato === 'ENTRATO') {
-                            badge = `<span class="badge-stato"><span class="dot dot-green"></span>Entrato</span>`;
-                        } else if (r.stato === 'DA_VERIFICARE') {
-                            badge = `<span class="badge-stato"><span class="dot dot-orange" style="background-color: #ea580c;"></span>Da Verificare</span>`;
-                        } else {
-                            badge = `<span class="badge-stato"><span class="dot dot-red"></span>Scaduto</span>`;
-                        }
-                        
-                        lista.innerHTML += `<tr><td>${r.npass}</td><td>${badge}</td></tr>`;
-                    });
+                let badge = '';
+                
+                // Gestione robusta di tutti gli stati possibili provenienti dal DB
+                if (r.stato === 'PRENOTATO') {
+                    badge = `<span class="badge-stato"><span class="dot dot-orange"></span>Deve Entrare</span>`;
+                } else if (r.stato === 'ENTRATO') {
+                    badge = `<span class="badge-stato"><span class="dot dot-green"></span>Entrato</span>`;
+                } else if (r.stato === 'DA_VERIFICARE') {
+                    badge = `<span class="badge-stato"><span class="dot dot-orange" style="background-color: #ea580c;"></span>Da Verificare</span>`;
+                } else {
+                    badge = `<span class="badge-stato"><span class="dot dot-red"></span>Scaduto</span>`;
+                }
+
+                // Generiamo la riga rendendo il pass cliccabile per caricarlo automaticamente in ricerca
+                righeHtml += `
+                <tr>
+                    <td style="padding: 8px 4px;">
+                        <button class="btn-pass-oggi" data-pass="${r.npass}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline; font-size:15px;">
+                            ${r.npass}
+                        </button>
+                    </td>
+                    <td style="padding: 8px 4px;">${badge}</td>
+                </tr>`;
+            });
+            
+            lista.innerHTML = righeHtml;
+
+            // Agganciamo l'evento click ai bottoni dei pass appena generati
+            document.querySelectorAll('.btn-pass-oggi').forEach(b => {
+                b.addEventListener('click', async () => {
+                    const pass = b.dataset.pass;
+                    const inputSearch = document.getElementById('search-p');
+                    if (inputSearch) inputSearch.value = pass;
+                    
+                    // Chiama la ricerca globale per quel pass
+                    await cercaPass(pass);
+                    
+                    // Porta il focus sul pannello di controllo
+                    document.getElementById('panel-piantone')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            });
         }
+        
         box.classList.remove('hidden');
         arriviVisible = true;
         btn.innerText = '❌ Nascondi Arrivi di Oggi';
