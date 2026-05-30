@@ -602,29 +602,27 @@ async function cercaPass(passManuale = null, idRecord = null) {
 function getFlags(x) {
     const oggi = new Date().toISOString().split('T')[0];
 
+    const prenotatoOggi = x.stato === 'PRENOTATO' && oggi >= x.data_inizio && oggi <= x.data_fine;
     const entrato = x.stato === 'ENTRATO';
+    const uscito = x.stato === 'USCITO';
+    
+    // 🚀 Un pass è "scaduto" (mai entrato) se il server lo ha ARCHIVIATO ma non ha orario di ingresso
+    const scaduto = (x.stato === 'PRENOTATO' && oggi > x.data_fine) || 
+                    (x.stato === 'ARCHIVIATO' && !x.orario_ingresso);
 
-    const scaduto = (x.stato === 'PRENOTATO' && oggi > x.data_fine);
+    // Un pass fa parte dello storico se l'auto è uscita oppure se è archiviato ed è già uscita
+    const storico = x.stato === 'USCITO' || (x.stato === 'ARCHIVIATO' && x.orario_uscita);
 
-    const prenotatoOggi =
-        x.stato === 'PRENOTATO' &&
-        oggi >= x.data_inizio &&
-        oggi <= x.data_fine;
-
-    const daVerificare =
-        x.stato === 'DA_VERIFICARE' &&
-        x.orario_ingresso !== null &&
-        x.orario_uscita === null &&
-        oggi > x.data_fine;
-
-    const storico = x.stato === 'USCITO' || x.stato === 'ARCHIVIATO';
+    const daVerificare = x.stato === 'DA_VERIFICARE' || 
+                         (x.stato === 'PRENOTATO' && oggi > x.data_fine && x.orario_ingresso && !x.orario_uscita);
 
     return {
-        entrato,
-        scaduto,
         prenotatoOggi,
-        daVerificare,
-        storico
+        entrato,
+        uscito,
+        scaduto,
+        storico,
+        daVerificare
     };
 }
 
