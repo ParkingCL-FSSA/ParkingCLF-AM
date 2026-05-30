@@ -724,7 +724,7 @@ async function aggiornaVeicoli() {
     let countEntratiOggi = 0;
     let countPrenotatiOggi = 0;
     let countVerificare = 0;
-    let countScaduti = 0; // Per l'alert lampeggiante dei non entrati mai
+    let countScaduti = 0; 
     
     dati.forEach(x => {
         // Conversione date del DB per i confronti temporali
@@ -760,7 +760,7 @@ async function aggiornaVeicoli() {
         const f = getFlags(x);
         if (f.daVerificare) countVerificare++;
 
-        // Vecchio controllo scaduti (Prenotati che non si sono presentati affatto)
+        // Controllo scaduti (Prenotati che non si sono presentati affatto)
         if (x.stato === 'PRENOTATO' && oggiTime > fineTime) countScaduti++;
     });
     
@@ -785,35 +785,53 @@ async function aggiornaVeicoli() {
     
     // --- Calcolo dinamico colori "Posti Liberi" ---
     const postiLiberi = 90 - countDentro;
-    let colorePosti = "#1e293b";
-    if (postiLiberi < 4) { colorePosti = "#dc2626"; } 
-    else if (postiLiberi < 10) { colorePosti = "#ea580c"; }
+    let colorePosti = "#16a34a"; // Verde iniziale di default
+    let sfondoCardAlto = "#f0fdf4"; // Sfondo verde tenue per la card in alto
+    let bordoCardAlto = "#bbf7d0";
 
-    // --- RENDER NUOVO BADGE CRUSCOTTO ---
+    if (postiLiberi < 4) { 
+        colorePosti = "#dc2626"; sfondoCardAlto = "#fef2f2"; bordoCardAlto = "#fecaca"; // Rosso
+    } else if (postiLiberi < 10) { 
+        colorePosti = "#ea580c"; sfondoCardAlto = "#fff7ed"; bordoCardAlto = "#ffedd5"; // Arancione
+    }
+
+    // ============================================================
+    // 1. AGGIORNAMENTO BLOCCO IN ALTO (CARD CONTROLLO SBARRA)
+    // ============================================================
+    // NOTA: Assicurati che l'id del div verde in alto corrisponda a 'card-sbarra-alto' o cambialo con il tuo id reale
+    const cardSbarraAlto = document.getElementById('card-sbarra-alto') || document.querySelector('.card-verde-alto-classe'); 
+    if (cardSbarraAlto) {
+        cardSbarraAlto.style.background = sfondoCardAlto;
+        cardSbarraAlto.style.borderColor = bordoCardAlto;
+        cardSbarraAlto.innerHTML = `
+            <span style="color: ${colorePosti}; font-weight: bold;">🅿️ Liberi: ${postiLiberi}</span> 
+            &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+            <span style="color: #2563eb; font-weight: bold;">🚘 Dentro: ${countDentro}</span>
+        `;
+    }
+
+    // ============================================================
+    // 2. AGGIORNAMENTO BLOCCO IN BASSO (SOTTO IL BOTTONE ARRIVI)
+    // ============================================================
     const badge = document.getElementById('badge-contatori');
-    badge.innerHTML = `
-    <div style="font-size: 16px; font-weight: bold; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 6px;">
-        🚧 CONTROLLO SBARRA &nbsp;&nbsp;|&nbsp;&nbsp;
-        <span style="color: ${colorePosti};">🅿️ Liberi: ${postiLiberi}</span> 
-        &nbsp;&nbsp;&nbsp;&nbsp;
-        <span style="color: #2563eb;">🚘 Dentro: ${countDentro}</span>
-    </div>
+    if (badge) {
+        badge.innerHTML = `
+        <div style="font-size: 14px; color: #475569; padding: 4px 0;">
+            🚗 <b>Entrati oggi:</b> <span style="color:#1e293b; font-weight:bold;">${countEntratiOggi}</span>
+            &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+            📅 <b>Prenotati:</b> <span style="color:#1e293b; font-weight:bold;">${countPrenotatiOggi}</span>
+            &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+            🚨 <b>Da verificare:</b> <span style="color:${countVerificare > 0 ? '#ea580c' : '#475569'}; font-weight:bold;">${countVerificare}</span>
 
-    <div style="font-size: 14px; color: #475569;">
-        🚗 <b>Entrati oggi:</b> <span style="color:#1e293b; font-weight:bold;">${countEntratiOggi}</span>
-        &nbsp;&nbsp;|&nbsp;&nbsp;
-        📅 <b>Prenotati:</b> <span style="color:#1e293b; font-weight:bold;">${countPrenotatiOggi}</span>
-        &nbsp;&nbsp;|&nbsp;&nbsp;
-        🚨 <b>Da verificare:</b> <span style="color:${countVerificare > 0 ? '#ea580c' : '#475569'}; font-weight:bold;">${countVerificare}</span>
-
-        ${countScaduti > 0 ? `
-            &nbsp;&nbsp;|&nbsp;&nbsp;
-            <span id="badge-scaduti" style="font-weight:bold;">
-                ⏰ <b>Scaduti:</b> ${countScaduti}
-            </span>
-        ` : ''}
-    </div>
-    `;
+            ${countScaduti > 0 ? `
+                &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+                <span id="badge-scaduti" style="font-weight:bold;">
+                    ⏰ <b>Scaduti:</b> ${countScaduti}
+                </span>
+            ` : ''}
+        </div>
+        `;
+    }
 
     const elScaduti = document.getElementById('badge-scaduti');
     if (elScaduti && countScaduti > 0) {
@@ -865,7 +883,6 @@ async function aggiornaVeicoli() {
         return (a.npass || "").localeCompare(b.npass || "", undefined, { numeric: true, sensitivity: 'base' });
     });
 
-    // Aggiornamento dinamico scritte di ricerca
     if (valoreCercato !== "" && lista.length > 0) {
         const veicoloTrovato = lista[0]; const f = getFlags(veicoloTrovato);
         const dataInizioData = veicoloTrovato.data_inizio ? new Date(veicoloTrovato.data_inizio) : null;
