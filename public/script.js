@@ -1167,10 +1167,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const emailUtente = document.getElementById('u-email')?.value.trim() || '';
 
         if (!notaTesto) {
-            alert('Scrivi qualcosa nel campo suggerimenti before inviare!');
+            alert('Scrivi qualcosa nel campo suggerimenti prima di inviare!');
             return;
         }
-
+        
         try {
             const res = await fetch('/api/user/salva-nota', {
                 method: 'POST',
@@ -1202,7 +1202,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-   document.getElementById('btn-reset-search')?.addEventListener('click', () => {
+    document.getElementById('btn-reset-search')?.addEventListener('click', () => {
         if (inputSearch) inputSearch.value = '';
         currentPren = null;
         filtroPiantone = 'attivi'; 
@@ -1268,4 +1268,23 @@ window.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('btn-ritardi')?.addEventListener('click', mostraRitardi);
     document.getElementById('btn-logout-admin')?.addEventListener('click', () => { location.reload(); });
+
+    // ============================================================
+    // 🚀 CHICCA AUTOMAZIONE: FOCUS AL RAGGIUNGIMENTO DELLE 5 CIFRE
+    // ============================================================
+    
+    // 1. Sposta il focus sul tasto Login appena si inserisce il pass a 5 cifre
+    const inputLogin = document.getElementById('in-npass');
+    inputLogin?.addEventListener('input', () => {
+        if (inputLogin.value.trim().length === 5) {
+            document.getElementById('btn-login')?.focus();
+        }
+    });
+
+    // 2. Sposta il focus sul tasto Cerca appena il piantone digita le 5 cifre del pass
+    inputSearch?.addEventListener('input', () => {
+        if (inputSearch.value.trim().length === 5) {
+            document.getElementById('btn-cerca')?.focus();
+        }
+    });
 });
