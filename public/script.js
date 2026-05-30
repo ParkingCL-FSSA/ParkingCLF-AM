@@ -552,7 +552,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 boxVerifica.classList.add('hidden');
             }
                 
-           // 🚀 AGGIORNATO: Gestione rigida dello stato SCADUTO (Nuova regola comunitaria della mezzanotte)
+            // 🚀 AGGIORNATO: Gestione rigida dello stato SCADUTO (Nuova regola comunitaria della mezzanotte)
             else if (currentPren.stato === 'SCADUTO') {
                 
                 // Se la vettura non è mai entrata nei tempi stabiliti, blocca tutto
@@ -573,7 +573,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                         </span>`;
                         
                 } else {
-                    // Fallback di sicurezza: se per qualche motivo assurdo l'auto fosse dentro, 
+                    // Fallback di sicurezza: se per qualche motivo la vettura risulta dentro, 
                     // permette al piantone di farla uscire anche se il pass è contrassegnato scaduto
                     btnIngresso.disabled = true;
                     btnIngresso.style.display = 'none';
@@ -592,7 +592,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 btnUscita.style.background = '#64748b';
             }
 
-    // UI PANNELLO (Mostra i dettagli del Pass)
+            // UI PANNELLO (Mostra i dettagli del Pass)
             document.getElementById('panel-piantone').classList.remove('hidden');
 
             // 🚀 STILE INTESTAZIONE: PASS (Bold), Prenotazione e Periodo (Grigio e più piccolo)
@@ -604,29 +604,70 @@ async function cercaPass(passManuale = null, idRecord = null) {
 
             document.getElementById('lab-periodo').style.textAlign = 'center';
             document.getElementById('lab-periodo').innerHTML = `
-                <div style="font-size: 15px; color: #64748b; font-weight: bold; margin-bottom: 6px;">
+                <div style="font-size: 13px; color: #64748b; font-weight: normal; margin-bottom: 6px;">
                     (Periodo: ${fmtData(currentPren.data_inizio)} - ${fmtData(currentPren.data_fine)})
                 </div>
             `;
         
-    // 🚀 STILE TIMBRI ORARI: L'orario di ingresso diventa più grande e in evidenza
-            if (oggiStr >= dataInizioStr) {
+            // 🚀 STILE TIMBRI ORARI: L'orario di ingresso diventa più grande, scuro e in evidenza (15px Bold)
+            if (oggiStr >= dataInizioStr && currentPren.stato !== 'SCADUTO') {
                 document.getElementById('reg-e').style.textAlign = 'center';
                 document.getElementById('reg-e').innerHTML = currentPren.orario_ingresso
-                    ? `<div style="font-size: 13px; font-weight: bold; color: #64748b; margin-top: 4px;">
+                    ? `<div style="font-size: 15px; font-weight: bold; color: #1e293b; margin-top: 4px;">
                         Registrato il ${new Date(currentPren.orario_ingresso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}
                        </div>`
                     : `<div style="font-size: 14px; color: #64748b;">Nessun ingresso registrato</div>`;
             }
 
-            document.getElementById('reg-u').style.textAlign = 'center';
-            document.getElementById('reg-u').innerHTML = currentPren.orario_uscita
-                ? `<div style="font-size: 13px; font-weight: bold; color: #64748b; margin-top: 4px;">
-                    Registrato il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}
-                   </div>`
-                : "";
+            if (currentPren.stato !== 'SCADUTO') {
+                document.getElementById('reg-u').style.textAlign = 'center';
+                document.getElementById('reg-u').innerHTML = currentPren.orario_uscita
+                    ? `<div style="font-size: 15px; font-weight: bold; color: #1e293b; margin-top: 4px;">
+                        Registrato il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}
+                       </div>`
+                    : "";
+            }
+
+            // 🚀 SCAMBIO FILTRI E BANNER DINAMICI IN TABELLA
+            const bannerCerca = document.getElementById('banner-ricerca') || document.querySelector('.badge-cerca-stato'); 
+            const tabellaCorpo = document.getElementById('tabella-veicoli-corpo') || document.querySelector('#tabella-veicoli tbody');
+
+            if (bannerCerca) {
+                if (currentPren.stato === 'SCADUTO') {
+                    bannerCerca.className = "banner-scaduto"; // Imposta la tua classe rossa per gli scaduti
+                    bannerCerca.style.background = '#ffeeef'; // Sfondo rosa/rosso chiaro di backup manuale
+                    bannerCerca.style.color = '#ef4444';
+                    bannerCerca.style.border = '1px solid #fca5a5';
+                    bannerCerca.innerHTML = `⏰ SCADUTO (Trovato da Ricerca)`;
+                } else {
+                    bannerCerca.className = "banner-attivo"; // Imposta la tua classe azzurra per gli attivi
+                    bannerCerca.style.background = '#eff6ff'; // Sfondo azzurro chiaro di backup manuale
+                    bannerCerca.style.color = '#3b82f6';
+                    bannerCerca.style.border = '1px solid #93c5fd';
+                    bannerCerca.innerHTML = `📋 ATTIVO (Trovato da Ricerca)`;
+                }
+                bannerCerca.classList.remove('hidden');
+            }
+
+            // Filtra la tabella al volo mostrando solo le righe coerenti con lo stato aperto
+            if (data.storico && tabellaCorpo) {
+                let righeDaMostrare = [];
+                if (currentPren.stato === 'SCADUTO') {
+                    righeDaMostrare = data.storico.filter(x => x.stato === 'SCADUTO');
+                } else {
+                    righeDaMostrare = data.storico.filter(x => ['PRENOTATO', 'ENTRATO', 'DA_VERIFICARE'].includes(x.stato));
+                }
+                
+                // Aggiorna l'HTML della tabella usando la tua funzione globale che disegna le righe (es: renderTabella o generaRiga)
+                if (typeof renderTabella === "function") {
+                    renderTabella(righeDaMostrare);
+                } else if (typeof generaRigaTabella === "function") {
+                    tabellaCorpo.innerHTML = righeDaMostrare.map(x => generaRigaTabella(x)).join('');
+                }
+            }
+
         } else {
-            alert("Nessuna prenotazione trovata per questo PASS.");
+            alert("Nessuna prenotazione trouvata per questo PASS.");
             document.getElementById('panel-piantone').classList.add('hidden');
         }
 
