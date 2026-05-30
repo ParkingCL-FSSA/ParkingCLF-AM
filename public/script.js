@@ -551,15 +551,35 @@ async function cercaPass(passManuale = null, idRecord = null) {
             
                 boxVerifica.classList.add('hidden');
             }
-            // 🚀 OTTIMIZZATO: Gestione unica dello stato SCADUTO (Rimosso MAI_ENTRATO)
+                
+           // 🚀 AGGIORNATO: Gestione rigida dello stato SCADUTO (Nuova regola comunitaria della mezzanotte)
             else if (currentPren.stato === 'SCADUTO') {
-                // Se la vettura non è mai entrata ed è scaduta, blocca l'uscita
+                
+                // Se la vettura non è mai entrata nei tempi stabiliti, blocca tutto
                 if (!currentPren.orario_ingresso) {
-                    btnUscita.disabled = true;
-                    btnUscita.innerText = 'NON ENTRATO / SCADUTO';
-                    btnUscita.style.background = '#64748b';
+                    
+                    // Disabilita e colora di grigio il tasto ENTRATA
+                    btnIngresso.disabled = true;
+                    btnIngresso.innerText = 'PRENOTAZIONE SCADUTA';
+                    btnIngresso.style.background = '#64748b'; 
+                    
+                    // Nascondi completamente il tasto USCITA perché l'auto non è mai entrata
+                    btnUscita.style.display = 'none'; 
+                    
+                    // Scrivi il messaggio di avviso rosso per il piantone
+                    document.getElementById('reg-e').innerHTML = `
+                        <span style="color:#ef4444; font-weight:bold;">
+                            ⚠️ Termine d'ingresso superato. Posto liberato.
+                        </span>`;
+                        
                 } else {
+                    // Fallback di sicurezza: se per qualche motivo assurdo l'auto fosse dentro, 
+                    // permette al piantone di farla uscire anche se il pass è contrassegnato scaduto
+                    btnIngresso.disabled = true;
+                    btnIngresso.style.display = 'none';
+                    
                     btnUscita.disabled = false;
+                    btnUscita.style.display = 'inline-block';
                     btnUscita.style.background = '#ef4444';
                     btnUscita.innerText = 'USCITA (SCADUTO)';
                 }
