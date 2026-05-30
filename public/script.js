@@ -410,7 +410,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
             }
 
             const bannerCerca = document.getElementById('stato-tabella'); 
-            const tabellaCorpo = document.getElementById('lista-veicoli');
+            const tabularCorpo = document.getElementById('lista-veicoli');
             const isScadutoCorrente = (currentPren.stato === 'SCADUTO');
 
             if (bannerCerca) {
@@ -423,11 +423,11 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 }
             }
 
-            if (data.storico && tabellaCorpo) {
+            if (data.storico && tabularCorpo) {
                 let righeDaMostrare = isScadutoCorrente 
                     ? data.storico.filter(x => ['PRENOTATO', 'ENTRATO', 'DA_VERIFICARE'].includes(x.stato))
                     : data.storico.filter(x => x.stato === 'SCADUTO');
-                tabellaCorpo.innerHTML = righeDaMostrare.map(x => generaRigaTabella(x)).join('');
+                tabularCorpo.innerHTML = righeDaMostrare.map(x => generaRigaTabella(x)).join('');
             }
         } else {
             alert("Nessuna prenotazione trovata per questo PASS.");
@@ -687,10 +687,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 🚀 RIPRISTINO LOGICA VERIFICA ORIGINALE RIGIDA PER EVITARE CRASH NETWORK LATO SERVER
     document.getElementById('btn-presente')?.addEventListener('click', async () => {
         if (!currentPren) return;
         const res = await fetch('/api/piantone/verifica-risolvi', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: current
+            body: JSON.stringify({ id: currentPren.id })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('Stato del veicolo aggiornato in ENTRATO correttamente');
+            await cercaPass(currentPren.npass, currentPren.id);
+            await aggiornaVeicoli();
+            document.getElementById('box-verifica')?.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('btn-non-presente')?.addEventListener('click', async () => {
+        if (!currentPren) return;
+        const res = await fetch('/api/piantone/verifica-risolvi', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: currentPren.id })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('Veicolo segnato come NON presente');
+            await aggiornaVeicoli();
+            document.getElementById('box-verifica')?.classList.add('hidden');
+            document.getElementById('panel-piantone')?.classList.add('hidden');
+            currentPren = null;
+            if (inputSearch) inputSearch.value = '';
+        }
+    });
+    
+    document.getElementById('btn-arrivi-oggi')?.addEventListener('click', mostraArriviOggi);
+    document.getElementById('btn-ingresso')?.addEventListener('click', () => { mossa('E'); });
+    document.getElementById('btn-home-success')?.addEventListener('click', () => { location.reload(); });
+    document.getElementById('btn-uscita')?.addEventListener('click', () => { mossa('U'); });
+    document.getElementById('btn-filtro')?.addEventListener('click', toggleScaduti);
+    document.getElementById('search-p')?.addEventListener('input', aggiornaVeicoli);
+    document.getElementById('btn-logout-piantone')?.addEventListener('click', () => { location.reload(); });
+    document.getElementById('btn-ritardi')?.addEventListener('click', mostraRitardi);
+    document.getElementById('btn-logout-admin')?.addEventListener('click', () => { location.reload(); });
+}); // ◄ UNISCE E CHIUDE CORRETTAMENTE TUTTI I BLOCCHI DEL FILE
