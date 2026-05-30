@@ -739,7 +739,7 @@ async function aggiornaVeicoli() {
         // Estrazione data ingresso (se esiste) in formato stringa AAAA-MM-GG
         const dataIngressoString = x.orario_ingresso ? x.orario_ingresso.substring(0, 10) : '';
 
-        // 🎯 LOGICA SOPRA: Solo chi ha orario_ingresso e NON ha orario_uscita
+        // 🎯 LOGICA SOPRA: Solo chi ha orario_ingresso e NON ha orario_uscita (Uguale alla query SQL)
         if (x.orario_ingresso && !x.orario_uscita) {
             countDentro++;
         }
@@ -779,14 +779,12 @@ async function aggiornaVeicoli() {
     const postiLiberi = 90 - countDentro;
 
     // ============================================================
-    // 1. INIEZIONE CARD IN ALTO (CON COLORI RICHIESTI)
+    // 1. INIEZIONE CARD IN ALTO (COLORI: LIBERI VERDE | DENTRO ARANCIONE)
     // ============================================================
-    // Cerchiamo l'elemento sia tramite ID che tramite una classe di fallback per sicurezza
-    const cardSbarraAlto = document.getElementById('card-sbarra-alto') || document.querySelector('.card-verde-alto-classe'); 
+    const cardSbarraAlto = document.getElementById('card-sbarra-alto'); 
     if (cardSbarraAlto) {
-        // Applichiamo uno sfondo neutro e pulito per far risaltare i testi colorati
-        cardSbarraAlto.style.background = "#f8fafc"; 
-        cardSbarraAlto.style.borderColor = "#e2e8f0";
+        cardSbarraAlto.style.background = "#f0fdf4"; // Sfondo verde chiarissimo e pulito
+        cardSbarraAlto.style.borderColor = "#bbf7d0";
         cardSbarraAlto.style.display = "flex";
         cardSbarraAlto.style.justifyContent = "center";
         cardSbarraAlto.style.alignItems = "center";
@@ -804,7 +802,7 @@ async function aggiornaVeicoli() {
     const badge = document.getElementById('badge-contatori');
     if (badge) {
         badge.innerHTML = `
-        <div style="font-size: 14px; color: #475569; padding: 4px 0; font-weight: 500;">
+        <div style="font-size: 13px; color: #475569; padding: 4px 0; font-weight: 500;">
             🚗 <b>Entrati oggi:</b> <span style="color:#1e293b; font-weight:bold;">${countEntratiOggi}</span>
             &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
             📅 <b>Prenotati:</b> <span style="color:#1e293b; font-weight:bold;">${countPrenotatiOggi}</span>
@@ -827,7 +825,7 @@ async function aggiornaVeicoli() {
         elScaduti.style.color = '#ef4444';
     }
 
-// --- FILTRAGGIO E ORDINAMENTO TABELLA ---
+    // --- FILTRAGGIO E ORDINAMENTO TABELLA ---
     const valoreCercato = inputSearch?.value?.trim()?.toUpperCase() || "";
 
     const lista = dati.filter(x => {
