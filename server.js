@@ -457,52 +457,72 @@ app.get('/api/veicoli-dentro', async (req, res) => {
 // --- PIANTONE CERCA ---
 app.get('/api/piantone/cerca/:npass', async (req, res) => {
     const authPass = req.query.auth;
-    const view = req.query.view || 'attivi';
+    const view = req.query.view || 'all'; // Default broad se non specificato
+    const idSelezionato = req.query.id;   // 🚀 Fondamentale: Intercettiamo l'ID cliccato dalla tabella
 
     if (!await verificaRuolo(authPass, ['piantone', 'admin'])) {
         return res.status(403).json({ error: "Accesso non autorizzato" });
     }
 
     try {
-        let whereFiltro = "";
+        let query = "";
+        let params = [];
 
-        if (view === 'attivi') {
-            whereFiltro = `AND (stato = 'PRENOTATO' OR stato = 'ENTRATO')`;
-        } else if (view === 'scaduti') {
-            whereFiltro = `AND (stato = 'DA_VERIFICARE' OR stato = 'MAI_ENTRATO')`;
-        } else if (view === 'verificare') {
-            whereFiltro = `AND stato = 'DA_VERIFICARE'`;
-        } else if (view === 'storico') {
-            whereFiltro = `AND (stato = 'USCITO' OR stato = 'ARCHIVIATO')`;
-        } else {
-            whereFiltro = `AND stato IN ('PRENOTATO', 'ENTRATO', 'USCITO', 'DA_VERIFICARE', 'MAI_ENTRATO', 'ARCHIVIATO')`;
+        // 🚀 CASO A: Il piantone ha CLICCATO su una riga specifica della tabella (Abbiamo l'ID univoco)
+        if (idSelezionato) {
+            query = `
+                SELECT id, npass, data_inizio, data_fine, orario_ingresso, orario_uscita, stato, note
+                FROM prenotazioni
+                WHERE id = $1 AND UPPER(npass) = $2
+            `;
+            params = [idSelezionato, req.params.npass.toUpperCase()];
+        } 
+        // 🔍 CASO B: Il piantone ha SCRITTO a mano il pass nella barra di ricerca (Senza ID)
+        else {
+            let whereFiltro = "";
+
+            if (view === 'attivi') {
+                whereFiltro = `AND stato IN ('PRENOTATO', 'ENTRATO', 'DA_VERIFICARE')`;
+            } else if (view === 'scaduti') {
+                whereFiltro = `AND stato = 'ARCHIVIATO' AND orario_ingresso IS NULL`;
+            } else if (view === 'verificare') {
+                whereFiltro = `AND stato = 'DA_VERIFICARE'`;
+            } else if (view === 'storico') {
+                whereFiltro = `AND stato IN ('USCITO', 'ARCHIVIATO')`;
+            } else {
+                // Se cerca globalmente ('all' o altro) includiamo tutti gli stati reali rimasti
+                whereFiltro = `AND stato IN ('PRENOTATO', 'ENTRATO', 'USCITO', 'DA_VERIFICARE', 'ARCHIVIATO')`;
+            }
+
+            query = `
+                SELECT id, npass, data_inizio, data_fine, orario_ingresso, orario_uscita, stato, note
+                FROM prenotazioni
+                WHERE UPPER(npass) = $1 ${whereFiltro}
+                ORDER BY
+                    CASE
+                        WHEN stato = 'ENTRATO' THEN 1
+                        WHEN stato = 'DA_VERIFICARE' THEN 2
+                        WHEN CURRENT_DATE BETWEEN data_inizio AND data_fine AND stato = 'PRENOTATO' THEN 3
+                        WHEN data_inizio >= CURRENT_DATE AND stato = 'PRENOTATO' THEN 4
+                        ELSE 5
+                    END ASC,
+                    data_inizio DESC,
+                    id DESC
+            `;
+            params = [req.params.npass.toUpperCase()];
         }
 
-        const query = `
-            SELECT *
-            FROM prenotazioni
-            WHERE UPPER(npass) = $1 ${whereFiltro}
-            ORDER BY
-                CASE
-                    WHEN stato IN ('ENTRATO', 'DA_VERIFICARE') THEN 1
-                    WHEN CURRENT_DATE BETWEEN data_inizio AND data_fine AND stato = 'PRENOTATO' THEN 2
-                    WHEN data_inizio >= CURRENT_DATE AND stato = 'PRENOTATO' THEN 3
-                    ELSE 4
-                END ASC,
-                data_inizio ASC,
-                id DESC
-        `;
-
-        const r = await pool.query(query, [req.params.npass.toUpperCase()]);
+        const r = await pool.query(query, params);
 
         if (!r.rows.length) {
             return res.json({ trovato: false });
         }
 
+        // Restituiamo l'elemento trovato (il primo secondo l'ordinamento o l'ID esatto)
         return res.json({
             trovato: true,
             prenotazione: r.rows[0],
-            storico: r.rows
+            storico: r.rows // Mantenuto per compatibilità se serve al client
         });
 
     } catch (err) {
