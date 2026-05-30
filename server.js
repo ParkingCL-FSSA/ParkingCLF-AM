@@ -596,26 +596,39 @@ app.post('/api/piantone/azione', async (req, res) => {
     }
 });
 
-// --- 7B. PIANTONE LIBERI (CORRETTO) ---
+// --- 7B. PIANTONE LIBERI (CON ESCLUSIONE V1P E CONTEGGIO LISTA) ---
 app.get('/api/piantone/liberi', async (req, res) => {
     try {
-        // Contiamo solo le auto realmente dentro la sbarra in questo momento
+        // Estraiamo tutti i veicoli attualmente dentro (orario_uscita IS NULL)
         const result = await pool.query(`
-            SELECT COUNT(id) as dentro
+            SELECT npass 
             FROM prenotazioni
             WHERE orario_ingresso IS NOT NULL 
               AND orario_uscita IS NULL
         `);
         
-        const dentro = parseInt(result.rows[0].dentro) || 0;
+        let dentroStandard = 0;
+        let listaV1p = 0;
+
+        result.rows.forEach(row => {
+            const pass = (row.npass || '').toUpperCase().trim();
+            if (pass.startsWith('V1P')) {
+                listaV1p++; // Conta quanti V1P sono dentro
+            } else {
+                dentroStandard++; // Conta i veicoli standard dentro
+            }
+        });
         
-        // Capienza fissa a 90: se dentro sono 55, totaleLiberi sarà esattamente 35
+        // Calcolo pulito: i V1P non toccano i 90 posti standard
+        const totaleLiberi = 90 - dentroStandard;
+
         res.json({ 
-            dentro: dentro, 
-            totaleLiberi: 90 - dentro 
+            dentro: dentroStandard, 
+            totaleLiberi: totaleLiberi,
+            listaV1p: listaV1p
         });
     } catch (err) {
-        console.error("💥 ERRORE CONTEGGIO LIBERI PIANTONE:", err);
+        console.error("💥 ERRORE CONTEGGIO LIBERI:", err);
         res.status(500).json({ error: "Errore interno" });
     }
 });
