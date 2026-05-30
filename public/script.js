@@ -574,8 +574,15 @@ async function cercaPass(passManuale = null, idRecord = null) {
 
             // UI PANNELLO (Mostra i dettagli del Pass)
             document.getElementById('panel-piantone').classList.remove('hidden');
+            
+            // 🚀 NUOVO LAYOUT CENTRATO E FORMATTATO
+            document.getElementById('lab-pass').style.textAlign = 'center';
+            document.getElementById('lab-pass').innerHTML = `
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 2px;">PASS: ${currentPren.npass}</div>
+                <div style="font-size: 14px; color: #475569; margin-bottom: 4px;">(Prenotazione: ${currentPren.id})</div>
+            `;
 
-            document.getElementById('lab-pass').innerHTML = `PASS: ${currentPren.npass} <span style="font-size:12px; color:#64748b;">(ID: ${currentPren.id})</span>`;
+            document.getElementById('lab-periodo').style.textAlign = 'center';
             document.getElementById('lab-periodo').innerHTML = `(Periodo: ${fmtData(currentPren.data_inizio)} - ${fmtData(currentPren.data_fine)})`;
 
             if (oggiStr >= dataInizioStr) {
