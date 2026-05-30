@@ -718,11 +718,12 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
         p.data_inizio
       FROM prenotazioni p
       LEFT JOIN registro_pass r ON UPPER(p.npass) = UPPER(r.npass)
-      WHERE CURRENT_DATE BETWEEN p.data_inizio AND p.data_fine AND p.stato = 'PRENOTATO'
-      ORDER BY UPPER(p.npass), p.data_inizio DESC, p.id DESC
+      WHERE p.data_inizio = CURRENT_DATE 
+        AND p.stato = 'PRENOTATO'
+      ORDER BY UPPER(p.npass), p.id DESC
     `);
 
-    // Corretto il bug b.b.data_inizio che faceva crashare il server
+    // Ordina i risultati (se necessario, anche se nascendo tutti oggi l'ordinamento è già coerente)
     const righeOrdinate = r.rows.sort((a, b) => new Date(a.data_inizio) - new Date(b.data_inizio));
     res.json(righeOrdinate);
   } catch (e) {
