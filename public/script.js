@@ -572,32 +572,39 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 btnUscita.style.background = '#64748b';
             }
 
-           // UI PANNELLO (Mostra i dettagli del Pass)
+    // UI PANNELLO (Mostra i dettagli del Pass)
             document.getElementById('panel-piantone').classList.remove('hidden');
-            
-            // 🚀 NUOVO LAYOUT: Periodo in risalto (più grande e in grassetto) e ID Prenotazione normale
+
+            // 🚀 STILE INTESTAZIONE: PASS (Bold), Prenotazione e Periodo (Grigio e più piccolo)
             document.getElementById('lab-pass').style.textAlign = 'center';
             document.getElementById('lab-pass').innerHTML = `
                 <div style="font-size: 18px; font-weight: bold; margin-bottom: 2px;">PASS: ${currentPren.npass}</div>
-                <div style="font-size: 13px; color: #64748b; margin-bottom: 6px; font-weight: normal;">(Prenotazione: ${currentPren.id})</div>
+                <div style="font-size: 13px; color: #64748b; margin-bottom: 2px; font-weight: normal;">(Prenotazione: ${currentPren.id})</div>
             `;
-            
+
             document.getElementById('lab-periodo').style.textAlign = 'center';
             document.getElementById('lab-periodo').innerHTML = `
-                <div style="font-size: 16px; font-weight: bold; color: #1e293b;">
+                <div style="font-size: 13px; color: #64748b; font-weight: normal; margin-bottom: 6px;">
                     (Periodo: ${fmtData(currentPren.data_inizio)} - ${fmtData(currentPren.data_fine)})
                 </div>
             `;
+
+    // 🚀 STILE TIMBRI ORARI: L'orario di ingresso diventa più grande e in evidenza
             if (oggiStr >= dataInizioStr) {
+                document.getElementById('reg-e').style.textAlign = 'center';
                 document.getElementById('reg-e').innerHTML = currentPren.orario_ingresso
-                    ? `Registrato il ${new Date(currentPren.orario_ingresso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}`
-                    : "Nessun ingresso registrato";
+                    ? `<div style="font-size: 15px; font-weight: bold; color: #1e293b; margin-top: 4px;">
+                        Registrato il ${new Date(currentPren.orario_ingresso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}
+                       </div>`
+                    : `<div style="font-size: 14px; color: #64748b;">Nessun ingresso registrato</div>`;
             }
 
+            document.getElementById('reg-u').style.textAlign = 'center';
             document.getElementById('reg-u').innerHTML = currentPren.orario_uscita
-                ? `Registrato il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}`
+                ? `<div style="font-size: 15px; font-weight: bold; color: #1e293b; margin-top: 4px;">
+                    Registrato il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}
+                   </div>`
                 : "";
-
         } else {
             alert("Nessuna prenotazione trovata per questo PASS.");
             document.getElementById('panel-piantone').classList.add('hidden');
