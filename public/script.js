@@ -1085,72 +1085,60 @@ let arriviVisible = false;
 async function mostraArriviOggi() {
     const box = document.getElementById('box-arrivi-oggi');
     const btn = document.getElementById('btn-arrivi-oggi');
+    const lista = document.getElementById('lista-arrivi-oggi');
+    if (!box || !lista) return;
 
     if (arriviVisible) {
         box.classList.add('hidden');
         arriviVisible = false;
-        btn.innerText = '📋 Mostra Arrivi di Oggi';
+        btn.innerText = '📋 Arrivi di Oggi';
         return;
     }
 
     try {
         const res = await fetch('/api/piantone/arrivi-oggi');
         const dati = await res.json();
-        const lista = document.getElementById('lista-arrivi-oggi');
-        
-        // Svuotiamo completamente la tabella per eliminare vecchi residui o scritte di avviso
         lista.innerHTML = '';
 
-        if (!dati || !dati.length) {
-            lista.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:12px;">Nessun arrivo previsto oggi</td></tr>`;
+        if (!dati || dati.length === 0) {
+            lista.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:12px; color:var(--gray);">Nessun arrivo previsto oggi</td></tr>`;
         } else {
-            // Costruiamo le righe in una stringa pulita
-            let righeHtml = '';
-            
+            let htmlRighe = '';
             dati.forEach(r => {
-                let badge = '';
-                
-                // Gestione robusta di tutti gli stati possibili provenienti dal DB
-                if (r.stato === 'PRENOTATO') {
-                    badge = `<span class="badge-stato"><span class="dot dot-orange"></span>Deve Entrare</span>`;
-                } else if (r.stato === 'ENTRATO') {
-                    badge = `<span class="badge-stato"><span class="dot dot-green"></span>Entrato</span>`;
-                } else if (r.stato === 'DA_VERIFICARE') {
-                    badge = `<span class="badge-stato"><span class="dot dot-orange" style="background-color: #ea580c;"></span>Da Verificare</span>`;
-                } else {
-                    badge = `<span class="badge-stato"><span class="dot dot-red"></span>Scaduto</span>`;
-                }
+                let badge = r.stato === 'PRENOTATO' ? `<span class="badge-stato"><span class="dot dot-orange"></span>Deve Entrare</span>` :
+                            r.stato === 'ENTRATO' ? `<span class="badge-stato"><span class="dot dot-green"></span>Entrato</span>` :
+                            r.stato === 'DA_VERIFICARE' ? `<span class="badge-stato"><span class="dot dot-orange" style="background-color: #ea580c;"></span>Da Verificare</span>` :
+                            `<span class="badge-stato"><span class="dot dot-red"></span>Scaduto</span>`;
 
-                // Generiamo la riga rendendo il pass cliccabile per caricarlo automaticamente in ricerca
-                righeHtml += `
+                htmlRighe += `
                 <tr>
-                    <td style="padding: 8px 4px;">
-                        <button class="btn-pass-oggi" data-pass="${r.npass}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline; font-size:15px;">
+                    <td style="padding: 10px 6px;">
+                        <button class="btn-pass-diretto" data-pass="${r.npass}" data-id="${r.id}" type="button" style="border:none; background:none; color:var(--blue); font-weight:bold; cursor:pointer; text-decoration:underline; font-size:15px; padding:0;">
                             ${r.npass}
                         </button>
                     </td>
-                    <td style="padding: 8px 4px;">${badge}</td>
+                    <td style="padding: 10px 6px;">${badge}</td>
                 </tr>`;
             });
-            
-            lista.innerHTML = righeHtml;
+            lista.innerHTML = htmlRighe;
 
-            // Agganciamo l'evento click ai bottoni dei pass appena generati
-            document.querySelectorAll('.btn-pass-oggi').forEach(b => {
-                b.addEventListener('click', async () => {
-                    const pass = b.dataset.pass;
+            // Assegna il click automatico a tutti i bottoni dei pass appena generati
+            document.querySelectorAll('.btn-pass-diretto').forEach(b => {
+                b.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    const passClick = b.getAttribute('data-pass');
+                    const idClick = b.getAttribute('data-id');
                     const inputSearch = document.getElementById('search-p');
-                    if (inputSearch) inputSearch.value = pass;
+                    if (inputSearch) inputSearch.value = passClick;
                     
-                    // Chiama la ricerca globale per quel pass
-                    await cercaPass(pass);
+                    // Richiama la tua funzione di ricerca nativa
+                    await cercaPass(passClick, idClick);
                     
-                    // Porta il focus sul pannello di controllo
+                    // Porta la visualizzazione sul pannello del pass trovato
                     document.getElementById('panel-piantone')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 });
             });
         }
-        
         box.classList.remove('hidden');
         arriviVisible = true;
         btn.innerText = '❌ Nascondi Arrivi di Oggi';
