@@ -428,7 +428,7 @@ app.get('/api/veicoli-dentro', async (req, res) => {
     try {
         const oggi = new Date().toISOString().split('T')[0];
         
-        // 🚀 PULIZIA COMPLETA: Rimosso MAI_ENTRATO. Controlla solo i PRENOTATI scaduti
+        // 1. Il server aggiorna a 'ARCHIVIATO' i prenotati scaduti (ma rimangono nel db)
         await pool.query(`
             UPDATE prenotazioni 
             SET stato = 'ARCHIVIATO' 
@@ -437,11 +437,12 @@ app.get('/api/veicoli-dentro', async (req, res) => {
               AND orario_ingresso IS NULL
         `, [oggi]);
         
-        // SELECT per la tabella del piantone (senza ARCHIVIATO)
+        // 🚀 CORREZIONE: Includiamo di nuovo 'ARCHIVIATO' nella SELECT. 
+        // Sarà lo script.js a filtrarli o mostrarli quando si preme "SCADUTI" o "STORICO"
         const r = await pool.query(`
             SELECT id, npass, data_inizio, data_fine, orario_ingresso, orario_uscita, data_inserimento, stato
             FROM prenotazioni
-            WHERE stato IN ('PRENOTATO', 'ENTRATO', 'USCITO', 'DA_VERIFICARE')
+            WHERE stato IN ('PRENOTATO', 'ENTRATO', 'USCITO', 'DA_VERIFICARE', 'ARCHIVIATO')
             ORDER BY data_inizio ASC, orario_ingresso ASC
             LIMIT 300
         `);
