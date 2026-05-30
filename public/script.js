@@ -709,20 +709,25 @@ async function aggiornaVeicoli() {
     const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
     const dati = await res.json();
     
-    // Creiamo la data di oggi a mezzanotte locale per un confronto pulito
+    // Configurazione data odierna locale per i confronti
     const oraSolareOggi = new Date();
     oraSolareOggi.setHours(0, 0, 0, 0);
     const oggiTime = oraSolareOggi.getTime();
+    const oggiString = oraSolareOggi.toISOString().split('T')[0];
 
     const inputSearch = document.getElementById('search-p');
 
+    // Contatori SOPRA (Stato Reale)
     let countDentro = 0;
-    let countPrenotati = 0;
-    let countScaduti = 0;
+
+    // Contatori SOTTO (Operativi di Oggi)
+    let countEntratiOggi = 0;
+    let countPrenotatiOggi = 0;
     let countVerificare = 0;
+    let countScaduti = 0; // Per l'alert lampeggiante dei non entrati mai
     
     dati.forEach(x => {
-        // Convertiamo le date del DB in timestamp a mezzanotte per il confronto
+        // Conversione date del DB per i confronti temporali
         const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
         if (dataInizioData) dataInizioData.setHours(0,0,0,0);
         const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
@@ -731,79 +736,46 @@ async function aggiornaVeicoli() {
         if (dataFineData) dataFineData.setHours(0,0,0,0);
         const fineTime = dataFineData ? dataFineData.getTime() : 0;
 
-        // 🎯 CONFRONTO TEMPORALE MATEMATICO (Inizia OGGI)
-        const prenotatoOggi =
-            x.stato === 'PRENOTATO' &&
-            inizioTime === oggiTime;
+        // Estrazione data ingresso (se esiste) in formato stringa AAAA-MM-GG
+        const dataIngressoString = x.orario_ingresso ? x.orario_ingresso.substring(0, 10) : '';
 
-        const dentro =
-        (
-            x.stato === 'ENTRATO'
-            ||
-            (
-                x.stato === 'DA_VERIFICARE' &&
-                x.orario_ingresso &&
-                !x.orario_uscita
-            )
+        // 1. Logica SOPRA: Chi è fisicamente DENTRO adesso
+        const isDentroOra = (
+            x.stato === 'ENTRATO' || 
+            (x.stato === 'DA_VERIFICARE' && x.orario_ingresso && !x.orario_uscita)
         );
+        if (isDentroOra) countDentro++;
 
-        const scaduto = (x.stato === 'PRENOTATO' && oggiTime > fineTime);
+        // 2. Logica SOTTO: Entrati OGGI
+        if (x.orario_ingresso && dataIngressoString === oggiString) {
+            countEntratiOggi++;
+        }
 
-        if (dentro) countDentro++;
-        if (prenotatoOggi) countPrenotati++;
-        if (scaduto) countScaduti++;
+        // 3. Logica SOTTO: Prenotati in arrivo OGGI
+        if (x.stato === 'PRENOTATO' && inizioTime === oggiTime) {
+            countPrenotatiOggi++;
+        }
+
+        // 4. Logica SOTTO: Da verificare (dentro e mai usciti oltre la scadenza)
         const f = getFlags(x);
         if (f.daVerificare) countVerificare++;
+
+        // Vecchio controllo scaduti (Prenotati che non si sono presentati affatto)
+        if (x.stato === 'PRENOTATO' && oggiTime > fineTime) countScaduti++;
     });
     
     totaleScaduti = countScaduti;
     totaleVerificare = countVerificare;
     
-    let label = "";
-    let colore = "#334155";
-    let sfondo = "#f8fafc";
-
-    if (filtroPiantone === 'attivi') {
-        label = "📋 ATTIVI";
-        colore = "#2563eb";
-        sfondo = "#dbeafe";
-    }
-    else if (filtroPiantone === 'scaduti') {
-        label = "⏰ SCADUTI";
-        colore = "#dc2626";
-        sfondo = "#fee2e2";
-    }
-    else if (filtroPiantone === 'verificare') {
-        label = "🚨 DA VERIFICARE";
-        colore = "#ea580c";
-        sfondo = "#ffedd5";
-    }
-    else if (filtroPiantone === 'storico') {
-        label = "🕘 STORICO";
-        colore = "#475569";
-        sfondo = "#e2e8f0";
-    }
-    else {
-        label = "📑 TUTTI";
-        colore = "#7c3aed";
-        sfondo = "#ede9fe";
-    }
+    // --- Gestione Etichette Filtri ---
+    let label = ""; let colore = "#334155"; let sfondo = "#f8fafc";
+    if (filtroPiantone === 'attivi') { label = "📋 ATTIVI"; colore = "#2563eb"; sfondo = "#dbeafe"; }
+    else if (filtroPiantone === 'scaduti') { label = "⏰ SCADUTI"; colore = "#dc2626"; sfondo = "#fee2e2"; }
+    else if (filtroPiantone === 'verificare') { label = "🚨 DA VERIFICARE"; colore = "#ea580c"; sfondo = "#ffedd5"; }
+    else if (filtroPiantone === 'storico') { label = "🕘 STORICO"; colore = "#475569"; sfondo = "#e2e8f0"; }
+    else { label = "📑 TUTTI"; colore = "#7c3aed"; sfondo = "#ede9fe"; }
     
-   // ============================================================
-    // COLORE DINAMICO POSTI LIBERI (Arancione < 10, Rosso < 4)
-    // ============================================================
-    const postiLiberi = 90 - countDentro;
-    let colorePosti = "#1e293b"; // Colore scuro di default
-
-    if (postiLiberi < 4) {
-        colorePosti = "#dc2626"; // Rosso acceso
-    } else if (postiLiberi < 10) {
-        colorePosti = "#ea580c"; // Arancione scuro
-    }
-
-    const badge = document.getElementById('badge-contatori');
     const statoTabella = document.getElementById('stato-tabella');
-    
     if (statoTabella) {
         statoTabella.innerHTML = label;
         statoTabella.style.color = colore;
@@ -811,69 +783,58 @@ async function aggiornaVeicoli() {
         statoTabella.style.borderColor = colore;
     }
     
+    // --- Calcolo dinamico colori "Posti Liberi" ---
+    const postiLiberi = 90 - countDentro;
+    let colorePosti = "#1e293b";
+    if (postiLiberi < 4) { colorePosti = "#dc2626"; } 
+    else if (postiLiberi < 10) { colorePosti = "#ea580c"; }
+
+    // --- RENDER NUOVO BADGE CRUSCOTTO ---
+    const badge = document.getElementById('badge-contatori');
     badge.innerHTML = `
-    <div>
-        🚗 <b>Dentro:</b> ${countDentro}
-        &nbsp;|&nbsp;
-        📅 <b>Prenotati oggi:</b> ${countPrenotati}
-        &nbsp;|&nbsp;
-        <span style="color: ${colorePosti}; font-weight: normal;">
-            🅿️ <b>Liberi:</b> ${postiLiberi}
-        </span>
+    <div style="font-size: 16px; font-weight: bold; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 6px;">
+        🚧 CONTROLLO SBARRA &nbsp;&nbsp;|&nbsp;&nbsp;
+        <span style="color: ${colorePosti};">🅿️ Liberi: ${postiLiberi}</span> 
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <span style="color: #2563eb;">🚘 Dentro: ${countDentro}</span>
     </div>
 
-    <div style="
-        margin-top:6px;
-        font-size:15px;
-        font-weight:bold;
-    ">
-        🚨 <b>Da verificare:</b> ${countVerificare}
+    <div style="font-size: 14px; color: #475569;">
+        🚗 <b>Entrati oggi:</b> <span style="color:#1e293b; font-weight:bold;">${countEntratiOggi}</span>
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        📅 <b>Prenotati:</b> <span style="color:#1e293b; font-weight:bold;">${countPrenotatiOggi}</span>
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        🚨 <b>Da verificare:</b> <span style="color:${countVerificare > 0 ? '#ea580c' : '#475569'}; font-weight:bold;">${countVerificare}</span>
 
-        ${
-            countScaduti > 0
-            ? `
-            &nbsp;|&nbsp;
-            <span id="badge-scaduti">
+        ${countScaduti > 0 ? `
+            &nbsp;&nbsp;|&nbsp;&nbsp;
+            <span id="badge-scaduti" style="font-weight:bold;">
                 ⏰ <b>Scaduti:</b> ${countScaduti}
             </span>
-            `
-            : ''
-        }
+        ` : ''}
     </div>
     `;
 
     const elScaduti = document.getElementById('badge-scaduti');
-
     if (elScaduti && countScaduti > 0) {
         elScaduti.style.animation = 'blink 1s infinite';
         elScaduti.style.color = '#ef4444';
     }
 
+    // --- FILTRAGGIO E ORDINAMENTO TABELLA ---
     const valoreCercato = inputSearch?.value?.trim()?.toUpperCase() || "";
 
     const lista = dati.filter(x => {
-        if (valoreCercato !== "") {
-            return x.npass?.toUpperCase() === valoreCercato;
-        }
-
+        if (valoreCercato !== "") return x.npass?.toUpperCase() === valoreCercato;
         const f = getFlags(x);
-        
         const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
         if (dataInizioData) dataInizioData.setHours(0,0,0,0);
         const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
-        if (filtroPiantone === 'verificare')
-            return f.daVerificare;
-
-        if (filtroPiantone === 'scaduti')
-            return f.scaduto;
-
-        if (filtroPiantone === 'attivi')
-            return (f.entrato || (x.stato === 'PRENOTATO' && inizioTime === oggiTime) || f.daVerificare);
-
-        if (filtroPiantone === 'storico')
-            return f.storico;
-
+        if (filtroPiantone === 'verificare') return f.daVerificare;
+        if (filtroPiantone === 'scaduti') return f.scaduto;
+        if (filtroPiantone === 'attivi') return (f.entrato || (x.stato === 'PRENOTATO' && inizioTime === oggiTime) || f.daVerificare);
+        if (filtroPiantone === 'storico') return f.storico;
         return true;
     })
     .sort((a, b) => {
@@ -890,78 +851,47 @@ async function aggiornaVeicoli() {
                 if (f.storico) return 4;                    
                 return 5;
             };
-
-            const pesoA = getPriorita(a);
-            const pesoB = getPriorita(b);
-
-            if (pesoA !== pesoB) {
-                return pesoA - pesoB;
-            }
-            const idA = a.id || 0;
-            const idB = b.id || 0;
-            return idB - idA;
+            const pesoA = getPriorita(a); const pesoB = getPriorita(b);
+            if (pesoA !== pesoB) return pesoA - pesoB;
+            return (b.id || 0) - (a.id || 0);
         } 
         
         if (filtroPiantone === 'verificare') {
-            const dataA = a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0);
-            const dataB = b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0);
-            return dataA - dataB;
+            return (a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0)) - (b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0));
         }
-        else if (filtroPiantone === 'storico') {
-            const dataA = a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0);
-            const dataB = b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0);
-            return dataB - dataA;
+        if (filtroPiantone === 'storico') {
+            return (b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0)) - (a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0));
         }
-        else {
-            const passA = a.npass || "";
-            const passB = b.npass || "";
-            return passA.localeCompare(passB, undefined, { numeric: true, sensitivity: 'base' });
-        }
+        return (a.npass || "").localeCompare(b.npass || "", undefined, { numeric: true, sensitivity: 'base' });
     });
 
+    // Aggiornamento dinamico scritte di ricerca
     if (valoreCercato !== "" && lista.length > 0) {
-        const veicoloTrovato = lista[0]; 
-        const f = getFlags(veicoloTrovato);
-        
+        const veicoloTrovato = lista[0]; const f = getFlags(veicoloTrovato);
         const dataInizioData = veicoloTrovato.data_inizio ? new Date(veicoloTrovato.data_inizio) : null;
         if (dataInizioData) dataInizioData.setHours(0,0,0,0);
         const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
         
-        if (f.entrato || (veicoloTrovato.stato === 'PRENOTATO' && inizioTime === oggiTime)) {
-            label = "📋 ATTIVO (Trovato da Ricerca)";
-            colore = "#2563eb"; sfondo = "#dbeafe";
-        } else if (f.daVerificare) {
-            label = "🚨 DA VERIFICARE (Trovato da Ricerca)";
-            colore = "#ea580c"; sfondo = "#ffedd5";
-        } else if (f.scaduto) { 
-            label = "⏰ SCADUTO (Trovato da Ricerca)";
-            colore = "#dc2626"; sfondo = "#fee2e2";
-        } else if (f.storico) {
-            label = "🕘 STORICO (Trovato da Ricerca)";
-            colore = "#475569"; sfondo = "#e2e8f0";
+        if (f.entrato || (veicoloTrovato.stato === 'PRENOTATO' && inizioTime === oggiTime)) { label = "📋 ATTIVO (Trovato da Ricerca)"; colore = "#2563eb"; sfondo = "#dbeafe"; } 
+        else if (f.daVerificare) { label = "🚨 DA VERIFICARE (Trovato da Ricerca)"; colore = "#ea580c"; sfondo = "#ffedd5"; } 
+        else if (f.scaduto) { label = "⏰ SCADUTO (Trovato da Ricerca)"; colore = "#dc2626"; sfondo = "#fee2e2"; } 
+        else if (f.storico) { label = "🕘 STORICO (Trovato da Ricerca)"; colore = "#475569"; sfondo = "#e2e8f0"; }
+        
+        if (statoTabella) {
+            statoTabella.style.color = colore; statoTabella.style.background = sfondo;
+            statoTabella.style.borderColor = colore; statoTabella.innerHTML = label;
         }
     }
         
-    if (statoTabella) {
-        statoTabella.style.color = colore;
-        statoTabella.style.background = sfondo;
-        statoTabella.style.borderColor = colore;
-        statoTabella.innerHTML = label;
-    }
-    
-    // RENDER TABELLA
+    // --- INIEZIONE RIGHE IN TABELLA HTML ---
     document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
-
         const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
         const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
-
         const dataIng = ing ? ing.toLocaleDateString('it-IT') : '--';
         const oraIng = ing ? ing.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
         const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '';
         const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '';
-        
-        const evidenzia = x.npass === ultimoAggiornato;
-        const f = getFlags(x);
+        const evidenzia = x.npass === ultimoAggiornato; const f = getFlags(x);
         
         return `<tr style="
             ${f.scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
@@ -977,35 +907,20 @@ async function aggiornaVeicoli() {
             <td>${f.scaduto ? 'NON ENTRATO' : dataUsc}</td>
             <td style="font-weight:bold;">${f.scaduto ? '' : oraUsc}</td>
         </tr>`;
-        
-    }).join('') || `
-        <tr>
-            <td colspan="5" style="text-align:center; color:black; padding:16px;">
-                Nessun veicolo presente
-            </td>
-        </tr>
-    `;
+    }).join('') || `<tr><td colspan="5" style="text-align:center; color:black; padding:16px;">Nessun veicolo presente</td></tr>`;
 
-    // AGGANCIO EVENTI CORRETTO DOPO IL RENDER
+    // Aggancio eventi pulsanti lista
     document.querySelectorAll('.btn-pass').forEach(btn => {
         btn.addEventListener('click', async () => {
-            const pass = btn.dataset.pass;
-            const idRecord = btn.dataset.id; 
-            
+            const pass = btn.dataset.pass; const idRecord = btn.dataset.id; 
             if (inputSearch) inputSearch.value = pass;
-            
             await cercaPass(pass, idRecord);
-
-            setTimeout(() => {
-                document.getElementById('panel-piantone')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 100);
+            setTimeout(() => { document.getElementById('panel-piantone')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
         });
     });
 
     const btnFiltro = document.getElementById('btn-filtro');
-    if (btnFiltro) {
-        btnFiltro.innerText = "MOSTRA STATI";
-    }
+    if (btnFiltro) btnFiltro.innerText = "MOSTRA STATI";
 }
 
 let loadingAzione = false;
