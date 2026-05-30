@@ -584,7 +584,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
 
             document.getElementById('lab-periodo').style.textAlign = 'center';
             document.getElementById('lab-periodo').innerHTML = `
-                <div style="font-size: 13px; color: #64748b; font-weight: normal; margin-bottom: 6px;">
+                <div style="font-size: 15px; color: #64748b; font-weight: bold; margin-bottom: 6px;">
                     (Periodo: ${fmtData(currentPren.data_inizio)} - ${fmtData(currentPren.data_fine)})
                 </div>
             `;
@@ -593,7 +593,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
             if (oggiStr >= dataInizioStr) {
                 document.getElementById('reg-e').style.textAlign = 'center';
                 document.getElementById('reg-e').innerHTML = currentPren.orario_ingresso
-                    ? `<div style="font-size: 15px; font-weight: bold; color: #1e293b; margin-top: 4px;">
+                    ? `<div style="font-size: 10px; font-weight: bold; color: #64748b; margin-top: 4px;">
                         Registrato il ${new Date(currentPren.orario_ingresso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}
                        </div>`
                     : `<div style="font-size: 14px; color: #64748b;">Nessun ingresso registrato</div>`;
