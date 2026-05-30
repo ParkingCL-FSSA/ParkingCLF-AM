@@ -711,6 +711,7 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
   try {
     const r = await pool.query(`
       SELECT DISTINCT ON (UPPER(p.npass))
+        p.id,
         UPPER(p.npass) AS npass,
         r.ente,
         'PRENOTATO' AS stato,
@@ -721,7 +722,8 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
       ORDER BY UPPER(p.npass), p.data_inizio DESC, p.id DESC
     `);
 
-    const righeOrdinate = r.rows.sort((a, b) => new Date(a.data_inizio) - new Date(b.b.data_inizio));
+    // Corretto il bug b.b.data_inizio che faceva crashare il server
+    const righeOrdinate = r.rows.sort((a, b) => new Date(a.data_inizio) - new Date(b.data_inizio));
     res.json(righeOrdinate);
   } catch (e) {
     console.error(e);
