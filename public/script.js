@@ -237,15 +237,6 @@ async function doLogin() {
     }
 }
 
-// ✅ Nuova funzione per visualizzazione posti liberi totali al piantone
-async function aggiornaPostiLiberiPiantone() {
-    const res = await fetch(`/api/piantone/liberi?npass=${userPass}`);
-    const dati = await res.json();
-    document.getElementById('total-free-display').innerHTML =
-    `<b style="color:green">Liberi: ${dati.totaleLiberi}</b> 
-     | <b>Dentro: ${dati.dentro}</b>`;
-}
-
 function buildCal() {
     const grid = document.getElementById('cal-grid');
     grid.innerHTML = "";
@@ -704,6 +695,31 @@ function getFlags(x) {
     };
 }
 
+// ✅ Nuova funzione per visualizzazione posti liberi totali al piantone (CORRETTA)
+async function aggiornaPostiLiberiPiantone() {
+    // Chiamiamo l'endpoint veicoli-dentro che contiene i dati reali verificati dal DB
+    const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
+    const dati = await res.json();
+    
+    let dentroReali = 0;
+    dati.forEach(x => {
+        if (x.orario_ingresso && !x.orario_uscita) {
+            dentroReali++;
+        }
+    });
+    
+    const liberiReali = 90 - dentroReali;
+    
+    const display = document.getElementById('total-free-display');
+    if (display) {
+        display.innerHTML = `
+            <b style="color:#16a34a; font-size: 16px;">Liberi: ${liberiReali}</b> 
+            &nbsp;|&nbsp; 
+            <b style="color:#ea580c; font-size: 16px;">Dentro: ${dentroReali}</b>
+        `;
+    }
+}
+
 async function aggiornaVeicoli() {
 
     const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
@@ -714,6 +730,8 @@ async function aggiornaVeicoli() {
     oraSolareOggi.setHours(0, 0, 0, 0);
     const oggiTime = oraSolareOggi.getTime();
     const oggiString = oraSolareOggi.toISOString().split('T')[0];
+
+    const inputSearch = document.getElementById('search-p');
 
     // ==========================================
     // ⚠️ CRUCIALE: Inizializzazione pulita a 0
@@ -759,21 +777,28 @@ async function aggiornaVeicoli() {
     totaleVerificare = countVerificare;
     
     // ==========================================
-    // 🎯 RICALCOLO DELLE VARIABILI DI STATO
+    // 🎯 RICALCOLO DELLE VARIABILI DI STATO (90 - 55 = 35)
     // ==========================================
-    // Capienza totale = 90. Con 55 dentro, i posti liberi saranno esattamente 35.
     const postiLiberi = 90 - countDentro; 
 
-    // Ora iniettiamo i dati puliti sia nella card in alto che nel testo sotto, 
-    // senza modificare l'HTML o eliminare righe.
-    
-    // 1. Aggiornamento del Box Verde Grande in alto:
+    // --- AGGIORNAMENTO BOX CON COLORI RICHIESTI ---
+    const displaySotto = document.getElementById('total-free-display');
     const cardSbarraAlto = document.getElementById('card-sbarra-alto') || document.getElementById('status-parcheggio');
-    if (cardSbarraAlto) {
-        cardSbarraAlto.innerHTML = `Liberi: ${postiLiberi} &nbsp;|&nbsp; Dentro: ${countDentro}`;
+    
+    // Stringa HTML unificata con i colori corretti
+    const stringaColorata = `
+        <span style="color:#16a34a; font-weight:bold;">Liberi: ${postiLiberi}</span> 
+        &nbsp;|&nbsp; 
+        <span style="color:#ea580c; font-weight:bold;">Dentro: ${countDentro}</span>
+    `;
+
+    if (displaySotto) {
+        displaySotto.innerHTML = stringaColorata;
+    } else if (cardSbarraAlto) {
+        cardSbarraAlto.innerHTML = stringaColorata;
     }
 
-    // 2. Aggiornamento della stringa centrale (se presente nel tuo layout):
+    // Aggiornamento della eventuale stringa centrale (se presente nel layout):
     const stringaSbarraCentro = document.getElementById('testo-sbarra-centro');
     if (stringaSbarraCentro) {
         stringaSbarraCentro.innerHTML = `🚧 CONTROLLO SBARRA | 🅿️ Liberi: ${postiLiberi} | 🚘 Dentro: ${countDentro}`;
@@ -785,7 +810,7 @@ async function aggiornaVeicoli() {
     const badge = document.getElementById('badge-contatori');
     if (badge) {
         badge.innerHTML = `
-        <div style="font-size: 13px; color: #475569; padding: 4px 0; font-weight: 500;">
+        <div style="font-size: 13px; color: #475569; padding: 4px 0; font-weight: 500; text-align: center;">
             🚗 <b>Entrati oggi:</b> <span style="color:#1e293b; font-weight:bold;">${countEntratiOggi}</span>
             &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
             📅 <b>Prenotati:</b> <span style="color:#1e293b; font-weight:bold;">${countPrenotatiOggi}</span>
@@ -810,6 +835,9 @@ async function aggiornaVeicoli() {
 
     // --- FILTRAGGIO E ORDINAMENTO TABELLA ---
     const valoreCercato = inputSearch?.value?.trim()?.toUpperCase() || "";
+
+    // Recupero dinamico dell'etichetta dello stato tabella
+    const statoTabella = document.getElementById('stato-tabella');
 
     const lista = dati.filter(x => {
         if (valoreCercato !== "") return x.npass?.toUpperCase() === valoreCercato;
@@ -853,6 +881,7 @@ async function aggiornaVeicoli() {
     });
 
     if (valoreCercato !== "" && lista.length > 0) {
+        let label = ""; let colore = "#334155"; let sfondo = "#f8fafc";
         const veicoloTrovato = lista[0]; const f = getFlags(veicoloTrovato);
         const dataInizioData = veicoloTrovato.data_inizio ? new Date(veicoloTrovato.data_inizio) : null;
         if (dataInizioData) dataInizioData.setHours(0,0,0,0);
