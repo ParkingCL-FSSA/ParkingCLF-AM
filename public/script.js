@@ -1083,20 +1083,34 @@ async function caricaStorico() {
 let arriviVisible = false;
 
 async function mostraArriviOggi() {
+    // Controllo di sicurezza per garantire che arriviVisible esista e non mandi in crash lo script
+    if (typeof arriviVisible === 'undefined') {
+        window.arriviVisible = false;
+    } else {
+        window.arriviVisible = arriviVisible;
+    }
+
     const box = document.getElementById('box-arrivi-oggi');
     const btn = document.getElementById('btn-arrivi-oggi');
     const lista = document.getElementById('lista-arrivi-oggi');
     if (!box || !lista) return;
 
-    if (arriviVisible) {
+    if (window.arriviVisible) {
         box.classList.add('hidden');
-        arriviVisible = false;
+        window.arriviVisible = false;
+        if (typeof arriviVisible !== 'undefined') arriviVisible = false;
         btn.innerText = '📋 Arrivi di Oggi';
         return;
     }
 
     try {
         const res = await fetch('/api/piantone/arrivi-oggi');
+        
+        // Se il server risponde male (es. 404 o 500), intercettiamo l'errore prima del crash JSON
+        if (!res.ok) {
+            throw new Error(`Risposta server non valida: ${res.status}`);
+        }
+
         const dati = await res.json();
         lista.innerHTML = '';
 
@@ -1122,7 +1136,7 @@ async function mostraArriviOggi() {
             });
             lista.innerHTML = htmlRighe;
 
-            // Assegna il click automatico a tutti i bottoni dei pass appena generati
+            // Aggancio dei listener sui pass generati
             document.querySelectorAll('.btn-pass-diretto').forEach(b => {
                 b.addEventListener('click', async (e) => {
                     e.preventDefault();
@@ -1131,19 +1145,19 @@ async function mostraArriviOggi() {
                     const inputSearch = document.getElementById('search-p');
                     if (inputSearch) inputSearch.value = passClick;
                     
-                    // Richiama la tua funzione di ricerca nativa
+                    // Chiama la tua funzione nativa del file originale
                     await cercaPass(passClick, idClick);
                     
-                    // Porta la visualizzazione sul pannello del pass trovato
                     document.getElementById('panel-piantone')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 });
             });
         }
         box.classList.remove('hidden');
-        arriviVisible = true;
+        window.arriviVisible = true;
+        if (typeof arriviVisible !== 'undefined') arriviVisible = true;
         btn.innerText = '❌ Nascondi Arrivi di Oggi';
     } catch (err) {
-        console.error(err);
+        console.error("Errore dettagliato:", err);
         alert('Errore caricamento arrivi');
     }
 }
