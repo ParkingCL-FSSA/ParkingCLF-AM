@@ -695,27 +695,18 @@ function getFlags(x) {
     };
 }
 
-// ✅ Nuova funzione per visualizzazione posti liberi totali al piantone (CORRETTA)
+// ✅ Visualizzazione totale al piantone (Aggiornata per V1P)
 async function aggiornaPostiLiberiPiantone() {
-    // Chiamiamo l'endpoint veicoli-dentro che contiene i dati reali verificati dal DB
-    const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
+    const res = await fetch(`/api/piantone/liberi`);
     const dati = await res.json();
-    
-    let dentroReali = 0;
-    dati.forEach(x => {
-        if (x.orario_ingresso && !x.orario_uscita) {
-            dentroReali++;
-        }
-    });
-    
-    const liberiReali = 90 - dentroReali;
     
     const display = document.getElementById('total-free-display');
     if (display) {
         display.innerHTML = `
-            <b style="color:#16a34a; font-size: 16px;">Liberi: ${liberiReali}</b> 
+            <b style="color:#16a34a; font-size: 16px;">Liberi: ${dati.totaleLiberi}</b> 
             &nbsp;|&nbsp; 
-            <b style="color:#ea580c; font-size: 16px;">Dentro: ${dentroReali}</b>
+            <b style="color:#ea580c; font-size: 16px;">Dentro: ${dati.dentro}</b>
+            ${dati.listaV1p > 0 ? `&nbsp;|&nbsp; <b style="color:#2563eb; font-size: 16px;">Lista: ${dati.listaV1p}</b>` : ''}
         `;
     }
 }
@@ -734,16 +725,19 @@ async function aggiornaVeicoli() {
     const inputSearch = document.getElementById('search-p');
 
     // ==========================================
-    // ⚠️ CRUCIALE: Inizializzazione pulita a 0
+    // ⚠️ INIZIALIZZAZIONE PULITA DEI CONTATORI
     // ==========================================
-    let countDentro = 0; // Deve partire tassativamente da 0 ad ogni aggiornamento
-
+    let countDentro = 0; // Solo pass standard
+    let countListaV1p = 0; // Solo pass che iniziano con V1P
+    
     let countEntratiOggi = 0;
     let countPrenotatiOggi = 0;
     let countVerificare = 0;
     let countScaduti = 0; 
     
     dati.forEach(x => {
+        const passCorrente = (x.npass || '').toUpperCase().trim();
+
         // Conversione date del DB per i confronti temporali
         const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
         if (dataInizioData) dataInizioData.setHours(0,0,0,0);
@@ -753,15 +747,18 @@ async function aggiornaVeicoli() {
         if (dataFineData) dataFineData.setHours(0,0,0,0);
         const fineTime = dataFineData ? dataFineData.getTime() : 0;
 
-        // Estrazione data ingresso (se esiste) in formato stringa AAAA-MM-GG
         const dataIngressoString = x.orario_ingresso ? x.orario_ingresso.substring(0, 10) : '';
 
-        // 🎯 CONTEGGIO CORRETTO: Incrementa SOLO se il veicolo è entrato e non è ancora uscito
+        // 🎯 SEPARAZIONE CONTEGGIO: Se è dentro, verifichiamo se è V1P o standard
         if (x.orario_ingresso && !x.orario_uscita) {
-            countDentro++;
+            if (passCorrente.startsWith('V1P')) {
+                countListaV1p++; // Va in lista extra
+            } else {
+                countDentro++; // Va nel computo dei 90 standard
+            }
         }
 
-        // Altri contatori operativi delle info in basso
+        // Altri contatori operativi (escludiamo o includiamo a seconda se vuoi vederli nei badge in basso)
         if (x.orario_ingresso && dataIngressoString === oggiString) {
             countEntratiOggi++;
         }
@@ -776,34 +773,39 @@ async function aggiornaVeicoli() {
     totaleScaduti = countScaduti;
     totaleVerificare = countVerificare;
     
-    // ==========================================
-    // 🎯 RICALCOLO DELLE VARIABILI DI STATO (90 - 55 = 35)
-    // ==========================================
+    // Matematica corretta basata solo sui non-V1P (Es: 90 - 52 = 38)
     const postiLiberi = 90 - countDentro; 
 
-    // --- AGGIORNAMENTO BOX CON COLORI RICHIESTI ---
-    const displaySotto = document.getElementById('total-free-display');
-    const cardSbarraAlto = document.getElementById('card-sbarra-alto') || document.getElementById('status-parcheggio');
-    
-    // Stringa HTML unificata con i colori corretti
-    const stringaColorata = `
+    // --- COSTRUZIONE DELLA STRINGA DINAMICA CON ELEMENTO LISTA SE PRESENTE ---
+    let stringaColorata = `
         <span style="color:#16a34a; font-weight:bold;">Liberi: ${postiLiberi}</span> 
         &nbsp;|&nbsp; 
         <span style="color:#ea580c; font-weight:bold;">Dentro: ${countDentro}</span>
     `;
+    if (countListaV1p > 0) {
+        stringaColorata += ` &nbsp;|&nbsp; <span style="color:#2563eb; font-weight:bold;">Lista: ${countListaV1p}</span>`;
+    }
 
+    // 1. Iniezione nel Box/Card principale
+    const displaySotto = document.getElementById('total-free-display');
+    const cardSbarraAlto = document.getElementById('card-sbarra-alto') || document.getElementById('status-parcheggio');
+    
     if (displaySotto) {
         displaySotto.innerHTML = stringaColorata;
     } else if (cardSbarraAlto) {
         cardSbarraAlto.innerHTML = stringaColorata;
     }
 
-    // Aggiornamento della eventuale stringa centrale (se presente nel layout):
+    // 2. Iniezione nella stringa centrale "CONTROLLO SBARRA 🚧"
     const stringaSbarraCentro = document.getElementById('testo-sbarra-centro');
     if (stringaSbarraCentro) {
-        stringaSbarraCentro.innerHTML = `🚧 CONTROLLO SBARRA | 🅿️ Liberi: ${postiLiberi} | 🚘 Dentro: ${countDentro}`;
+        let testoCentro = `🚧 CONTROLLO SBARRA | 🅿️ Liberi: ${postiLiberi} | 🚘 Dentro: ${countDentro}`;
+        if (countListaV1p > 0) {
+            testoCentro += ` | 🔹 Lista: ${countListaV1p}`;
+        }
+        stringaSbarraCentro.innerHTML = testoCentro;
     }
-
+    
     // ============================================================
     // 2. INIEZIONE BADGE IN BASSO (SOTTO BOTTONE ARRIVI)
     // ============================================================
