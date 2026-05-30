@@ -512,7 +512,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
             currentPren = data.prenotazione;
             
             if (!currentPren) {
-                alert("Prenotazione non trovata");
+                alert("Prenotazione non trouvata");
                 return;
             }
             
@@ -628,20 +628,23 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     : "";
             }
 
-            // 🚀 SCAMBIO FILTRI E BANNER DINAMICI IN TABELLA
+            // 🚀 SCAMBIO FILTRI E BANNER DINAMICI IN TABELLA (Basato sul record cliccato)
             const bannerCerca = document.getElementById('banner-ricerca') || document.querySelector('.badge-cerca-stato'); 
-            const tabellaCorpo = document.getElementById('tabella-veicoli-corpo') || document.querySelector('#tabella-veicoli tbody');
+            const tabularCorpo = document.getElementById('tabella-veicoli-corpo') || document.querySelector('#tabella-veicoli tbody');
+
+            // Questa è la chiave: controlliamo lo stato esatto del record correntemente aperto nel pannello
+            const isScadutoCorrente = (currentPren.stato === 'SCADUTO');
 
             if (bannerCerca) {
-                if (currentPren.stato === 'SCADUTO') {
-                    bannerCerca.className = "banner-scaduto"; // Imposta la tua classe rossa per gli scaduti
-                    bannerCerca.style.background = '#ffeeef'; // Sfondo rosa/rosso chiaro di backup manuale
+                if (isScadutoCorrente) {
+                    bannerCerca.className = "banner-scaduto"; 
+                    bannerCerca.style.background = '#ffeeef'; 
                     bannerCerca.style.color = '#ef4444';
                     bannerCerca.style.border = '1px solid #fca5a5';
                     bannerCerca.innerHTML = `⏰ SCADUTO (Trovato da Ricerca)`;
                 } else {
-                    bannerCerca.className = "banner-attivo"; // Imposta la tua classe azzurra per gli attivi
-                    bannerCerca.style.background = '#eff6ff'; // Sfondo azzurro chiaro di backup manuale
+                    bannerCerca.className = "banner-attivo"; 
+                    bannerCerca.style.background = '#eff6ff'; 
                     bannerCerca.style.color = '#3b82f6';
                     bannerCerca.style.border = '1px solid #93c5fd';
                     bannerCerca.innerHTML = `📋 ATTIVO (Trovato da Ricerca)`;
@@ -649,25 +652,28 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 bannerCerca.classList.remove('hidden');
             }
 
-            // Filtra la tabella al volo mostrando solo le righe coerenti con lo stato aperto
-            if (data.storico && tabellaCorpo) {
+            // 🚀 FILTRO ESCLUSIVO: Se clicchi sullo scaduto mostra solo lo scaduto, se clicchi sull'attivo mostra solo l'attivo
+            if (data.storico && tabularCorpo) {
                 let righeDaMostrare = [];
-                if (currentPren.stato === 'SCADUTO') {
+                
+                if (isScadutoCorrente) {
+                    // Mostra esclusivamente i record SCADUTI relativi a questo pass
                     righeDaMostrare = data.storico.filter(x => x.stato === 'SCADUTO');
                 } else {
+                    // Mostra esclusivamente i record ATTIVI relativi a questo pass
                     righeDaMostrare = data.storico.filter(x => ['PRENOTATO', 'ENTRATO', 'DA_VERIFICARE'].includes(x.stato));
                 }
                 
-                // Aggiorna l'HTML della tabella usando la tua funzione globale che disegna le righe (es: renderTabella o generaRiga)
+                // Aggiorna l'HTML della tabella richiamando la tua funzione di rendering
                 if (typeof renderTabella === "function") {
                     renderTabella(righeDaMostrare);
                 } else if (typeof generaRigaTabella === "function") {
-                    tabellaCorpo.innerHTML = righeDaMostrare.map(x => generaRigaTabella(x)).join('');
+                    tabularCorpo.innerHTML = righeDaMostrare.map(x => generaRigaTabella(x)).join('');
                 }
             }
 
         } else {
-            alert("Nessuna prenotazione trouvata per questo PASS.");
+            alert("Nessuna prenotazione trovata per questo PASS.");
             document.getElementById('panel-piantone').classList.add('hidden');
         }
 
