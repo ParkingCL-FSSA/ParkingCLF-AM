@@ -715,12 +715,11 @@ async function aggiornaVeicoli() {
     const oggiTime = oraSolareOggi.getTime();
     const oggiString = oraSolareOggi.toISOString().split('T')[0];
 
-    const inputSearch = document.getElementById('search-p');
+    // ==========================================
+    // ⚠️ CRUCIALE: Inizializzazione pulita a 0
+    // ==========================================
+    let countDentro = 0; // Deve partire tassativamente da 0 ad ogni aggiornamento
 
-    // Contatori SOPRA (Stato Reale del Parcheggio)
-    let countDentro = 0;
-
-    // Contatori SOTTO (Operativi del Turno di Oggi)
     let countEntratiOggi = 0;
     let countPrenotatiOggi = 0;
     let countVerificare = 0;
@@ -739,12 +738,12 @@ async function aggiornaVeicoli() {
         // Estrazione data ingresso (se esiste) in formato stringa AAAA-MM-GG
         const dataIngressoString = x.orario_ingresso ? x.orario_ingresso.substring(0, 10) : '';
 
-        // 🎯 LOGICA SOPRA: Solo chi ha orario_ingresso e NON ha orario_uscita (Uguale alla query SQL)
+        // 🎯 CONTEGGIO CORRETTO: Incrementa SOLO se il veicolo è entrato e non è ancora uscito
         if (x.orario_ingresso && !x.orario_uscita) {
             countDentro++;
         }
 
-        // 🎯 LOGICA SOTTO: Situazione operativa turno oggi
+        // Altri contatori operativi delle info in basso
         if (x.orario_ingresso && dataIngressoString === oggiString) {
             countEntratiOggi++;
         }
@@ -759,41 +758,25 @@ async function aggiornaVeicoli() {
     totaleScaduti = countScaduti;
     totaleVerificare = countVerificare;
     
-    // --- Gestione Etichette Filtri Tabella ---
-    let label = ""; let colore = "#334155"; let sfondo = "#f8fafc";
-    if (filtroPiantone === 'attivi') { label = "📋 ATTIVI"; colore = "#2563eb"; sfondo = "#dbeafe"; }
-    else if (filtroPiantone === 'scaduti') { label = "⏰ SCADUTI"; colore = "#dc2626"; sfondo = "#fee2e2"; }
-    else if (filtroPiantone === 'verificare') { label = "🚨 DA VERIFICARE"; colore = "#ea580c"; sfondo = "#ffedd5"; }
-    else if (filtroPiantone === 'storico') { label = "🕘 STORICO"; colore = "#475569"; sfondo = "#e2e8f0"; }
-    else { label = "📑 TUTTI"; colore = "#7c3aed"; sfondo = "#ede9fe"; }
-    
-    const statoTabella = document.getElementById('stato-tabella');
-    if (statoTabella) {
-        statoTabella.innerHTML = label;
-        statoTabella.style.color = colore;
-        statoTabella.style.background = sfondo;
-        statoTabella.style.borderColor = colore;
-    }
-    
-    // Calcolo posti liberi residui
-    const postiLiberi = 90 - countDentro;
+    // ==========================================
+    // 🎯 RICALCOLO DELLE VARIABILI DI STATO
+    // ==========================================
+    // Capienza totale = 90. Con 55 dentro, i posti liberi saranno esattamente 35.
+    const postiLiberi = 90 - countDentro; 
 
-    // ============================================================
-    // 1. INIEZIONE CARD IN ALTO (COLORI: LIBERI VERDE | DENTRO ARANCIONE)
-    // ============================================================
-    const cardSbarraAlto = document.getElementById('card-sbarra-alto'); 
+    // Ora iniettiamo i dati puliti sia nella card in alto che nel testo sotto, 
+    // senza modificare l'HTML o eliminare righe.
+    
+    // 1. Aggiornamento del Box Verde Grande in alto:
+    const cardSbarraAlto = document.getElementById('card-sbarra-alto') || document.getElementById('status-parcheggio');
     if (cardSbarraAlto) {
-        cardSbarraAlto.style.background = "#f0fdf4"; // Sfondo verde chiarissimo e pulito
-        cardSbarraAlto.style.borderColor = "#bbf7d0";
-        cardSbarraAlto.style.display = "flex";
-        cardSbarraAlto.style.justifyContent = "center";
-        cardSbarraAlto.style.alignItems = "center";
-        
-        cardSbarraAlto.innerHTML = `
-            <span style="color: #16a34a; font-weight: bold; font-size: 16px;">Liberi: ${postiLiberi}</span> 
-            &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
-            <span style="color: #ea580c; font-weight: bold; font-size: 16px;">Dentro: ${countDentro}</span>
-        `;
+        cardSbarraAlto.innerHTML = `Liberi: ${postiLiberi} &nbsp;|&nbsp; Dentro: ${countDentro}`;
+    }
+
+    // 2. Aggiornamento della stringa centrale (se presente nel tuo layout):
+    const stringaSbarraCentro = document.getElementById('testo-sbarra-centro');
+    if (stringaSbarraCentro) {
+        stringaSbarraCentro.innerHTML = `🚧 CONTROLLO SBARRA | 🅿️ Liberi: ${postiLiberi} | 🚘 Dentro: ${countDentro}`;
     }
 
     // ============================================================
