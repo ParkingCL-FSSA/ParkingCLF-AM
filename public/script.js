@@ -2,18 +2,14 @@ let userPass = ""; let selectedDays = [];
 let deferredPrompt; let currentPren = null;
 let filtroPiantone = 'verificare'; let totaleScaduti = 0;
 let ultimoAggiornato = null;let totaleVerificare = 0;
-let arriviVisible = false; // ◄ REGISTRATA CORRETTAMENTE QUI PER EVITARE BLOCCHI
-
-// attivi = dentro (default)
-// scaduti = solo scaduti
-// tutti = tutto
+let arriviVisible = false;
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     const btnInstalla = document.getElementById('btnInstalla');
     if(btnInstalla) {
-        btnInstalla.style.display = 'block'; // Mostra il tasto solo se installabile
+        btnInstalla.style.display = 'block';
         btnInstalla.addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
@@ -23,18 +19,15 @@ window.addEventListener('beforeinstallprompt', (e) => {
         });
     }
 });
-// Quando la pagina si carica...
+
 window.onload = () => {
     const urlParams = new URLSearchParams(window.location.search);
-    
-    // Se l'utente è arrivato tramite il QR code con mode=install
     if (urlParams.get('mode') === 'install') {
-        // Aspettiamo un secondo e poi mostriamo un avviso o evidenziamo il tasto installa
         setTimeout(() => {
             const btn = document.getElementById('btnInstalla');
             if (btn) {
-                btn.style.border = "4px solid #3b82f6"; // Lo rendiamo più visibile
-                alert("Benvenuto! Clicca sul tasto bianco e blu 'INSTALLA APP' per salvare l'applicazione sulla schermata home del tuo telefono.");
+                btn.style.border = "4px solid #3b82f6";
+                alert("Benvenuto! Clicca sul tasto 'INSTALLA APP' per salvare l'applicazione sulla schermata home del tuo telefono.");
             }
         }, 1000);
     }
@@ -43,8 +36,8 @@ window.onload = () => {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js')
-      .then(reg => console.log('Service Worker registrato con successo', reg))
-      .catch(err => console.error('Errore registrazione Service Worker', err));
+      .then(reg => console.log('Service Worker registrato', reg))
+      .catch(err => console.error('Errore SW', err));
   });
 }
 
@@ -73,7 +66,6 @@ document.getElementById('btn-login')?.addEventListener('click', async () => {
                 document.getElementById('view-piantone').classList.remove('hidden');
                 document.querySelector('.card').classList.add('admin-wide');
                 await aggiornaVeicoli();
-                // Avvia polling ogni 7 secondi per il piantone
                 setInterval(aggiornaVeicoli, 7000);
             } else {
                 document.getElementById('view-user').classList.remove('hidden');
@@ -96,8 +88,6 @@ function generaCalendario(disponibili, prenotati, scaduti, verificare) {
     grid.innerHTML = '';
     selectedDays = [];
 
-    disponiblesGlobal = disponibili; 
-
     disponibili.forEach(g => {
         const div = document.createElement('div');
         div.className = 'day-slot';
@@ -105,7 +95,6 @@ function generaCalendario(disponibili, prenotati, scaduti, verificare) {
         let dFmt = fmtData(g.data);
         div.innerHTML = `<strong>${dFmt}</strong><br><small style="color:var(--green)">Libre: ${g.posti}</small>`;
 
-        // Se i posti sono <= 0, disabilita lo slot rendendolo grigio e non cliccabile
         if (g.posti <= 0) {
             div.style.background = '#f1f5f9';
             div.style.color = '#94a3b8';
@@ -115,28 +104,26 @@ function generaCalendario(disponibili, prenotati, scaduti, verificare) {
             return; 
         }
 
-        // Controllo se il giorno è già prenotato attivamente dall'utente
         const giaPrenotato = prenotati.some(p => p.split('T')[0] === g.data.split('T')[0]);
         const giaScaduto = scaduti.some(s => s.split('T')[0] === g.data.split('T')[0]);
         const giaVerificare = verificare.some(v => v.split('T')[0] === g.data.split('T')[0]);
 
         if (giaPrenotato) {
-            div.style.background = '#bbf7d0'; // Verde chiaro
+            div.style.background = '#bbf7d0';
             div.style.color = '#166534';
             div.style.cursor = 'not-allowed';
             div.innerHTML = `<strong>${dFmt}</strong><br><small style="font-weight:bold;">PRENOTATO</small>`;
         } else if (giaVerificare) {
-            div.style.background = '#fed7aa'; // Arancione chiaro per DA_VERIFICARE
+            div.style.background = '#fed7aa';
             div.style.color = '#9a3412';
             div.style.cursor = 'not-allowed';
             div.innerHTML = `<strong>${dFmt}</strong><br><small style="font-weight:bold;">VERIFICA</small>`;
         } else if (giaScaduto) {
-            div.style.background = '#fee2e2'; // Rosso chiaro per SCADUTO
+            div.style.background = '#fee2e2';
             div.style.color = '#991b1b';
             div.style.cursor = 'not-allowed';
             div.innerHTML = `<strong>${dFmt}</strong><br><small style="font-weight:bold;">SCADUTO</small>`;
         } else {
-            // Giorno selezionabile standard
             div.onclick = () => toggleGiorno(g.data, div);
         }
 
@@ -155,13 +142,10 @@ function toggleGiorno(dateStr, element) {
     }
 }
 
-// RESET SELEZIONE GIORNI USER
 document.getElementById('btn-reset-days')?.addEventListener('click', () => {
-    // Rimuove la classe 'selected' da tutti i quadratini visibili
     document.querySelectorAll('.day-slot.selected').forEach(el => {
         el.classList.remove('selected');
     });
-    // Svuota l'array dei giorni selezionati
     selectedDays = [];
 });
 
@@ -171,29 +155,21 @@ document.getElementById('btn-prenota')?.addEventListener('click', async () => {
         return alert("Devi selezionare un periodo continuo di minimo 2 giorni e massimo 15 giorni!");
     }
     
-    // ORDINAMENTO DATE SELEZIONATE
     selectedDays.sort();
-    
-    // VERIFICA CONTINUITÀ DEL PERIODO SELEZIONATO
     for (let i = 0; i < selectedDays.length - 1; i++) {
         const d1 = new Date(selectedDays[i]);
         const d2 = new Date(selectedDays[i+1]);
-        const diffTime = Math.abs(d2 - d1);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
+        const diffDays = Math.ceil(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24));
         if (diffDays > 1) {
-            return alert("ATTENZIONE: I giorni selezionati devono essere consecutivi (senza interruzioni o 'buchi' nel mezzo)!");
+            return alert("ATTENZIONE: I giorni selezionati devono essere consecutivi!");
         }
     }
 
     const email = document.getElementById('u-email').value.trim();
     if (!email) return alert("Inserisci la tua email per ricevere il PASS!");
 
-    // Validazione formale email strutturata
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        return alert("Inserisci un indirizzo email valido!");
-    }
+    if (!emailRegex.test(email)) return alert("Inserisci un indirizzo email valido!");
 
     try {
         const res = await fetch('/api/prenota', {
@@ -223,7 +199,7 @@ document.getElementById('btn-prenota')?.addEventListener('click', async () => {
     }
 });
 
-// DIALOG COMMENTI / SUGGERIMENTI UTENTE
+// DIALOG COMMENTI
 document.getElementById('btn-invia-nota')?.addEventListener('click', async () => {
     const nota = document.getElementById('u-note').value.trim();
     if (!nota) return alert("Scrivi un commento prima di inviare!");
@@ -236,8 +212,8 @@ document.getElementById('btn-invia-nota')?.addEventListener('click', async () =>
         });
         const data = await res.json();
         if (data.success) {
-            alert("Grazie! Il tuo suggerimento è stato inviato all'amministratore del sistema.");
-            document.getElementById('u-note').value = ''; // svuota area di testo
+            alert("Grazie! Il tuo suggerimento è stato inviato.");
+            document.getElementById('u-note').value = '';
         } else {
             alert("Errore durante l'invio della nota.");
         }
@@ -267,7 +243,6 @@ document.getElementById('btn-mie')?.addEventListener('click', async () => {
         data.lungaSosta.forEach(p => {
             const div = document.createElement('div');
             div.style = "background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-bottom:10px; text-align:left; font-size:13px; position:relative;";
-            
             let badgeCol = p.stato === 'PRENOTATO' ? 'var(--orange)' : p.stato === 'ENTRATO' ? 'var(--green)' : 'var(--gray)';
             
             div.innerHTML = `
@@ -276,7 +251,6 @@ document.getElementById('btn-mie')?.addEventListener('click', async () => {
                 <div><strong>Stato:</strong> <span style="color:${badgeCol}; font-weight:bold;">${p.stato}</span></div>
             `;
 
-            // Mostra il pulsante di cancellazione solo se lo stato è ancora 'PRENOTATO' o 'DA_VERIFICARE' o 'SCADUTO' (Se mai entrato)
             if (p.stato === 'PRENOTATO' || p.stato === 'DA_VERIFICARE' || p.stato === 'SCADUTO') {
                 const btnCanc = document.createElement('button');
                 btnCanc.innerText = "❌ CANCELLA";
@@ -285,10 +259,8 @@ document.getElementById('btn-mie')?.addEventListener('click', async () => {
                 btnCanc.onclick = () => cancellaPrenotazione(p.id);
                 div.appendChild(btnCanc);
             }
-
             cont.appendChild(div);
         });
-
     } catch (err) {
         console.error(err);
         alert("Errore recupero prenotazioni");
@@ -296,8 +268,7 @@ document.getElementById('btn-mie')?.addEventListener('click', async () => {
 });
 
 async function cancellaPrenotazione(id) {
-    if (!confirm("Sei sicuro di voler cancellare questa prenotazione? Il posto verrà liberato immediatamente.")) return;
-
+    if (!confirm("Sei sicuro di voler cancellare questa prenotazione?")) return;
     try {
         const res = await fetch('/api/user/cancella', {
             method: 'POST',
@@ -307,7 +278,7 @@ async function cancellaPrenotazione(id) {
         const data = await res.json();
         if (data.success) {
             alert("Prenotazione cancellata con successo.");
-            document.getElementById('btn-mie').click(); // Rinfresca la lista simulando click
+            document.getElementById('btn-mie').click();
         } else {
             alert(data.msg || "Impossibile cancellare la prenotazione.");
         }
@@ -322,15 +293,11 @@ document.getElementById('btn-back-user')?.addEventListener('click', () => {
     document.getElementById('view-user').classList.remove('hidden');
 });
 
-// LOGOUT UTENTE STANDARD
 document.getElementById('btn-logout-user')?.addEventListener('click', () => {
     location.reload();
 });
 
-// ----------------------------------------------------
-// PIANTONE & FUNZIONI DI FILTRAGGIO AVANZATE
-// ----------------------------------------------------
-
+// PIANTONE
 async function cercaPass(passManuale = null, idRecord = null) {
     const input = document.getElementById('search-p');
     document.getElementById('box-verifica')?.classList.add('hidden');
@@ -342,9 +309,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
 
     try {
         let url = `/api/piantone/cerca/${encodeURIComponent(p)}?auth=${userPass}`;
-        if (idRecord) {
-            url += `&id=${idRecord}`;
-        }
+        if (idRecord) url += `&id=${idRecord}`;
 
         const res = await fetch(url);
         const data = await res.json();
@@ -366,13 +331,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
 
         if (data.trovato) {
             currentPren = data.prenotazione;
-            if (!currentPren) {
-                alert("Prenotazione non trovata");
-                return;
-            }
-            
-            btnIngresso.disabled = true;
-            btnUscita.disabled = true;
+            if (!currentPren) return alert("Prenotazione non trovata");
             
             const oggiStr = new Date().toISOString().split('T')[0];
             const dataInizioStr = currentPren.data_inizio.split('T')[0];
@@ -396,7 +355,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 btnUscita.style.display = 'inline-block';
                 btnUscita.style.background = '#ea580c';
                 btnUscita.innerText = 'VERIFICA';
-                boxVerifica.classList.add('hidden');
+                if (boxVerifica) boxVerifica.classList.remove('hidden');
             }
             else if (currentPren.stato === 'SCADUTO') {
                 if (!currentPren.orario_ingresso) {
@@ -423,32 +382,28 @@ async function cercaPass(passManuale = null, idRecord = null) {
 
             document.getElementById('panel-piantone').classList.remove('hidden');
 
-            document.getElementById('lab-pass').style.textAlign = 'center';
             document.getElementById('lab-pass').innerHTML = `
-                <div style="font-size: 18px; font-weight: bold; margin-bottom: 2px;">PASS: ${currentPren.npass}</div>
-                <div style="font-size: 13px; color: #64748b; margin-bottom: 2px; font-weight: normal;">(Prenotazione: ${currentPren.id})</div>
+                <div style="font-size: 18px; font-weight: bold; text-align:center;">PASS: ${currentPren.npass}</div>
+                <div style="font-size: 13px; color: #64748b; text-align:center;">(Prenotazione: ${currentPren.id})</div>
             `;
 
-            document.getElementById('lab-periodo').style.textAlign = 'center';
             document.getElementById('lab-periodo').innerHTML = `
-                <div style="font-size: 13px; color: #64748b; font-weight: normal; margin-bottom: 6px;">
+                <div style="font-size: 13px; color: #64748b; text-align:center; margin-bottom: 6px;">
                     (Periodo: ${fmtData(currentPren.data_inizio)} - ${fmtData(currentPren.data_fine)})
                 </div>
             `;
         
             if (oggiStr >= dataInizioStr && currentPren.stato !== 'SCADUTO') {
-                document.getElementById('reg-e').style.textAlign = 'center';
                 document.getElementById('reg-e').innerHTML = currentPren.orario_ingresso
-                    ? `<div style="font-size: 15px; font-weight: bold; color: #1e293b; margin-top: 4px;">
+                    ? `<div style="font-size: 15px; font-weight: bold; color: #1e293b; text-align:center; margin-top: 4px;">
                         Registrato il ${new Date(currentPren.orario_ingresso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}
                        </div>`
-                    : `<div style="font-size: 14px; color: #64748b;">Nessun ingresso registrato</div>`;
+                    : `<div style="font-size: 14px; color: #64748b; text-align:center;">Nessun ingresso registrato</div>`;
             }
 
             if (currentPren.stato !== 'SCADUTO') {
-                document.getElementById('reg-u').style.textAlign = 'center';
                 document.getElementById('reg-u').innerHTML = currentPren.orario_uscita
-                    ? `<div style="font-size: 15px; font-weight: bold; color: #1e293b; margin-top: 4px;">
+                    ? `<div style="font-size: 15px; font-weight: bold; color: #1e293b; text-align:center; margin-top: 4px;">
                         Registrato il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}
                        </div>`
                     : "";
@@ -460,45 +415,30 @@ async function cercaPass(passManuale = null, idRecord = null) {
 
             if (bannerCerca) {
                 if (isScadutoCorrente) {
-                    bannerCerca.style.background = '#ffeeef'; 
-                    bannerCerca.style.color = '#ef4444';
-                    bannerCerca.style.borderColor = '#fca5a5';
+                    bannerCerca.style.background = '#ffeeef'; bannerCerca.style.color = '#ef4444'; bannerCerca.style.borderColor = '#fca5a5';
                     bannerCerca.innerHTML = `⏰ SCADUTO (Trovato da Ricerca)`;
                 } else {
-                    bannerCerca.style.background = '#eff6ff'; 
-                    bannerCerca.style.color = '#3b82f6';
-                    bannerCerca.style.borderColor = '#93c5fd';
+                    bannerCerca.style.background = '#eff6ff'; bannerCerca.style.color = '#3b82f6'; bannerCerca.style.borderColor = '#93c5fd';
                     bannerCerca.innerHTML = `📋 ATTIVO (Trovato da Ricerca)`;
                 }
             }
 
             if (data.storico && tabellaCorpo) {
-                let righeDaMostrare = [];
-                if (isScadutoCorrente) {
-                    righeDaMostrare = data.storico.filter(x => ['PRENOTATO', 'ENTRATO', 'DA_VERIFICARE'].includes(x.stato));
-                } else {
-                    righeDaMostrare = data.storico.filter(x => x.stato === 'SCADUTO');
-                }
-                
-                if (typeof renderTabella === "function") {
-                    renderTabella(righeDaMostrare);
-                } else {
-                    tabellaCorpo.innerHTML = righeDaMostrare.map(x => generaRigaTabella(x)).join('');
-                }
+                let righeDaMostrare = isScadutoCorrente 
+                    ? data.storico.filter(x => ['PRENOTATO', 'ENTRATO', 'DA_VERIFICARE'].includes(x.stato))
+                    : data.storico.filter(x => x.stato === 'SCADUTO');
+                tabellaCorpo.innerHTML = righeDaMostrare.map(x => generaRigaTabella(x)).join('');
             }
-
         } else {
             alert("Nessuna prenotazione trovata per questo PASS.");
             document.getElementById('panel-piantone').classList.add('hidden');
         }
-
     } catch (err) {
-        console.error("ERRORE CERCA PASS:", err);
+        console.error(err);
         alert("Errore ricerca PASS");
     }
 }
 
-// TOGGLE FILTRO STATI TABELLA PRINCIPALE PIANTONE
 function toggleScaduti() {
     const btn = document.getElementById('btn-filtro');
     const label = document.getElementById('stato-tabella');
@@ -507,41 +447,30 @@ function toggleScaduti() {
         filtroPiantone = 'attivi';
         btn.innerText = 'MOSTRA SCADUTI';
         label.innerText = '📋 ATTIVI DENTRO';
-        label.style.borderColor = 'var(--green)';
-        label.style.background = '#f0fdf4';
-        label.style.color = '#166534';
+        label.style.borderColor = 'var(--green)'; label.style.background = '#f0fdf4'; label.style.color = '#166534';
     } else if (filtroPiantone === 'attivi') {
         filtroPiantone = 'scaduti';
         btn.innerText = 'MOSTRA DA VERIFICARE';
         label.innerText = '⏰ SOLO SCADUTI / MAI ENTRATI';
-        label.style.borderColor = 'var(--red)';
-        label.style.background = '#fef2f2';
-        label.style.color = '#991b1b';
+        label.style.borderColor = 'var(--red)'; label.style.background = '#fef2f2'; label.style.color = '#991b1b';
     } else {
         filtroPiantone = 'verificare';
         btn.innerText = 'MOSTRA ATTIVI DENTRO';
         label.innerText = '⚠️ DA VERIFICARE / RITARDI';
-        label.style.borderColor = 'var(--orange)';
-        label.style.background = '#fff7ed';
-        label.style.color = '#c2410c';
+        label.style.borderColor = 'var(--orange)'; label.style.background = '#fff7ed'; label.style.color = '#c2410c';
     }
     aggiornaVeicoli();
 }
 
-// AGGIORNA TABELLA VEICOLI E BADGE CONTATORI PIANTONE
 async function aggiornaVeicoli() {
     try {
         const queryPass = document.getElementById('search-p').value.trim().toUpperCase();
-        
         let url = `/api/piantone/veicoli?filtro=${filtroPiantone}&auth=${userPass}`;
-        if (queryPass) {
-            url += `&searchPass=${encodeURIComponent(queryPass)}`;
-        }
+        if (queryPass) url += `&searchPass=${encodeURIComponent(queryPass)}`;
 
         const res = await fetch(url);
         const data = await res.json();
 
-        // Aggiorna contatore posti liberi in alto
         const dispDisplay = document.getElementById('total-free-display');
         if(dispDisplay && data.postiLiberiOggi !== undefined) {
              dispDisplay.innerHTML = `Posti Liberi Oggi: <span style="font-size:16px; font-weight:bold; color:var(--blue);">${data.postiLiberiOggi}</span>`;
@@ -550,7 +479,6 @@ async function aggiornaVeicoli() {
         totaleScaduti = data.totaleScaduti || 0;
         totaleVerificare = data.totaleVerificare || 0;
 
-        // Renderizza i contatori stringa icone sotto i pulsanti principali
         const badgeContatori = document.getElementById('badge-contatori');
         if (badgeContatori) {
             badgeContatori.innerHTML = `
@@ -563,7 +491,6 @@ async function aggiornaVeicoli() {
             `;
         }
 
-        // Popola corpo tabella veicoli principale
         const tbody = document.getElementById('lista-veicoli');
         if (!tbody) return;
         tbody.innerHTML = '';
@@ -573,20 +500,14 @@ async function aggiornaVeicoli() {
             return;
         }
 
-        data.veicoli.forEach(v => {
-            tbody.innerHTML += generaRigaTabella(v);
-        });
-
+        data.veicoli.forEach(v => { tbody.innerHTML += generaRigaTabella(v); });
     } catch (err) {
-        console.error("Errore aggiornamento tabella veicoli:", err);
+        console.error(err);
     }
 }
 
-// GENERATORE CODICE HTML RIGHE TABELLA VEICOLI
 function generaRigaTabella(v) {
-    let stileStato = '';
-    let notaRitardo = '';
-
+    let stileStato = ''; let notaRitardo = '';
     if (v.stato === 'DA_VERIFICARE') {
         stileStato = 'background-color: #fff7ed; font-weight: bold; color: #c2410c;';
         notaRitardo = `<br><span style="font-size:10px; color:#ea580c; font-weight:normal;">⚠️ Mancata uscita</span>`;
@@ -597,20 +518,9 @@ function generaRigaTabella(v) {
         stileStato = 'background-color: #f0fdf4; color: #166534; font-weight:500;';
     }
 
-    const dInizio = fmtData(v.data_inizio);
-    const dFine = fmtData(v.data_fine);
+    let oraIngresso = v.orario_ingresso ? new Date(v.orario_ingresso).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
+    let oraUscita = v.orario_uscita ? new Date(v.orario_uscita).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
 
-    let oraIngresso = '--';
-    if (v.orario_ingresso) {
-        oraIngresso = new Date(v.orario_ingresso).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-    }
-
-    let oraUscita = '--';
-    if (v.orario_uscita) {
-        oraUscita = new Date(v.orario_uscita).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-    }
-
-    // Rende il link del PASS cliccabile passando sia il codice stringa che l'id univoco record database
     return `
       <tr style="${stileStato}">
         <td>
@@ -619,22 +529,19 @@ function generaRigaTabella(v) {
           </a>
           ${notaRitardo}
         </td>
-        <td>${dInizio}</td>
+        <td>${fmtData(v.data_inizio)}</td>
         <td style="color:var(--green); font-weight:bold;">${oraIngresso}</td>
-        <td>${dFine}</td>
+        <td>${fmtData(v.data_fine)}</td>
         <td style="color:var(--orange); font-weight:bold;">${oraUscita}</td>
       </tr>
     `;
 }
 
-// ----------------------------------------------------
-// 🌟 FUNZIONE COMPLETA E CORRETTA ARRIVI DI OGGI
-// ----------------------------------------------------
+// ARRIVI OGGI
 async function mostraArriviOggi() {
     const box = document.getElementById('box-arrivi-oggi');
     const btn = document.getElementById('btn-arrivi-oggi');
     const lista = document.getElementById('lista-arrivi-oggi');
-
     if (!box || !lista) return;
 
     if (arriviVisible) {
@@ -647,25 +554,17 @@ async function mostraArriviOggi() {
     try {
         const res = await fetch('/api/piantone/arrivi-oggi');
         const dati = await res.json();
-        
-        lista.innerHTML = ''; // Pulisce residui
+        lista.innerHTML = '';
 
         if (!dati || dati.length === 0) {
             lista.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:12px; color:var(--gray);">Nessun arrivo previsto oggi</td></tr>`;
         } else {
             let htmlRighe = '';
-            
             dati.forEach(r => {
-                let badge = '';
-                if (r.stato === 'PRENOTATO') {
-                    badge = `<span class="badge-stato"><span class="dot dot-orange"></span>Deve Entrare</span>`;
-                } else if (r.stato === 'ENTRATO') {
-                    badge = `<span class="badge-stato"><span class="dot dot-green"></span>Entrato</span>`;
-                } else if (r.stato === 'DA_VERIFICARE') {
-                    badge = `<span class="badge-stato"><span class="dot dot-orange" style="background-color: #ea580c;"></span>Da Verificare</span>`;
-                } else {
-                    badge = `<span class="badge-stato"><span class="dot dot-red"></span>Scaduto</span>`;
-                }
+                let badge = r.stato === 'PRENOTATO' ? `<span class="badge-stato"><span class="dot dot-orange"></span>Deve Entrare</span>` :
+                            r.stato === 'ENTRATO' ? `<span class="badge-stato"><span class="dot dot-green"></span>Entrato</span>` :
+                            r.stato === 'DA_VERIFICARE' ? `<span class="badge-stato"><span class="dot dot-orange" style="background-color: #ea580c;"></span>Da Verificare</span>` :
+                            `<span class="badge-stato"><span class="dot dot-red"></span>Scaduto</span>`;
 
                 htmlRighe += `
                 <tr>
@@ -677,42 +576,33 @@ async function mostraArriviOggi() {
                     <td style="padding: 10px 6px;">${badge}</td>
                 </tr>`;
             });
-            
             lista.innerHTML = htmlRighe;
 
-            // Collegamento evento click sui codici della tabella
             document.querySelectorAll('.btn-pass-diretto').forEach(b => {
                 b.addEventListener('click', async (e) => {
                     e.preventDefault();
                     const passClick = b.getAttribute('data-pass');
                     const idClick = b.getAttribute('data-id');
-                    
                     const inputSearch = document.getElementById('search-p');
                     if (inputSearch) inputSearch.value = passClick;
-                    
                     await cercaPass(passClick, idClick);
                     document.getElementById('panel-piantone')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 });
             });
         }
-        
         box.classList.remove('hidden');
         arriviVisible = true;
         btn.innerText = '❌ Nascondi Arrivi di Oggi';
-
     } catch (err) {
-        console.error("Errore nel caricamento degli arrivi odierni:", err);
+        console.error(err);
         alert('Errore caricamento arrivi');
     }
 }
 
-// AZIONI ENTRATA / USCITA (MOSSA)
 async function mossa(tipo) {
     if (!currentPren) return;
-    
-    // Controllo preventivo blocco ingresso per i pass scaduti e mai entrati
     if (tipo === 'E' && currentPren.stato === 'SCADUTO' && !currentPren.orario_ingresso) {
-         return alert("OPERAZIONE BLOCCATA: Questo pass è scaduto senza mai effettuare l'accesso nei giorni stabiliti. Non è possibile inserire la vettura.");
+         return alert("OPERAZIONE BLOCCATA: Questo pass è scaduto senza mai effettuare l'accesso nei giorni stabiliti.");
     }
 
     try {
@@ -724,11 +614,11 @@ async function mossa(tipo) {
         const data = await res.json();
 
         if (data.success) {
-            alert(tipo === 'E' ? "Ingresso registrato con successo!" : "Uscita registrata con successo!");
-            await cercaPass(currentPren.npass, currentPren.id); // Ricarica il pannello corrente con il nuovo stato aggiornato
-            await aggiornaVeicoli(); // Rinfresca la griglia generale
+            alert(tipo === 'E' ? "Ingresso registrato!" : "Uscita registrata!");
+            await cercaPass(currentPren.npass, currentPren.id);
+            await aggiornaVeicoli();
         } else {
-            alert(data.msg || "Errore durante la registrazione del passaggio");
+            alert(data.msg || "Errore durante la registrazione");
         }
     } catch (err) {
         console.error(err);
@@ -736,7 +626,7 @@ async function mossa(tipo) {
     }
 }
 
-// ADMIN TABLE
+// ADMIN
 async function caricaTabellaAdmin() {
     try {
         const res = await fetch('/api/admin/giorni');
@@ -744,25 +634,9 @@ async function caricaTabellaAdmin() {
         const tab = document.getElementById('tab-admin');
         if (!tab) return;
 
-        tab.innerHTML = `
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Posti Liberi</th>
-              <th>Occupati (L.S.)</th>
-            </tr>
-          </thead>
-          <tbody>
-        `;
-
+        tab.innerHTML = `<thead><tr><th>Data</th><th>Posti Liberi</th><th>Occupati (L.S.)</th></tr></thead><tbody>`;
         data.forEach(g => {
-            tab.innerHTML += `
-              <tr>
-                <td><strong>${fmtData(g.data)}</strong></td>
-                <td style="color:var(--green); font-weight:bold;">${g.posti}</td>
-                <td style="color:var(--gray);">${g.occupati}</td>
-              </tr>
-            `;
+            tab.innerHTML += `<tr><td><strong>${fmtData(g.data)}</strong></td><td style="color:var(--green); font-weight:bold;">${g.posti}</td><td style="color:var(--gray);">${g.occupati}</td></tr>`;
         });
         tab.innerHTML += '</tbody>';
     } catch (err) {
@@ -770,20 +644,14 @@ async function caricaTabellaAdmin() {
     }
 }
 
-// REPORT RITARDI ADMIN
 async function mostraRitardi() {
     try {
         const res = await fetch('/api/admin/ritardi');
         const data = await res.json();
-        
-        if(!data.ritardi || data.ritardi.length === 0) {
-            return alert("Ottimo! Nessun veicolo in ritardo rilevato nel sistema.");
-        }
+        if(!data.ritardi || data.ritardi.length === 0) return alert("Nessun veicolo in ritardo rilevato.");
 
         let report = "⚠️ VEICOLI IN RITARDO DETTAGLI:\n\n";
-        data.ritardi.forEach(r => {
-            report += `• PASS: ${r.npass} | Scadenza: ${fmtData(r.data_fine)} | Stato: ${r.stato}\n`;
-        });
+        data.ritardi.forEach(r => { report += `• PASS: ${r.npass} | Scadenza: ${fmtData(r.data_fine)} | Stato: ${r.stato}\n`; });
         alert(report);
     } catch (err) {
         console.error(err);
@@ -791,22 +659,16 @@ async function mostraRitardi() {
     }
 }
 
-// FORMATTATORE DATE COMPATTO (DD/MM/YYYY)
 function fmtData(isoStr) {
     if (!isoStr) return '--';
     const d = new Date(isoStr);
     if (isNaN(d.getTime())) return isoStr;
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    return `${day}/${month}/${d.getFullYear()}`;
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
 
-// EVENT LISTENERS DI AVVIO PAGINA
+// LISTENERS
 document.addEventListener('DOMContentLoaded', () => {
-    const btnCerca = document.getElementById('btn-cerca');
-    if (btnCerca) {
-        btnCerca.addEventListener('click', () => cercaPass());
-    }
+    document.getElementById('btn-cerca')?.addEventListener('click', () => cercaPass());
 
     const btnResetSearch = document.getElementById('btn-reset-search');
     const inputSearch = document.getElementById('search-p');
@@ -816,65 +678,19 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('panel-piantone')?.classList.add('hidden');
             document.getElementById('box-verifica')?.classList.add('hidden');
             currentPren = null;
-            
             const bannerCerca = document.getElementById('stato-tabella');
             if (bannerCerca) {
-                bannerCerca.style.background = '#f8fafc';
-                bannerCerca.style.color = '#334155';
-                bannerCerca.style.borderColor = '#cbd5e1';
+                bannerCerca.style.background = '#f8fafc'; bannerCerca.style.color = '#334155'; bannerCerca.style.borderColor = '#cbd5e1';
                 bannerCerca.innerHTML = `📋 ATTIVI`;
             }
             aggiornaVeicoli();
         });
     }
 
+    // 🚀 RIPRISTINO LOGICA VERIFICA ORIGINALE RIGIDA PER EVITARE CRASH NETWORK LATO SERVER
     document.getElementById('btn-presente')?.addEventListener('click', async () => {
         if (!currentPren) return;
         const res = await fetch('/api/piantone/verifica-risolvi', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: currentPren.id, presente: true, auth: userPass })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert('Stato del veicolo aggiornato in ENTRATO correttamente');
-            await cercaPass(currentPren.npass, currentPren.id);
-            await aggiornaVeicoli();
-            document.getElementById('box-verifica')?.classList.add('hidden');
-        }
-    });
-
-    document.getElementById('btn-non-presente')?.addEventListener('click', async () => {
-        if (!currentPren) return;
-        const res = await fetch('/api/piantone/verifica-risolvi', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: currentPren.id, presente: false, auth: userPass })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert('Veicolo segnato come NON presente');
-            await aggiornaVeicoli();
-            document.getElementById('box-verifica')?.classList.add('hidden');
-            document.getElementById('panel-piantone')?.classList.add('hidden');
-            currentPren = null;
-            if (inputSearch) inputSearch.value = '';
-        }
-    });
-    
-    document.getElementById('btn-arrivi-oggi')?.addEventListener('click', mostraArriviOggi);
-    document.getElementById('btn-ingresso')?.addEventListener('click', () => { mossa('E'); });
-
-    const btnHomeSuccess = document.getElementById('btn-home-success');
-    if (btnHomeSuccess) {
-        btnHomeSuccess.addEventListener('click', () => { location.reload(); });
-    }
-
-    document.getElementById('btn-uscita')?.addEventListener('click', () => { mossa('U'); });
-    document.getElementById('btn-filtro')?.addEventListener('click', toggleScaduti);
-    document.getElementById('search-p')?.addEventListener('input', aggiornaVeicoli);
-    document.getElementById('btn-logout-piantone')?.addEventListener('click', () => { location.reload(); });
-    
-    document.getElementById('btn-ritardi')?.addEventListener('click', mostraRitardi);
-    document.getElementById('btn-logout-admin')?.addEventListener('click', () => { location.reload(); });
-});
+            body: JSON.stringify({ id: current
