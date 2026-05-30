@@ -512,7 +512,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
             currentPren = data.prenotazione;
             
             if (!currentPren) {
-                alert("Prenotazione non trouvata");
+                alert("Prenotazione non trovata");
                 return;
             }
             
@@ -573,7 +573,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                         </span>`;
                         
                 } else {
-                    // Fallback di sicurezza: se per qualche motivo la vettura risulta dentro, 
+                    // Fallback di sicurezza: se per qualche motivo la vettura resulta dentro, 
                     // permette al piantone di farla uscire anche se il pass è contrassegnato scaduto
                     btnIngresso.disabled = true;
                     btnIngresso.style.display = 'none';
@@ -628,67 +628,39 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     : "";
             }
 
-            // 🚀 SCAMBIO FILTRI E BANNER DINAMICI IN TABELLA (Basato sul record cliccato)
-            const bannerCerca = document.getElementById('banner-ricerca') || document.querySelector('.badge-cerca-stato'); 
-            const tabularCorpo = document.getElementById('tabella-veicoli-corpo') || document.querySelector('#tabella-veicoli tbody');
-
-            // Questa è la chiave: controlliamo lo stato esatto del record correntemente aperto nel pannello
-            const isScadutoCorrente = (currentPren.stato === 'SCADUTO');
-
-            if (bannerCerca) {
-                if (isScadutoCorrente) {
-                    bannerCerca.className = "banner-scaduto"; 
-                    bannerCerca.style.background = '#ffeeef'; 
-                    bannerCerca.style.color = '#ef4444';
-                    bannerCerca.style.border = '1px solid #fca5a5';
-                    bannerCerca.innerHTML = `⏰ SCADUTO (Trovato da Ricerca)`;
-                } else {
-                    bannerCerca.className = "banner-attivo"; 
-                    bannerCerca.style.background = '#eff6ff'; 
-                    bannerCerca.style.color = '#3b82f6';
-                    bannerCerca.style.border = '1px solid #93c5fd';
-                    bannerCerca.innerHTML = `📋 ATTIVO (Trovato da Ricerca)`;
-                }
-                bannerCerca.classList.remove('hidden');
-            }
-
-// 🚀 SCAMBIO FILTRI E BANNER DINAMICI IN TABELLA (Logica Invertita)
-            // Assicurati che questi ID esistano nel tuo HTML!
-            const bannerCerca = document.getElementById('banner-stato'); 
-            const tabellaCorpo = document.getElementById('corpo-tabella-ricerca');
+            // 🚀 AGGANCIO MAPPA SU ID REALI HTML: 'stato-tabella' e 'lista-veicoli'
+            const bannerCerca = document.getElementById('stato-tabella'); 
+            const tabellaCorpo = document.getElementById('lista-veicoli');
 
             const isScadutoCorrente = (currentPren.stato === 'SCADUTO');
 
             if (bannerCerca) {
                 if (isScadutoCorrente) {
-                    bannerCerca.className = "banner-scaduto"; 
                     bannerCerca.style.background = '#ffeeef'; 
                     bannerCerca.style.color = '#ef4444';
-                    bannerCerca.style.border = '1px solid #fca5a5';
+                    bannerCerca.style.borderColor = '#fca5a5';
                     bannerCerca.innerHTML = `⏰ SCADUTO (Trovato da Ricerca)`;
                 } else {
-                    bannerCerca.className = "banner-attivo"; 
                     bannerCerca.style.background = '#eff6ff'; 
                     bannerCerca.style.color = '#3b82f6';
-                    bannerCerca.style.border = '1px solid #93c5fd';
+                    bannerCerca.style.borderColor = '#93c5fd';
                     bannerCerca.innerHTML = `📋 ATTIVO (Trovato da Ricerca)`;
                 }
-                bannerCerca.classList.remove('hidden');
             }
 
-            // 🚀 FILTRO "INVERTITO": La tabella mostra l'OPPOSTO di quello che stai guardando
+            // 🚀 LOGICA FILTRO INVERTITO SULLA TABELLA REALE
             if (data.storico && tabellaCorpo) {
                 let righeDaMostrare = [];
                 
                 if (isScadutoCorrente) {
-                    // Se in alto stai guardando lo SCADUTO, la tabella ti mostra SOLO GLI ATTIVI (così puoi scambiare)
+                    // Se sopra visualizzi lo SCADUTO, sotto vedi l'ATTIVO per poterci cliccare e fare switch
                     righeDaMostrare = data.storico.filter(x => ['PRENOTATO', 'ENTRATO', 'DA_VERIFICARE'].includes(x.stato));
                 } else {
-                    // Se in alto stai guardando l'ATTIVO, la tabella ti mostra SOLO GLI SCADUTI (così puoi scambiare)
+                    // Se sopra visualizzi l'ATTIVO, sotto vedi lo SCADUTO
                     righeDaMostrare = data.storico.filter(x => x.stato === 'SCADUTO');
                 }
                 
-                // Disegna le righe filtrate (usa la tua funzione esistente)
+                // Rendering dell'HTML
                 if (typeof renderTabella === "function") {
                     renderTabella(righeDaMostrare);
                 } else if (typeof generaRigaTabella === "function") {
