@@ -41,13 +41,14 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// LOGIN
+// LOGIN (Ripristinato identico all'originale per protocollo di rete)
 document.getElementById('btn-login')?.addEventListener('click', async () => {
     const pass = document.getElementById('in-npass').value.trim().toUpperCase();
     if (!pass) return alert("Inserisci codice!");
 
     try {
-        const res = await fetch(`/api/login?pass=${encodeURIComponent(pass)}`);
+        // Chiamata diretta standard senza codifiche che potrebbero non essere digerite dal backend
+        const res = await fetch('/api/login?pass=' + pass);
         const data = await res.json();
 
         if (data.success) {
