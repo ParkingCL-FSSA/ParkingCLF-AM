@@ -127,7 +127,6 @@
 <body>
   <div class="card">
 
-    <!-- LOGIN -->
     <div id="view-login">
       <div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-bottom:10px;">
         <img src="/LogoCLF.png" alt="Logo CLF" style="width:70px; height:auto;" />
@@ -139,27 +138,26 @@
       <button id="btn-login" type="button">ENTRA</button>
     </div>
     
-<div id="avviso-manutenzione" style="
-    display: none; /* disattiva || display: block; riattiva */ 
-    margin-top: 25px;
-    padding: 15px;
-    color: #ef4444;
-    font-size: 16px;
-    line-height: 1.5;
-    text-align: left;
-    max-width: 320px;
-    margin-left: auto;
-    margin-right: auto;
-    font-weight: 500;
-">
-    AVVISO: chi non avesse ricevuto il PDF in fase di prenotazione ieri, 
-    può cancellare e rifare adesso una nuova prenotazione.<br>
-    Il sistema ha ripreso a funzionare regolarmente. Scusate per il disagio.<br><br>
-  NOTICE: Anyone who didn't receive the PDF when booking yesterday can cancel and 
-  rebook now. The system is back up and running. We apologize for the inconvenience.<br>
-</div>
+    <div id="avviso-manutenzione" style="
+        display: none; 
+        margin-top: 25px;
+        padding: 15px;
+        color: #ef4444;
+        font-size: 16px;
+        line-height: 1.5;
+        text-align: left;
+        max-width: 320px;
+        margin-left: auto;
+        margin-right: auto;
+        font-weight: 500;
+    ">
+        AVVISO: chi non avesse ricevuto il PDF in fase di prenotazione ieri, 
+        può cancellare e rifare adesso una nuova prenotazione.<br>
+        Il sistema ha ripreso a funzionare regolarmente. Scusate per il disagio.<br><br>
+      NOTICE: Anyone who didn't receive the PDF when booking yesterday can cancel and 
+      rebook now. The system is back up and running. We apologize for the inconvenience.<br>
+    </div>
 
-    <!-- INSTALLA APP -->
     <button
       id="btnInstalla"
       type="button"
@@ -180,7 +178,6 @@
       📲 INSTALLA APP PARCHEGGIO
     </button>
 
-    <!-- USER -->
     <div id="view-user" class="hidden">
       <h3 id="user-title">📅 Prenota Posto</h3>
 
@@ -206,7 +203,6 @@
       <button id="btn-logout-user" class="btn-red" type="button" style="margin-top:20px;">LogOUT</button>
     </div>
  
-    <!-- LISTA PRENOTAZIONI -->
     <div id="view-my-list" class="hidden">
       <h3>Gestione Prenotazioni</h3>
 
@@ -219,7 +215,6 @@
 
       <button id="btn-back-user" class="btn-gray" type="button" style="margin-top:15px;">Torna Indietro</button>
 
-      <!-- GDPR -->
       <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:12px; padding:14px; font-size:12px; color:#166534; text-align:justify; line-height:1.7; margin-top:12px;">
         🛡️ <strong>Privacy & Sicurezza (GDPR)</strong><br /><br />
         In conformità al GDPR (Regolamento UE 2016/679), il tuo indirizzo email viene utilizzato esclusivamente per l’invio della conferma di prenotazione.
@@ -234,7 +229,6 @@
       </div>
     </div>
 
-    <!-- SUCCESS -->
     <div id="view-success" class="hidden">
       <div style="font-size:60px; color:var(--green); margin-bottom:10px;">✅</div>
 
@@ -253,7 +247,6 @@
         Controlla la cartella <strong>Posta indesiderata / Spam</strong> e contrassegna il mittente come <strong>“Sicuro”</strong> o <strong>“Non Spam”</strong>.
       </div>
 
-      <!-- GDPR -->
       <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:12px; padding:14px; font-size:12px; color:#166534; text-align:justify; line-height:1.7;">
         🛡️ <strong>Privacy & Sicurezza (GDPR)</strong><br /><br />
         In conformità al GDPR (Regolamento UE 2016/679), il tuo indirizzo email viene utilizzato esclusivamente per l’invio della conferma di prenotazione.
@@ -268,17 +261,14 @@
       </div>
     </div>
 
-    <!-- PIANTONE -->
     <div id="view-piantone" class="hidden">
       <h3>CONTROLLO SBARRA 🚧</h3>
 
-      <!-- STATUS -->
-      <div id="status-parcheggio"
-        style="margin-bottom:15px; padding:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; color:#166534; font-weight:bold; font-size:14px;">
-        <span id="total-free-display">Calcolo disponibilità...</span>
+      <div id="card-sbarra-alto"
+        style="margin-bottom:15px; padding:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; font-weight:bold; font-size:14px;">
+        Caricamento dati reali sbarra...
       </div>
 
-      <!-- RICERCA + RESET -->
       <div style="display:flex; gap:8px; align-items:center;">
         <input
           type="text"
@@ -286,7 +276,7 @@
           placeholder="CERCA CODICE"
           style="text-transform:uppercase; flex:1;"
           autocomplete="off"
-          autocorrect="off"
+          autorrect="off"
           autocapitalize="characters"
           spellcheck="false"
         />
@@ -301,8 +291,7 @@
         </button>
       </div>
 
-      <!-- PANEL RISULTATO -->
-     <div id="panel-piantone" class="hidden"
+      <div id="panel-piantone" class="hidden"
         style="margin-top:15px; padding:20px; background:#f8fafc; border-radius:15px; border:1px solid #e2e8f0;">
         <h4 id="lab-pass" style="margin:0; font-size:18px;">PASS: ---</h4>
         <p id="lab-periodo" style="font-size:14px; color:var(--gray); margin:5px 0 15px 0;">
@@ -322,10 +311,9 @@
         </div>
         
         <div id="box-verifica" class="hidden" style="
-           /* display: flex; */
-            gap: 8px;
-            justify-content: center;
-            margin-top: 15px;
+           gap: 8px;
+           justify-content: center;
+           margin-top: 15px;
         ">
             <button id="btn-presente" type="button" style="width: auto; padding:6px 10px; font-size:12px; border:none; border-radius:8px; background:#16a34a; color:white; margin:0;">
                 ✅ PRESENTE
@@ -336,7 +324,6 @@
         </div>
       </div> 
       
-      <!-- VEICOLI -->
       <h4 style="margin-top:25px; text-align:center;font-size:18px;">🚘Accesso Veicoli</h4>
       <button id="btn-filtro" class="btn-blue" type="button" style="margin-top:0px; width:220px; padding:8px 0;">MOSTRA STATI</button>
       <button id="btn-arrivi-oggi" class="btn-gray" type="button" style="width:320px; padding:6px 0;">📋 Arrivi di Oggi</button>
@@ -352,7 +339,7 @@
         </table>
       </div>
 
-      <div id="badge-contatori" style="margin:10px 0; font-size:14px;"></div>
+      <div id="badge-contatori" style="margin:15px 0 10px 0; font-size:14px;"></div>
 
       <div id="stato-tabella"
         style="margin:12px auto; padding:8px 18px; border-radius:999px; border:2px solid #cbd5e1; background:#f8fafc; font-size:13px; font-weight:bold; color:#334155; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
@@ -375,7 +362,6 @@
       <button id="btn-logout-piantone" class="btn-gray" type="button">LOGOUT</button>
     </div>
 
-    <!-- ADMIN -->
     <div id="view-admin" class="hidden">
       <h3>📊 Disponibilità Posti</h3>
       <table id="tab-admin"></table>
@@ -383,7 +369,6 @@
       <button id="btn-logout-admin" class="btn-red" type="button" style="margin-top:20px;">LOGOUT</button>
     </div>
 
-    <!-- ESCI APP -->
     <button
       id="btnEsciApp"
       type="button"
