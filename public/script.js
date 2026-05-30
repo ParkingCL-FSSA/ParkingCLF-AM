@@ -708,7 +708,12 @@ async function aggiornaVeicoli() {
 
     const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
     const dati = await res.json();
-    const oggi = new Date().toISOString().split('T')[0];
+    
+    // Creiamo la data di oggi a mezzanotte locale per un confronto pulito
+    const oraSolareOggi = new Date();
+    oraSolareOggi.setHours(0, 0, 0, 0);
+    const oggiTime = oraSolareOggi.getTime();
+
     const inputSearch = document.getElementById('search-p');
 
     let countDentro = 0;
@@ -717,13 +722,19 @@ async function aggiornaVeicoli() {
     let countVerificare = 0;
     
     dati.forEach(x => {
-        // Estrae solo AAAA-MM-GG dal record del DB
-        const dataInizioPulita = x.data_inizio ? x.data_inizio.substring(0, 10) : '';
-        const dataFinePulita = x.data_fine ? x.data_fine.substring(0, 10) : '';
+        // Convertiamo le date del DB in timestamp a mezzanotte per il confronto
+        const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
+        if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+        const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
+        const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
+        if (dataFineData) dataFineData.setHours(0,0,0,0);
+        const fineTime = dataFineData ? dataFineData.getTime() : 0;
+
+        // 🎯 CONFRONTO TEMPORALE MATEMATICO (Inizia OGGI)
         const prenotatoOggi =
             x.stato === 'PRENOTATO' &&
-            dataInizioPulita === oggi;
+            inizioTime === oggiTime;
 
         const dentro =
         (
@@ -736,7 +747,7 @@ async function aggiornaVeicoli() {
             )
         );
 
-        const scaduto = (x.stato === 'PRENOTATO' && oggi > dataFinePulita);
+        const scaduto = (x.stato === 'PRENOTATO' && oggiTime > fineTime);
 
         if (dentro) countDentro++;
         if (prenotatoOggi) countPrenotati++;
@@ -832,7 +843,10 @@ async function aggiornaVeicoli() {
         }
 
         const f = getFlags(x);
-        const dataInizioPulita = x.data_inizio ? x.data_inizio.substring(0, 10) : '';
+        
+        const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
+        if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+        const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
         if (filtroPiantone === 'verificare')
             return f.daVerificare;
@@ -841,7 +855,7 @@ async function aggiornaVeicoli() {
             return f.scaduto;
 
         if (filtroPiantone === 'attivi')
-            return (f.entrato || (x.stato === 'PRENOTATO' && dataInizioPulita === oggi) || f.daVerificare);
+            return (f.entrato || (x.stato === 'PRENOTATO' && inizioTime === oggiTime) || f.daVerificare);
 
         if (filtroPiantone === 'storico')
             return f.storico;
@@ -852,8 +866,11 @@ async function aggiornaVeicoli() {
         if (valoreCercato !== "") {
             const getPriorita = (item) => {
                 const f = getFlags(item);
-                const dataInizioPulita = item.data_inizio ? item.data_inizio.substring(0, 10) : '';
-                if (f.entrato || (item.stato === 'PRENOTATO' && dataInizioPulita === oggi)) return 1; 
+                const dataInizioData = item.data_inizio ? new Date(item.data_inizio) : null;
+                if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+                const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
+
+                if (f.entrato || (item.stato === 'PRENOTATO' && inizioTime === oggiTime)) return 1; 
                 if (f.daVerificare) return 2;                
                 if (f.scaduto) return 3;                    
                 if (f.storico) return 4;                    
@@ -891,9 +908,12 @@ async function aggiornaVeicoli() {
     if (valoreCercato !== "" && lista.length > 0) {
         const veicoloTrovato = lista[0]; 
         const f = getFlags(veicoloTrovato);
-        const dataInizioPulita = veicoloTrovato.data_inizio ? veicoloTrovato.data_inizio.substring(0, 10) : '';
         
-        if (f.entrato || (veicoloTrovato.stato === 'PRENOTATO' && dataInizioPulita === oggi)) {
+        const dataInizioData = veicoloTrovato.data_inizio ? new Date(veicoloTrovato.data_inizio) : null;
+        if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+        const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
+        
+        if (f.entrato || (veicoloTrovato.stato === 'PRENOTATO' && inizioTime === oggiTime)) {
             label = "📋 ATTIVO (Trovato da Ricerca)";
             colore = "#2563eb"; sfondo = "#dbeafe";
         } else if (f.daVerificare) {
