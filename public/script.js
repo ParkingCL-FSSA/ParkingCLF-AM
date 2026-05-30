@@ -814,10 +814,10 @@ async function aggiornaVeicoli() {
     badge.innerHTML = `
     <div>
         🚗 <b>Dentro:</b> ${countDentro}
-        &nbsp;&nbsp;|&nbsp;&nbsp;
+        &nbsp;|&nbsp;
         📅 <b>Prenotati oggi:</b> ${countPrenotati}
-        &nbsp;&nbsp;|&nbsp;&nbsp;
-        <span style="color: ${colorePosti}; font-weight: bold;">
+        &nbsp;|&nbsp;
+        <span style="color: ${colorePosti}; font-weight: normal;">
             🅿️ <b>Liberi:</b> ${postiLiberi}
         </span>
     </div>
@@ -832,7 +832,7 @@ async function aggiornaVeicoli() {
         ${
             countScaduti > 0
             ? `
-            &nbsp;&nbsp;|&nbsp;&nbsp;
+            &nbsp;|&nbsp;
             <span id="badge-scaduti">
                 ⏰ <b>Scaduti:</b> ${countScaduti}
             </span>
