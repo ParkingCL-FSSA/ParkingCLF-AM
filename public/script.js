@@ -789,6 +789,18 @@ async function aggiornaVeicoli() {
         sfondo = "#ede9fe";
     }
     
+   // ============================================================
+    // COLORE DINAMICO POSTI LIBERI (Arancione < 10, Rosso < 4)
+    // ============================================================
+    const postiLiberi = 90 - countDentro;
+    let colorePosti = "#1e293b"; // Colore scuro di default
+
+    if (postiLiberi < 4) {
+        colorePosti = "#dc2626"; // Rosso acceso
+    } else if (postiLiberi < 10) {
+        colorePosti = "#ea580c"; // Arancione scuro
+    }
+
     const badge = document.getElementById('badge-contatori');
     const statoTabella = document.getElementById('stato-tabella');
     
@@ -805,7 +817,9 @@ async function aggiornaVeicoli() {
         &nbsp;&nbsp;|&nbsp;&nbsp;
         📅 <b>Prenotati oggi:</b> ${countPrenotati}
         &nbsp;&nbsp;|&nbsp;&nbsp;
-        🅿️ <b>Liberi:</b> ${90 - countDentro}
+        <span style="color: ${colorePosti}; font-weight: bold;">
+            🅿️ <b>Liberi:</b> ${postiLiberi}
+        </span>
     </div>
 
     <div style="
