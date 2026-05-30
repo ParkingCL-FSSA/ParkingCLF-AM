@@ -1103,11 +1103,20 @@ async function mostraArriviOggi() {
             lista.innerHTML = `<tr><td colspan="2">Nessun arrivo previsto oggi</td></tr>`;
         } else {
             dati.forEach(r => {
-                let badge = r.stato === 'PRENOTATO' ? `<span class="badge-stato"><span class="dot dot-orange"></span>Deve Entrare</span>` :
-                            r.stato === 'ENTRATO' ? `<span class="badge-stato"><span class="dot dot-green"></span>Entrato</span>` :
-                            `<span class="badge-stato"><span class="dot dot-red"></span>Scaduto</span>`;
-                lista.innerHTML += `<tr><td>${r.npass}</td><td>${badge}</td></tr>`;
-            });
+                        let badge = '';
+                        
+                        if (r.stato === 'PRENOTATO') {
+                            badge = `<span class="badge-stato"><span class="dot dot-orange"></span>Deve Entrare</span>`;
+                        } else if (r.stato === 'ENTRATO') {
+                            badge = `<span class="badge-stato"><span class="dot dot-green"></span>Entrato</span>`;
+                        } else if (r.stato === 'DA_VERIFICARE') {
+                            badge = `<span class="badge-stato"><span class="dot dot-orange" style="background-color: #ea580c;"></span>Da Verificare</span>`;
+                        } else {
+                            badge = `<span class="badge-stato"><span class="dot dot-red"></span>Scaduto</span>`;
+                        }
+                        
+                        lista.innerHTML += `<tr><td>${r.npass}</td><td>${badge}</td></tr>`;
+                    });
         }
         box.classList.remove('hidden');
         arriviVisible = true;
