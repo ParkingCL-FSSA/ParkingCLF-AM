@@ -623,12 +623,10 @@ function getFlags(x) {
     const entrato = x.stato === 'ENTRATO';
     const uscito = x.stato === 'USCITO';
     
-    // 🚀 Un pass è "scaduto" (mai entrato) se il server lo ha ARCHIVIATO ma non ha orario di ingresso
-    const scaduto = (x.stato === 'PRENOTATO' && oggi > x.data_fine) || 
-                    (x.stato === 'ARCHIVIATO' && !x.orario_ingresso);
+    // 🚀 Il flag scaduto ora si attiva se lo stato sul DB è 'SCADUTO'
+    const scaduto = (x.stato === 'SCADUTO');
 
-    // Un pass fa parte dello storico se l'auto è uscita oppure se è archiviato ed è già uscita
-    const storico = x.stato === 'USCITO' || (x.stato === 'ARCHIVIATO' && x.orario_uscita);
+    const storico = x.stato === 'USCITO' || x.stato === 'ARCHIVIATO';
 
     const daVerificare = x.stato === 'DA_VERIFICARE' || 
                          (x.stato === 'PRENOTATO' && oggi > x.data_fine && x.orario_ingresso && !x.orario_uscita);
