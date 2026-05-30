@@ -608,7 +608,47 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     (Periodo: ${fmtData(currentPren.data_inizio)} - ${fmtData(currentPren.data_fine)})
                 </div>
             `;
+            
+// 🚀 AGGIORNAMENTO DINAMICO DELLA TABELLA E DEI BANNER IN BASE AL RECORD APERTO
+            const bannerCerca = document.getElementById('banner-ricerca'); // Il div del banner (es. l'id del tuo blocco colorato)
+            const tabellaCorpo = document.getElementById('tabella-veicoli-corpo'); // Il tbody della tua tabella
 
+            if (bannerCerca) {
+                // Se il record correntemente aperto è SCADUTO
+                if (currentPren.stato === 'SCADUTO') {
+                    bannerCerca.className = "banner-scaduto"; // Classe CSS rossa per lo scaduto
+                    bannerCerca.innerHTML = `⏰ SCADUTO (Trovato da Ricerca)`;
+                } 
+                // Se è attivo (PRENOTATO, ENTRATO, DA_VERIFICARE)
+                else {
+                    bannerCerca.className = "banner-attivo"; // Classe CSS azzurra per l'attivo
+                    bannerCerca.innerHTML = `📋 ATTIVO (Trovato da Ricerca)`;
+                }
+                bannerCerca.classList.remove('hidden');
+            }
+
+            // 🚀 FILTRA LA TABELLA: Mostra sotto SOLO i record che hanno lo stesso stato di quello aperto
+            // Se abbiamo lo 'storico' inviato dal server (data.storico), filtriamo direttamente quello
+            if (data.storico && tabellaCorpo) {
+                let righeDaMostrare = [];
+                
+                if (currentPren.stato === 'SCADUTO') {
+                    // Mostra solo le righe scadute di questo pass
+                    righeDaMostrare = data.storico.filter(x => x.stato === 'SCADUTO');
+                } else {
+                    // Mostra solo le righe attive di questo pass
+                    righeDaMostrare = data.storico.filter(x => ['PRENOTATO', 'ENTRATO', 'DA_VERIFICARE'].includes(x.stato));
+                }
+
+                // Disegna le righe filtrate (usa qui la tua funzione esistente che genera il codice HTML della riga)
+                tabellaCorpo.innerHTML = righeDaMostrare.map(x => generaRigaTabella(x)).join('');
+            }
+
+        } else {
+            alert("Nessuna prenotazione trovata per questo PASS.");
+            document.getElementById('panel-piantone').classList.add('hidden');
+        }
+        
     // 🚀 STILE TIMBRI ORARI: L'orario di ingresso diventa più grande e in evidenza
             if (oggiStr >= dataInizioStr) {
                 document.getElementById('reg-e').style.textAlign = 'center';
