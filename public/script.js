@@ -1083,7 +1083,6 @@ async function caricaStorico() {
 let arriviVisible = false;
 
 async function mostraArriviOggi() {
-    // Controllo di sicurezza per garantire che arriviVisible esista e non mandi in crash lo script
     if (typeof arriviVisible === 'undefined') {
         window.arriviVisible = false;
     } else {
@@ -1105,11 +1104,7 @@ async function mostraArriviOggi() {
 
     try {
         const res = await fetch('/api/piantone/arrivi-oggi');
-        
-        // Se il server risponde male (es. 404 o 500), intercettiamo l'errore prima del crash JSON
-        if (!res.ok) {
-            throw new Error(`Risposta server non valida: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`Risposta server KO: ${res.status}`);
 
         const dati = await res.json();
         lista.innerHTML = '';
@@ -1119,15 +1114,13 @@ async function mostraArriviOggi() {
         } else {
             let htmlRighe = '';
             dati.forEach(r => {
-                let badge = r.stato === 'PRENOTATO' ? `<span class="badge-stato"><span class="dot dot-orange"></span>Deve Entrare</span>` :
-                            r.stato === 'ENTRATO' ? `<span class="badge-stato"><span class="dot dot-green"></span>Entrato</span>` :
-                            r.stato === 'DA_VERIFICARE' ? `<span class="badge-stato"><span class="dot dot-orange" style="background-color: #ea580c;"></span>Da Verificare</span>` :
-                            `<span class="badge-stato"><span class="dot dot-red"></span>Scaduto</span>`;
+                // Il server restituisce solo chi deve entrare oggi
+                let badge = `<span class="badge-stato"><span class="dot dot-orange"></span>Deve Entrare</span>`;
 
                 htmlRighe += `
                 <tr>
                     <td style="padding: 10px 6px;">
-                        <button class="btn-pass-diretto" data-pass="${r.npass}" data-id="${r.id}" type="button" style="border:none; background:none; color:var(--blue); font-weight:bold; cursor:pointer; text-decoration:underline; font-size:15px; padding:0;">
+                        <button class="btn-pass-diretto" data-pass="${r.npass}" data-id="${r.id || ''}" type="button" style="border:none; background:none; color:var(--blue); font-weight:bold; cursor:pointer; text-decoration:underline; font-size:15px; padding:0;">
                             ${r.npass}
                         </button>
                     </td>
@@ -1136,7 +1129,7 @@ async function mostraArriviOggi() {
             });
             lista.innerHTML = htmlRighe;
 
-            // Aggancio dei listener sui pass generati
+            // Aggancio dei listener sui bottoni pass generati
             document.querySelectorAll('.btn-pass-diretto').forEach(b => {
                 b.addEventListener('click', async (e) => {
                     e.preventDefault();
@@ -1145,7 +1138,7 @@ async function mostraArriviOggi() {
                     const inputSearch = document.getElementById('search-p');
                     if (inputSearch) inputSearch.value = passClick;
                     
-                    // Chiama la tua funzione nativa del file originale
+                    // Esegue la ricerca nativa usando pass ed eventuale ID
                     await cercaPass(passClick, idClick);
                     
                     document.getElementById('panel-piantone')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1157,11 +1150,10 @@ async function mostraArriviOggi() {
         if (typeof arriviVisible !== 'undefined') arriviVisible = true;
         btn.innerText = '❌ Nascondi Arrivi di Oggi';
     } catch (err) {
-        console.error("Errore dettagliato:", err);
+        console.error("Errore Arrivi:", err);
         alert('Errore caricamento arrivi');
     }
 }
-
 window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-login')?.addEventListener('click', doLogin);
     document.getElementById('btn-prenota')?.addEventListener('click', inviaPren);
