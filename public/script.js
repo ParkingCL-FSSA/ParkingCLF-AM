@@ -717,10 +717,10 @@ async function aggiornaVeicoli() {
 
     const inputSearch = document.getElementById('search-p');
 
-    // Contatori SOPRA (Stato Reale)
+    // Contatori SOPRA (Stato Reale del Parcheggio)
     let countDentro = 0;
 
-    // Contatori SOTTO (Operativi di Oggi)
+    // Contatori SOTTO (Operativi del Turno di Oggi)
     let countEntratiOggi = 0;
     let countPrenotatiOggi = 0;
     let countVerificare = 0;
@@ -739,28 +739,32 @@ async function aggiornaVeicoli() {
         // Estrazione data ingresso (se esiste) in formato stringa AAAA-MM-GG
         const dataIngressoString = x.orario_ingresso ? x.orario_ingresso.substring(0, 10) : '';
 
-        // 1. Logica SOPRA: Chi è fisicamente DENTRO adesso
-        const isDentroOra = (
-            x.stato === 'ENTRATO' || 
-            (x.stato === 'DA_VERIFICARE' && x.orario_ingresso && !x.orario_uscita)
-        );
-        if (isDentroOra) countDentro++;
+        // ============================================================
+        // 🎯 LOGICA SOPRA: ALLINEATA AL 100% CON IL TUO DATABASE
+        // ============================================================
+        // Un veicolo è fisicamente DENTRO solo se è entrato e non è mai uscito
+        if (x.orario_ingresso && !x.orario_uscita) {
+            countDentro++;
+        }
 
-        // 2. Logica SOTTO: Entrati OGGI
+        // ============================================================
+        // 🎯 LOGICA SOTTO: SITUAZIONE OPERATIVA OGGI
+        // ============================================================
+        // 1. Entrati OGGI (hanno varcato l'ingresso nella data odierna)
         if (x.orario_ingresso && dataIngressoString === oggiString) {
             countEntratiOggi++;
         }
 
-        // 3. Logica SOTTO: Prenotati in arrivo OGGI
+        // 2. Prenotati in arrivo OGGI
         if (x.stato === 'PRENOTATO' && inizioTime === oggiTime) {
             countPrenotatiOggi++;
         }
 
-        // 4. Logica SOTTO: Da verificare (dentro e mai usciti oltre la scadenza)
+        // 3. Da verificare (Utilizza la funzione getFlags esistente per le anomalie)
         const f = getFlags(x);
         if (f.daVerificare) countVerificare++;
 
-        // Controllo scaduti (Prenotati che non si sono presentati affatto)
+        // 4. Scaduti (Prenotazioni vecchie mai presentate)
         if (x.stato === 'PRENOTATO' && oggiTime > fineTime) countScaduti++;
     });
     
@@ -785,8 +789,8 @@ async function aggiornaVeicoli() {
     
     // --- Calcolo dinamico colori "Posti Liberi" ---
     const postiLiberi = 90 - countDentro;
-    let colorePosti = "#16a34a"; // Verde iniziale di default
-    let sfondoCardAlto = "#f0fdf4"; // Sfondo verde tenue per la card in alto
+    let colorePosti = "#16a34a"; // Verde
+    let sfondoCardAlto = "#f0fdf4"; 
     let bordoCardAlto = "#bbf7d0";
 
     if (postiLiberi < 4) { 
@@ -796,9 +800,8 @@ async function aggiornaVeicoli() {
     }
 
     // ============================================================
-    // 1. AGGIORNAMENTO BLOCCO IN ALTO (CARD CONTROLLO SBARRA)
+    // 1. INIEZIONE CARD IN ALTO (MONITOR SBARRA REALE)
     // ============================================================
-    // NOTA: Assicurati che l'id del div verde in alto corrisponda a 'card-sbarra-alto' o cambialo con il tuo id reale
     const cardSbarraAlto = document.getElementById('card-sbarra-alto') || document.querySelector('.card-verde-alto-classe'); 
     if (cardSbarraAlto) {
         cardSbarraAlto.style.background = sfondoCardAlto;
@@ -811,7 +814,7 @@ async function aggiornaVeicoli() {
     }
 
     // ============================================================
-    // 2. AGGIORNAMENTO BLOCCO IN BASSO (SOTTO IL BOTTONE ARRIVI)
+    // 2. INIEZIONE BADGE IN BASSO (SOTTO BOTTONE ARRIVI)
     // ============================================================
     const badge = document.getElementById('badge-contatori');
     if (badge) {
