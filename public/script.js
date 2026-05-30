@@ -717,11 +717,10 @@ async function aggiornaVeicoli() {
     let countVerificare = 0;
     
     dati.forEach(x => {
-
-        // Tagliamo i primi 10 caratteri della data del database per evitare problemi di timestamp o ISO
+        // Estrae solo AAAA-MM-GG dal record del DB
         const dataInizioPulita = x.data_inizio ? x.data_inizio.substring(0, 10) : '';
+        const dataFinePulita = x.data_fine ? x.data_fine.substring(0, 10) : '';
 
-        // 🎯 CONFRONTO BLINDATO
         const prenotatoOggi =
             x.stato === 'PRENOTATO' &&
             dataInizioPulita === oggi;
@@ -737,7 +736,7 @@ async function aggiornaVeicoli() {
             )
         );
 
-        const scaduto = (x.stato === 'PRENOTATO' && oggi > x.data_fine);
+        const scaduto = (x.stato === 'PRENOTATO' && oggi > dataFinePulita);
 
         if (dentro) countDentro++;
         if (prenotatoOggi) countPrenotati++;
@@ -833,6 +832,7 @@ async function aggiornaVeicoli() {
         }
 
         const f = getFlags(x);
+        const dataInizioPulita = x.data_inizio ? x.data_inizio.substring(0, 10) : '';
 
         if (filtroPiantone === 'verificare')
             return f.daVerificare;
@@ -841,7 +841,7 @@ async function aggiornaVeicoli() {
             return f.scaduto;
 
         if (filtroPiantone === 'attivi')
-            return (f.entrato || (x.stato === 'PRENOTATO' && x.data_inizio === oggi) || f.daVerificare);
+            return (f.entrato || (x.stato === 'PRENOTATO' && dataInizioPulita === oggi) || f.daVerificare);
 
         if (filtroPiantone === 'storico')
             return f.storico;
@@ -852,7 +852,8 @@ async function aggiornaVeicoli() {
         if (valoreCercato !== "") {
             const getPriorita = (item) => {
                 const f = getFlags(item);
-                if (f.entrato || (item.stato === 'PRENOTATO' && item.data_inizio === oggi)) return 1; 
+                const dataInizioPulita = item.data_inizio ? item.data_inizio.substring(0, 10) : '';
+                if (f.entrato || (item.stato === 'PRENOTATO' && dataInizioPulita === oggi)) return 1; 
                 if (f.daVerificare) return 2;                
                 if (f.scaduto) return 3;                    
                 if (f.storico) return 4;                    
@@ -890,8 +891,9 @@ async function aggiornaVeicoli() {
     if (valoreCercato !== "" && lista.length > 0) {
         const veicoloTrovato = lista[0]; 
         const f = getFlags(veicoloTrovato);
+        const dataInizioPulita = veicoloTrovato.data_inizio ? veicoloTrovato.data_inizio.substring(0, 10) : '';
         
-        if (f.entrato || (veicoloTrovato.stato === 'PRENOTATO' && veicoloTrovato.data_inizio === oggi)) {
+        if (f.entrato || (veicoloTrovato.stato === 'PRENOTATO' && dataInizioPulita === oggi)) {
             label = "📋 ATTIVO (Trovato da Ricerca)";
             colore = "#2563eb"; sfondo = "#dbeafe";
         } else if (f.daVerificare) {
