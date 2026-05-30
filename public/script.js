@@ -718,10 +718,13 @@ async function aggiornaVeicoli() {
     
     dati.forEach(x => {
 
-        // 🎯 LOGICA CORRETTA: Considera arrivi oggi SOLO quelli che iniziano oggi!
+        // Tagliamo i primi 10 caratteri della data del database per evitare problemi di timestamp o ISO
+        const dataInizioPulita = x.data_inizio ? x.data_inizio.substring(0, 10) : '';
+
+        // 🎯 CONFRONTO BLINDATO
         const prenotatoOggi =
             x.stato === 'PRENOTATO' &&
-            x.data_inizio === oggi;
+            dataInizioPulita === oggi;
 
         const dentro =
         (
