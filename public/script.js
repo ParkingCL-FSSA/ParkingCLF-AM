@@ -652,23 +652,47 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 bannerCerca.classList.remove('hidden');
             }
 
-            // 🚀 FILTRO ESCLUSIVO: Se clicchi sullo scaduto mostra solo lo scaduto, se clicchi sull'attivo mostra solo l'attivo
-            if (data.storico && tabularCorpo) {
+// 🚀 SCAMBIO FILTRI E BANNER DINAMICI IN TABELLA (Logica Invertita)
+            // Assicurati che questi ID esistano nel tuo HTML!
+            const bannerCerca = document.getElementById('banner-stato'); 
+            const tabellaCorpo = document.getElementById('corpo-tabella-ricerca');
+
+            const isScadutoCorrente = (currentPren.stato === 'SCADUTO');
+
+            if (bannerCerca) {
+                if (isScadutoCorrente) {
+                    bannerCerca.className = "banner-scaduto"; 
+                    bannerCerca.style.background = '#ffeeef'; 
+                    bannerCerca.style.color = '#ef4444';
+                    bannerCerca.style.border = '1px solid #fca5a5';
+                    bannerCerca.innerHTML = `⏰ SCADUTO (Trovato da Ricerca)`;
+                } else {
+                    bannerCerca.className = "banner-attivo"; 
+                    bannerCerca.style.background = '#eff6ff'; 
+                    bannerCerca.style.color = '#3b82f6';
+                    bannerCerca.style.border = '1px solid #93c5fd';
+                    bannerCerca.innerHTML = `📋 ATTIVO (Trovato da Ricerca)`;
+                }
+                bannerCerca.classList.remove('hidden');
+            }
+
+            // 🚀 FILTRO "INVERTITO": La tabella mostra l'OPPOSTO di quello che stai guardando
+            if (data.storico && tabellaCorpo) {
                 let righeDaMostrare = [];
                 
                 if (isScadutoCorrente) {
-                    // Mostra esclusivamente i record SCADUTI relativi a questo pass
-                    righeDaMostrare = data.storico.filter(x => x.stato === 'SCADUTO');
-                } else {
-                    // Mostra esclusivamente i record ATTIVI relativi a questo pass
+                    // Se in alto stai guardando lo SCADUTO, la tabella ti mostra SOLO GLI ATTIVI (così puoi scambiare)
                     righeDaMostrare = data.storico.filter(x => ['PRENOTATO', 'ENTRATO', 'DA_VERIFICARE'].includes(x.stato));
+                } else {
+                    // Se in alto stai guardando l'ATTIVO, la tabella ti mostra SOLO GLI SCADUTI (così puoi scambiare)
+                    righeDaMostrare = data.storico.filter(x => x.stato === 'SCADUTO');
                 }
                 
-                // Aggiorna l'HTML della tabella richiamando la tua funzione di rendering
+                // Disegna le righe filtrate (usa la tua funzione esistente)
                 if (typeof renderTabella === "function") {
                     renderTabella(righeDaMostrare);
                 } else if (typeof generaRigaTabella === "function") {
-                    tabularCorpo.innerHTML = righeDaMostrare.map(x => generaRigaTabella(x)).join('');
+                    tabellaCorpo.innerHTML = righeDaMostrare.map(x => generaRigaTabella(x)).join('');
                 }
             }
 
