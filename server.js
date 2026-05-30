@@ -417,7 +417,7 @@ app.post('/api/user/salva-nota', async (req, res) => {
     }
 });
 
-// --- 5. VEICOLI DENTRO ---
+// --- 5. VEICOLI DENTRO (OTTIMIZZATO) ---
 app.get('/api/veicoli-dentro', async (req, res) => {
     const npass = req.query.npass;
 
@@ -428,8 +428,7 @@ app.get('/api/veicoli-dentro', async (req, res) => {
     try {
         const oggi = new Date().toISOString().split('T')[0];
         
-        // 🚀 NUOVA REGOLA: Se non entri entro la mezzanotte del giorno successivo all'inizio, passi a SCADUTO
-        // (Es: inizio il 28, dal 30 risulta SCADUTO se orario_ingresso è NULL)
+        // 🚀 Regola Scadenze
         await pool.query(`
             UPDATE prenotazioni 
             SET stato = 'SCADUTO' 
@@ -438,7 +437,7 @@ app.get('/api/veicoli-dentro', async (req, res) => {
               AND orario_ingresso IS NULL
         `, [oggi]);
 
-        // Alla fine del periodo totale, se è ancora PRENOTATO o SCADUTO, lo archiviamo definitivamente
+        // Archiviazione automatica al termine del periodo totale
         await pool.query(`
             UPDATE prenotazioni 
             SET stato = 'ARCHIVIATO' 
@@ -446,11 +445,12 @@ app.get('/api/veicoli-dentro', async (req, res) => {
               AND data_fine < $1
         `, [oggi]);
         
-        // La SELECT ora deve includere anche gli 'SCADUTI' in modo che il piantone li veda!
+        // Estrazione mirata per la visualizzazione in tempo reale della tabella
         const r = await pool.query(`
             SELECT id, npass, data_inizio, data_fine, orario_ingresso, orario_uscita, data_inserimento, stato
             FROM prenotazioni
-            WHERE stato IN ('PRENOTATO', 'ENTRATO', 'USCITO', 'DA_VERIFICARE', 'SCADUTO')
+            WHERE stato IN ('PRENOTATO', 'ENTRATO', 'DA_VERIFICARE', 'SCADUTO')
+               OR (stato = 'USCITO' AND orario_uscita::date = CURRENT_DATE)
             ORDER BY data_inizio ASC, orario_ingresso ASC
             LIMIT 300
         `);
@@ -596,18 +596,26 @@ app.post('/api/piantone/azione', async (req, res) => {
     }
 });
 
-// --- 7B. PIANTONE LIBERI ---
+// --- 7B. PIANTONE LIBERI (CORRETTO) ---
 app.get('/api/piantone/liberi', async (req, res) => {
     try {
+        // Contiamo solo le auto realmente dentro la sbarra in questo momento
         const result = await pool.query(`
-            SELECT COUNT(DISTINCT npass) as dentro
+            SELECT COUNT(id) as dentro
             FROM prenotazioni
-            WHERE stato = 'ENTRATO' OR (stato = 'SCADUTO' AND orario_uscita IS NULL)
+            WHERE orario_ingresso IS NOT NULL 
+              AND orario_uscita IS NULL
         `);
+        
         const dentro = parseInt(result.rows[0].dentro) || 0;
-        res.json({ dentro, totaleLiberi: 90 - dentro });
+        
+        // Capienza fissa a 90: se dentro sono 55, totaleLiberi sarà esattamente 35
+        res.json({ 
+            dentro: dentro, 
+            totaleLiberi: 90 - dentro 
+        });
     } catch (err) {
-        console.error(err);
+        console.error("💥 ERRORE CONTEGGIO LIBERI PIANTONE:", err);
         res.status(500).json({ error: "Errore interno" });
     }
 });
