@@ -891,20 +891,15 @@ async function aggiornaVeicoli() {
                 📅 <b>Prenotati:</b> <span style="color:#1e293b; font-weight:bold;">${countPrenotatiOggi}</span>
                 &nbsp;|&nbsp;
                 🚨 <b>Da verificare:</b> <span style="color:${countVerificare > 0 ? '#ea580c' : '#475569'}; font-weight:bold;">${countVerificare}</span>
-
-                ${countScaduti > 0 ? `
-                    &nbsp;|&nbsp;
-                    <span id="badge-scaduti" style="font-weight:bold;">
-                        ⏰ <b>Scaduti:</b> ${countScaduti}
-                    </span>
-                ` : ''}
+                &nbsp;|&nbsp;
+                ⏰ <b>Scaduti:</b> <span style="color:${countScaduti > 0 ? '#ea580c' : '#475569'}; font-weight:bold;">${countScaduti}</span>
             </div>
             `;
         }
 
         const elScaduti = document.getElementById('badge-scaduti');
         if (elScaduti && countScaduti > 0) {
-            elScaduti.style.animation = 'blink 1s infinite';
+            //elScaduti.style.animation = 'blink 1s infinite';
             elScaduti.style.color = '#ef4444';
         }
 
