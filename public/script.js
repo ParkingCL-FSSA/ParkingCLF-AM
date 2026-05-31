@@ -1012,10 +1012,16 @@ async function aggiornaVeicoli() {
             
        // --- INIEZIONE RIGHE IN TABELLA HTML ---
         document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
-            // ... (tutto il tuo codice per date e flag rimane invariato) ...
-            
-            // Definiamo uno stile comune per tutte le colonne per forzare l'allineamento
-            const cellStyle = 'style="width: 20%; padding: 8px; text-align: left;"';
+        const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
+        const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
+        const dataIng = ing ? ing.toLocaleDateString('it-IT') : '--';
+        const oraIng = ing ? ing.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
+        const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '';
+        const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '';
+        const evidenzia = x.npass === ultimoAggiornato; const f = getFlags(x);
+        
+        // Definiamo uno stile comune per tutte le colonne per forzare l'allineamento
+        const cellStyle = 'style="width: 20%; padding: 8px; text-align: left;"';
             
             return `<tr style="
                 ${f.scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
