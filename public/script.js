@@ -1027,23 +1027,32 @@ async function aggiornaVeicoli() {
         const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
         const evidenzia = x.npass === ultimoAggiornato; const f = getFlags(x);
         
-        // Definiamo uno stile comune per tutte le colonne per forzare l'allineamento
-        const cellStyle = 'style="width: 20%; padding: 4px 8px; text-align: left; vertical-align: middle;"';
+        // Rileviamo se l'utente è da mobile (schermo sotto i 768px)
+    const isMobile = window.innerWidth < 768;
+
+    // 🛠️ STILE ADATTIVO: Più compatto lateralmente e font corretto su mobile per evitare sovrapposizioni
+    const fontSize = isMobile ? '12px' : '14px';
+    const paddingCella = isMobile ? '10px 4px' : '6px 8px'; // Più spazio verticale (10px) per cliccare bene col dito, meno laterale (4px)
+
+    const cellStyle = `style="width: 20%; padding: ${paddingCella}; text-align: left; vertical-align: middle; font-size: ${fontSize}; box-sizing: border-box; overflow: hidden; white-space: nowrap;"`;
             
     return `<tr style="
-        height: auto; /* Impedisce il blocco dell'altezza minima riga */
+        height: auto;
         ${f.scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
         ${f.storico ? 'background:#f1f5f9;' : ''}
         ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
         ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
     ">
         <td ${cellStyle}>
-            <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline; padding:0; margin:0;">${x.npass}</button>
+            <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" 
+                style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline; padding:0; margin:0; font-size: ${fontSize};">
+                ${x.npass}
+            </button>
         </td>
         <td ${cellStyle}>${f.scaduto ? 'NON ENTRATO' : dataIng}</td>
-        <td ${cellStyle} style="font-weight:bold; padding: 4px 8px;">${f.scaduto ? '' : oraIng}</td>
+        <td ${cellStyle} style="font-weight:bold; padding: ${paddingCella}; font-size: ${fontSize};">${f.scaduto ? '' : oraIng}</td>
         <td ${cellStyle}>${dataUsc}</td>
-        <td ${cellStyle} style="font-weight:bold; padding: 4px 8px;">${oraUsc}</td>
+        <td ${cellStyle} style="font-weight:bold; padding: ${paddingCella}; font-size: ${fontSize};">${oraUsc}</td>
     </tr>`;
 }).join('') || `<tr><td colspan="5" style="text-align:center; color:black; padding:16px;">Nessun veicolo presente</td></tr>`;
 
