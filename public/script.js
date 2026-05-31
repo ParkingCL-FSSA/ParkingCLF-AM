@@ -143,7 +143,8 @@ function aggiornaGraficaBadge() {
 
     // 1. Reset: rimuoviamo sempre l'animazione all'inizio
     statoTabella.classList.remove('badge-blink');
-
+     statoTabella.classList.remove('badge-blink-2');
+    
     // 2. Logica dei colori e testi
     if (filtroPiantone === 'verificare') {
         statoTabella.innerHTML = "🚨 DA VERIFICARE";
