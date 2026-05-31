@@ -1028,27 +1028,24 @@ async function aggiornaVeicoli() {
         const evidenzia = x.npass === ultimoAggiornato; const f = getFlags(x);
         
         // Definiamo uno stile comune per tutte le colonne per forzare l'allineamento
-        const cellStyle = 'style="width: 20%; padding: 8px; text-align: left;"';
+        const cellStyle = 'style="width: 20%; padding: 4px 8px; text-align: left; vertical-align: middle;"';
             
-        return `<tr style="
-            ${f.scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
-            ${f.storico ? 'background:#f1f5f9;' : ''}
-            ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
-            ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
-        ">
-            <td ${cellStyle}>
-                <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline;">${x.npass}</button>
-            </td>
-            
-            <td ${cellStyle} style="text-align:right;">${f.scaduto ? ' NON' : dataIng}</td>
-            
-            <td ${cellStyle}>${f.scaduto ? 'ENTRATO' : oraIng}</td>
-            
-            <td ${cellStyle}>${dataUsc}</td>
-            
-            <td ${cellStyle} style="font-weight:bold;">${oraUsc}</td>
-        </tr>`;
-        }).join('') || `<tr><td colspan="5" style="text-align:center; color:black; padding:16px;">Nessun veicolo presente</td></tr>`;
+    return `<tr style="
+        height: auto; /* Impedisce il blocco dell'altezza minima riga */
+        ${f.scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
+        ${f.storico ? 'background:#f1f5f9;' : ''}
+        ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
+        ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
+    ">
+        <td ${cellStyle}>
+            <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline; padding:0; margin:0;">${x.npass}</button>
+        </td>
+        <td ${cellStyle}>${f.scaduto ? 'NON ENTRATO' : dataIng}</td>
+        <td ${cellStyle} style="font-weight:bold; padding: 4px 8px;">${f.scaduto ? '' : oraIng}</td>
+        <td ${cellStyle}>${dataUsc}</td>
+        <td ${cellStyle} style="font-weight:bold; padding: 4px 8px;">${oraUsc}</td>
+    </tr>`;
+}).join('') || `<tr><td colspan="5" style="text-align:center; color:black; padding:16px;">Nessun veicolo presente</td></tr>`;
 
         // Aggancio eventi pulsanti lista
         document.querySelectorAll('.btn-pass').forEach(btn => {
