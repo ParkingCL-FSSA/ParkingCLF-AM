@@ -842,23 +842,49 @@ async function aggiornaVeicoli() {
     const statoTabella = document.getElementById('stato-tabella');
 
     const lista = dati.filter(x => {
-        if (valoreCercato !== "") return x.npass?.toUpperCase() === valoreCercato;
-        const f = getFlags(x);
-        const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
-        if (dataInizioData) dataInizioData.setHours(0,0,0,0);
-        const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
+    // Se c'è una ricerca testuale per targa/pass, mostra il risultato esatto a prescindere dai filtri
+    if (valoreCercato !== "") return x.npass?.toUpperCase() === valoreCercato;
+    
+    const f = getFlags(x);
+    
+    // Configurazione millisecondi per i confronti temporali precisi
+    const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
+    if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+    const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
-        // --- GESTIONE SCHEDE TABELLA ---
-        if (filtroPiantone === 'verificare') return f.daVerificare;
-        
-        // 🎯 SCHEDA SCADUTI: Mostra i pass in stato SCADUTO inviati dal server 
-        // che non sono ancora entrati (orario_ingresso vuoto)
-        if (filtroPiantone === 'scaduti') return (x.stato === 'SCADUTO' && !x.orario_ingresso);
-        
-        if (filtroPiantone === 'attivi') return (f.entrato || (x.stato === 'PRENOTATO' && inizioTime === oggiTime) || f.daVerificare);
-        if (filtroPiantone === 'storico') return f.storico;
-        return true;
-    })
+    const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
+    if (dataFineData) dataFineData.setHours(0,0,0,0);
+    const fineTime = dataFineData ? dataFineData.getTime() : 0;
+
+    // --- 1. SCHEDA DA VERIFICARE ---
+    if (filtroPiantone === 'verificare') return f.daVerificare;
+    
+    // 🎯 2. SCHEDA SCADUTI (VERSIONE SICURA ED ELASTICA)
+    // Mostra il veicolo se il server lo ha marcato 'SCADUTO' OPPURE se la data di inizio è passata,
+    // il periodo non è ancora finito (fineTime >= oggiTime) e non è mai entrato.
+    if (filtroPiantone === 'scaduti') {
+        const èScadutoNelPeriodo = (x.stato === 'SCADUTO' || (oggiTime > inizioTime && oggiTime <= fineTime)) && !x.orario_ingresso;
+        return èScadutoNelPeriodo;
+    }
+    
+    // 🚘 3. SCHEDA ATTIVI
+    // Mostra chi è dentro (f.entrato), chi deve entrare oggi, o chi è da verificare.
+    // Esclude tassativamente chi è "scaduto nei giorni scorsi" così non intasa la lista principale.
+    if (filtroPiantone === 'attivi') {
+        if (x.orario_ingresso && !x.orario_uscita) return true; // È dentro adesso
+        if (f.daVerificare) return true;
+        // Se non è entrato, lo mostriamo tra gli attivi SOLO se oggi è il primo giorno di prenotazione
+        return (x.stato === 'PRENOTATO' && inizioTime === oggiTime && !x.orario_ingresso);
+    }
+    
+    // 🕒 4. SCHEDA STORICO
+    // Se questa funzione gestisce anche la scheda storico, mostriamo tutti i record passati a 'USCITO'
+    if (filtroPiantone === 'storico') {
+        return x.stato === 'USCITO';
+    }
+    
+    return true;
+})
     .sort((a, b) => {
         if (valoreCercato !== "") {
             const getPriorita = (item) => {
