@@ -1217,7 +1217,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         }
     } else {
         // Se non è loggato, impostiamo un filtro di default ma NON chiamiamo il server a vuoto
-        filtroPiantone = 'attivi';
+        filtroPiantone = 'verificare';
         // (Opzionale) Se hai una funzione di login, ti assicurerai di chiamare 
         // aggiornaVeicoli() subito DOPO che il login ha avuto successo.
     }
