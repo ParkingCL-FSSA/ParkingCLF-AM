@@ -419,7 +419,7 @@ app.post('/api/user/salva-nota', async (req, res) => {
     }
 });
 
-// --- 5. VEICOLI DENTRO (CORRETTO: SCADUTI VISIBILI FINO A FINE PERIODO) ---
+// --- 5. VEICOLI DENTRO (CORRETTO PER SCADUTI IMMEDIATI) ---
 app.get('/api/veicoli-dentro', async (req, res) => {
     const npass = req.query.npass;
 
@@ -430,18 +430,17 @@ app.get('/api/veicoli-dentro', async (req, res) => {
     try {
         const oggi = new Date().toISOString().split('T')[0];
         
-        // 1. Passato il primo giorno senza ingresso? Diventa SCADUTO (liberando il posto)
-        // ma manteniamo il controllo sulla data_fine per non archiviarlo prima del tempo
+        // 🚀 MODIFICA: Usiamo <= per includere subito chi doveva entrare ieri (Inizio + 1 giorno <= Oggi)
         await pool.query(`
             UPDATE prenotazioni 
             SET stato = 'SCADUTO' 
             WHERE stato = 'PRENOTATO' 
-              AND (data_inizio + INTERVAL '1 day') < $1 
+              AND (data_inizio + INTERVAL '1 day') <= $1 
               AND orario_ingresso IS NULL
               AND data_fine >= $1
         `, [oggi]);
 
-        // 2. Diventa ARCHIVIATO (e sparisce dai piedi) SOLO quando la data_fine è del tutto superata
+        // Archiviazione a fine periodo
         await pool.query(`
             UPDATE prenotazioni 
             SET stato = 'ARCHIVIATO' 
@@ -449,7 +448,6 @@ app.get('/api/veicoli-dentro', async (req, res) => {
               AND data_fine < $1
         `, [oggi]);
         
-        // La SELECT prende gli 'SCADUTO' vivi (che sono nel loro periodo ma contrassegnati come scaduti)
         const r = await pool.query(`
             SELECT id, npass, data_inizio, data_fine, orario_ingresso, orario_uscita, data_inserimento, stato
             FROM prenotazioni
@@ -709,6 +707,7 @@ app.get('/api/admin/ritardi', async (req, res) => {
     }
 });
 
+// PIANTONE STORICO (RIPRISTINATO E ORDINATO) 
 app.get('/api/piantone/storico', async (req, res) => {
     const npass = req.query.npass;
 
@@ -717,12 +716,14 @@ app.get('/api/piantone/storico', async (req, res) => {
     }
 
     try {
+        // Mostriamo solo chi è USCITO davvero, ordinando per l'orario effettivo di uscita
         const r = await pool.query(`
-            SELECT npass, orario_ingresso, orario_uscita, stato
+            SELECT npass, orario_ingresso, orario_uscita, stato, data_inizio, data_fine
             FROM prenotazioni
-            WHERE stato = 'USCITO' OR stato = 'ARCHIVIATO'
-            ORDER BY orario_ingresso DESC
-            LIMIT 30
+            WHERE stato = 'USCITO'
+              AND orario_uscita IS NOT NULL
+            ORDER BY orario_uscita DESC
+            LIMIT 50
         `);
         res.json(r.rows);
     } catch (err) {
