@@ -1027,32 +1027,32 @@ async function aggiornaVeicoli() {
         const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
         const evidenzia = x.npass === ultimoAggiornato; const f = getFlags(x);
         
-        // Rileviamo se l'utente è da mobile (schermo sotto i 768px)
-    const isMobile = window.innerWidth < 768;
+    // Distribuzione esatta delle larghezze per far respirare i testi (Totale 100%)
+    const wPass = 'width: 18%;';
+    const wDataIng = 'width: 25%;';
+    const wOraIng = 'width: 15%;';
+    const wDataUsc = 'width: 27%;';
+    const wOraUsc = 'width: 15%;';
 
-    // 🛠️ STILE ADATTIVO: Più compatto lateralmente e font corretto su mobile per evitare sovrapposizioni
-    const fontSize = isMobile ? '12px' : '14px';
-    const paddingCella = isMobile ? '10px 4px' : '6px 8px'; // Più spazio verticale (10px) per cliccare bene col dito, meno laterale (4px)
+    // Padding comodo per il touch del cellulare (8px sopra/sotto, 4px ai lati)
+    const baseStyle = 'padding: 8px 4px; text-align: left; vertical-align: middle; box-sizing: border-box;';
 
-    const cellStyle = `style="width: 20%; padding: ${paddingCella}; text-align: left; vertical-align: middle; font-size: ${fontSize}; box-sizing: border-box; overflow: hidden; white-space: nowrap;"`;
-            
     return `<tr style="
-        height: auto;
         ${f.scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
         ${f.storico ? 'background:#f1f5f9;' : ''}
         ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
         ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
     ">
-        <td ${cellStyle}>
+        <td style="${baseStyle} ${wPass}">
             <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" 
-                style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline; padding:0; margin:0; font-size: ${fontSize};">
+                style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline; padding:0; margin:0; font-size:14px;">
                 ${x.npass}
             </button>
         </td>
-        <td ${cellStyle}>${f.scaduto ? 'NON ENTRATO' : dataIng}</td>
-        <td ${cellStyle} style="font-weight:bold; padding: ${paddingCella}; font-size: ${fontSize};">${f.scaduto ? '' : oraIng}</td>
-        <td ${cellStyle}>${dataUsc}</td>
-        <td ${cellStyle} style="font-weight:bold; padding: ${paddingCella}; font-size: ${fontSize};">${oraUsc}</td>
+        <td style="${baseStyle} ${wDataIng}">${f.scaduto ? 'NON ENTRATO' : dataIng}</td>
+        <td style="${baseStyle} ${wOraIng} font-weight:bold;">${f.scaduto ? '' : oraIng}</td>
+        <td style="${baseStyle} ${wDataUsc}">${dataUsc}</td>
+        <td style="${baseStyle} ${wOraUsc} font-weight:bold;">${oraUsc}</td>
     </tr>`;
 }).join('') || `<tr><td colspan="5" style="text-align:center; color:black; padding:16px;">Nessun veicolo presente</td></tr>`;
 
