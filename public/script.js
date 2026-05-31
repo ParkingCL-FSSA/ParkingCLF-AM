@@ -1029,10 +1029,10 @@ async function aggiornaVeicoli() {
         
     // Distribuzione esatta delle larghezze per far respirare i testi (Totale 100%)
     const wPass = 'width: 18%;';
-    const wDataIng = 'width: 27%;';
-    const wOraIng = 'width: 14%;';
-    const wDataUsc = 'width: 27%;';
-    const wOraUsc = 'width: 14%;';
+    const wDataIng = 'width: 24%;';
+    const wOraIng = 'width: 17%;';
+    const wDataUsc = 'width: 24%;';
+    const wOraUsc = 'width: 17%;';
 
     // Padding comodo per il touch del cellulare (8px sopra/sotto, 4px ai lati)
     const baseStyle = 'padding: 10px 4px; text-align: left; vertical-align: middle; box-sizing: border-box;';
