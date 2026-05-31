@@ -1040,9 +1040,9 @@ async function aggiornaVeicoli() {
                 <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline;">${x.npass}</button>
             </td>
             
-            <td ${cellStyle}>${f.scaduto ? 'NON ENTRATO' : dataIng}</td>
+            <td ${cellStyle}>${f.scaduto ? 'NON' : dataIng}</td>
             
-            <td ${cellStyle} style="font-weight:bold;">${f.scaduto ? '' : oraIng}</td>
+            <td ${cellStyle}>${f.scaduto ? 'ENTRATO' : oraIng}</td>
             
             <td ${cellStyle}>${dataUsc}</td>
             
