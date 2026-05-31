@@ -55,13 +55,15 @@ async function scadenzaPrenotazioni() {
         const result = await pool.query(`
             UPDATE prenotazioni
             SET stato = CASE
-                -- prenotazione mai usata
-                WHEN stato = 'PRENOTATO'
+                -- Il periodo prenotato è COMPLETAMENTE SUPERATO e l'auto non è mai entrata.
+                -- Diventa ARCHIVIATO e sparisce dalle liste operative del piantone.
+                WHEN stato IN ('PRENOTATO', 'SCADUTO')
                      AND data_fine < CURRENT_DATE
                      AND orario_ingresso IS NULL
-                THEN 'MAI_ENTRATO'
+                THEN 'ARCHIVIATO'
 
-                -- entrato ma mai uscito
+                -- Il periodo è superato, l'auto risulta ENTRATA ma non è mai stata registrata l'uscita.
+                -- Diventa DA_VERIFICARE (va nei ritardi effettivi del piantone/admin).
                 WHEN stato = 'ENTRATO'
                      AND data_fine < CURRENT_DATE
                      AND orario_uscita IS NULL
@@ -71,7 +73,7 @@ async function scadenzaPrenotazioni() {
             END
             WHERE
                 (
-                    stato = 'PRENOTATO'
+                    stato IN ('PRENOTATO', 'SCADUTO')
                     AND data_fine < CURRENT_DATE
                 )
                 OR
@@ -83,7 +85,7 @@ async function scadenzaPrenotazioni() {
         `);
 
         if (result.rowCount > 0) {
-            console.log(`[SCADENZA] ${result.rowCount} prenotazioni aggiornate`);
+            console.log(`[SCADENZA] ${result.rowCount} prenotazioni aggiornate nei record storici`);
         }
     } catch (err) {
         console.error('[SCADENZA] Errore:', err.message);
@@ -417,7 +419,7 @@ app.post('/api/user/salva-nota', async (req, res) => {
     }
 });
 
-// --- 5. VEICOLI DENTRO (OTTIMIZZATO) ---
+// --- 5. VEICOLI DENTRO (CORRETTO: SCADUTI VISIBILI FINO A FINE PERIODO) ---
 app.get('/api/veicoli-dentro', async (req, res) => {
     const npass = req.query.npass;
 
@@ -428,24 +430,26 @@ app.get('/api/veicoli-dentro', async (req, res) => {
     try {
         const oggi = new Date().toISOString().split('T')[0];
         
-        // 🚀 Regola Scadenze
+        // 1. Passato il primo giorno senza ingresso? Diventa SCADUTO (liberando il posto)
+        // ma manteniamo il controllo sulla data_fine per non archiviarlo prima del tempo
         await pool.query(`
             UPDATE prenotazioni 
             SET stato = 'SCADUTO' 
             WHERE stato = 'PRENOTATO' 
               AND (data_inizio + INTERVAL '1 day') < $1 
               AND orario_ingresso IS NULL
+              AND data_fine >= $1
         `, [oggi]);
 
-        // Archiviazione automatica al termine del periodo totale
+        // 2. Diventa ARCHIVIATO (e sparisce dai piedi) SOLO quando la data_fine è del tutto superata
         await pool.query(`
             UPDATE prenotazioni 
             SET stato = 'ARCHIVIATO' 
-            WHERE stato IN ('PRENOTATO', 'SCADUTO') 
+            WHERE stato = 'SCADUTO' 
               AND data_fine < $1
         `, [oggi]);
         
-        // Estrazione mirata per la visualizzazione in tempo reale della tabella
+        // La SELECT prende gli 'SCADUTO' vivi (che sono nel loro periodo ma contrassegnati come scaduti)
         const r = await pool.query(`
             SELECT id, npass, data_inizio, data_fine, orario_ingresso, orario_uscita, data_inserimento, stato
             FROM prenotazioni
