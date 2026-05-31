@@ -889,7 +889,7 @@ async function aggiornaVeicoli() {
         if (badge) {
             badge.innerHTML = `
             <div style="font-size: 13px; color: #475569; padding: 4px 0; font-weight: 500; text-align: center;">
-                🚗 <b>Entrati oggi:</b> <span style="color:#1e293b; font-weight:bold;">${countEntratiOggi}</span>
+                🚗 <b>Entrati:</b> <span style="color:#1e293b; font-weight:bold;">${countEntratiOggi}</span>
                 &nbsp;|&nbsp;
                 📅 <b>Prenotati:</b> <span style="color:#1e293b; font-weight:bold;">${countPrenotatiOggi}</span>
                 &nbsp;|&nbsp;
