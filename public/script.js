@@ -164,7 +164,7 @@ function aggiornaGraficaBadge() {
         
         // Blink attivo solo per le criticità
         if (totaleScaduti > 0) {
-            statoTabella.classList.add('badge-blink');
+            statoTabella.classList.add('badge-blink-2');
         }
     }
     else if (filtroPiantone === 'attivi') {
