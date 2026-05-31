@@ -848,12 +848,17 @@ async function aggiornaVeicoli() {
         if (dataInizioData) dataInizioData.setHours(0,0,0,0);
         const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
+        // --- GESTIONE SCHEDE TABELLA ---
         if (filtroPiantone === 'verificare') return f.daVerificare;
-        if (filtroPiantone === 'scaduti') return f.scaduto;
+        
+        // 🎯 SCHEDA SCADUTI: Mostra i pass in stato SCADUTO inviati dal server 
+        // che non sono ancora entrati (orario_ingresso vuoto)
+        if (filtroPiantone === 'scaduti') return (x.stato === 'SCADUTO' && !x.orario_ingresso);
+        
         if (filtroPiantone === 'attivi') return (f.entrato || (x.stato === 'PRENOTATO' && inizioTime === oggiTime) || f.daVerificare);
         if (filtroPiantone === 'storico') return f.storico;
         return true;
-    })
+    });
     .sort((a, b) => {
         if (valoreCercato !== "") {
             const getPriorita = (item) => {
