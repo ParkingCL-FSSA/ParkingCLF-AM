@@ -716,263 +716,286 @@ async function aggiornaPostiLiberiPiantone() {
 }
 
 async function aggiornaVeicoli() {
+    // 🛡️ CONTROLLO DI SICUREZZA INTEGRATO: Se userPass è vuoto o non definito, interrompiamo subito
+    if (typeof userPass === 'undefined' || !userPass || userPass.trim() === "") {
+        console.warn("⚠️ Richiesta annullata: userPass non ancora disponibile (utente non loggato).");
+        return;
+    }
 
-    const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
-    const dati = await res.json();
-    
-    // Configurazione data odierna locale per i confronti
-    const oraSolareOggi = new Date();
-    oraSolareOggi.setHours(0, 0, 0, 0);
-    const oggiTime = oraSolareOggi.getTime();
-    const oggiString = oraSolareOggi.toISOString().split('T')[0];
+    try {
+        const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
+        
+        // Se il server risponde con un errore (es: 403 o 500), usciamo in sicurezza
+        if (!res.ok) {
+            console.warn(`⚠️ Impossibile recuperare i dati dei veicoli. Il server ha risposto con stato: ${res.status}`);
+            return;
+        }
 
-    const inputSearch = document.getElementById('search-p');
+        const dati = await res.json();
+        
+        // 🎯 PROTEZIONE CRASH: Verifichiamo che 'dati' sia effettivamente un array valido
+        if (!Array.isArray(dati)) {
+            console.error("💥 I dati ricevuti dal server non sono un array valido:", dati);
+            return;
+        }
+        
+        // Configurazione data odierna locale per i confronti
+        const oraSolareOggi = new Date();
+        oraSolareOggi.setHours(0, 0, 0, 0);
+        const oggiTime = oraSolareOggi.getTime();
+        const oggiString = oraSolareOggi.toISOString().split('T')[0];
 
-    // ==========================================
-    // ⚠️ INIZIALIZZAZIONE PULITA DEI CONTATORI
-    // ==========================================
-    let countDentro = 0; // Solo pass standard
-    let countListaV1p = 0; // Solo pass che iniziano con V1P
-    
-    let countEntratiOggi = 0;
-    let countPrenotatiOggi = 0;
-    let countVerificare = 0;
-    let countScaduti = 0; 
-    
-    dati.forEach(x => {
-        const passCorrente = (x.npass || '').toUpperCase().trim();
+        const inputSearch = document.getElementById('search-p');
 
-        // Conversione date del DB per i confronti temporali
-        const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
-        if (dataInizioData) dataInizioData.setHours(0,0,0,0);
-        const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
+        // ==========================================
+        // ⚠️ INIZIALIZZAZIONE PULITA DEI CONTATORI
+        // ==========================================
+        let countDentro = 0; // Solo pass standard
+        let countListaV1p = 0; // Solo pass che iniziano con V1P
+        
+        let countEntratiOggi = 0;
+        let countPrenotatiOggi = 0;
+        let countVerificare = 0;
+        let countScaduti = 0; 
+        
+        dati.forEach(x => {
+            const passCorrente = (x.npass || '').toUpperCase().trim();
 
-        const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
-        if (dataFineData) dataFineData.setHours(0,0,0,0);
-        const fineTime = dataFineData ? dataFineData.getTime() : 0;
+            // Conversione date del DB per i confronti temporali
+            const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
+            if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+            const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
-        const dataIngressoString = x.orario_ingresso ? x.orario_ingresso.substring(0, 10) : '';
+            const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
+            if (dataFineData) dataFineData.setHours(0,0,0,0);
+            const fineTime = dataFineData ? dataFineData.getTime() : 0;
 
-        // 🎯 SEPARAZIONE CONTEGGIO: Se è dentro, verifichiamo se è V1P o standard
-        if (x.orario_ingresso && !x.orario_uscita) {
-            if (passCorrente.startsWith('V1P')) {
-                countListaV1p++; // Va in lista extra
-            } else {
-                countDentro++; // Va nel computo dei 90 standard
+            const dataIngressoString = x.orario_ingresso ? x.orario_ingresso.substring(0, 10) : '';
+
+            // 🎯 SEPARAZIONE CONTEGGIO: Se è dentro, verifichiamo se è V1P o standard
+            if (x.orario_ingresso && !x.orario_uscita) {
+                if (passCorrente.startsWith('V1P')) {
+                    countListaV1p++; // Va in lista extra
+                } else {
+                    countDentro++; // Va nel computo dei 90 standard
+                }
+            }
+
+            // Altri contatori operativi 
+            if (x.orario_ingresso && dataIngressoString === oggiString) {
+                countEntratiOggi++;
+            }
+            if (x.stato === 'PRENOTATO' && inizioTime === oggiTime) {
+                countPrenotatiOggi++;
+            }
+            
+            const f = getFlags(x);
+            if (f.daVerificare) countVerificare++;
+            
+            // 🎯 ALLINEAMENTO CONTEGGIO BADGE: Usa la stessa logica elastica del filtro sotto
+            const èScadutoNelPeriodo = (x.stato === 'SCADUTO' || (oggiTime > inizioTime && oggiTime <= fineTime)) && !x.orario_ingresso;
+            if (èScadutoNelPeriodo) {
+                countScaduti++;
+            }
+        });
+        
+        totaleScaduti = countScaduti;
+        totaleVerificare = countVerificare;
+        
+        // Matematica corretta basata solo sui non-V1P (Es: 90 - 52 = 38)
+        const postiLiberi = 90 - countDentro; 
+
+        // --- COSTRUZIONE DELLA STRINGA DINAMICA CON ELEMENTO LISTA SE PRESENTE ---
+        let stringaColorata = `
+            <span style="color:#16a34a; font-weight:bold;">Liberi: ${postiLiberi}</span> 
+            &nbsp;|&nbsp; 
+            <span style="color:#ea580c; font-weight:bold;">Dentro: ${countDentro}</span>
+        `;
+        if (countListaV1p > 0) {
+            stringaColorata += ` &nbsp;|&nbsp; <span style="color:#2563eb; font-weight:bold;">Lista: ${countListaV1p}</span>`;
+        }
+
+        // 1. Iniezione nel Box/Card principale
+        const displaySotto = document.getElementById('total-free-display');
+        const cardSbarraAlto = document.getElementById('card-sbarra-alto') || document.getElementById('status-parcheggio');
+        
+        if (displaySotto) {
+            displaySotto.innerHTML = stringaColorata;
+        } else if (cardSbarraAlto) {
+            cardSbarraAlto.innerHTML = stringaColorata;
+        }
+
+        // 2. Iniezione nella stringa centrale "CONTROLLO SBARRA 🚧"
+        const stringaSbarraCentro = document.getElementById('testo-sbarra-centro');
+        if (stringaSbarraCentro) {
+            let testoCentro = `🚧 CONTROLLO SBARRA | 🅿️ Liberi: ${postiLiberi} | 🚘 Dentro: ${countDentro}`;
+            if (countListaV1p > 0) {
+                testoCentro += ` | 🔹 Lista: ${countListaV1p}`;
+            }
+            stringaSbarraCentro.innerHTML = testoCentro;
+        }
+        
+        // ============================================================
+        // 2. INIEZIONE BADGE IN BASSO (SOTTO BOTTONE ARRIVI)
+        // ============================================================
+        const badge = document.getElementById('badge-contatori');
+        if (badge) {
+            badge.innerHTML = `
+            <div style="font-size: 13px; color: #475569; padding: 4px 0; font-weight: 500; text-align: center;">
+                🚗 <b>Entrati oggi:</b> <span style="color:#1e293b; font-weight:bold;">${countEntratiOggi}</span>
+                &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+                &nbsp;📅 <b>Prenotati:</b> <span style="color:#1e293b; font-weight:bold;">${countPrenotatiOggi}</span>
+                &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+                🚨 <b>Da verificare:</b> <span style="color:${countVerificare > 0 ? '#ea580c' : '#475569'}; font-weight:bold;">${countVerificare}</span>
+
+                ${countScaduti > 0 ? `
+                    &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+                    <span id="badge-scaduti" style="font-weight:bold;">
+                        ⏰ <b>Scaduti:</b> ${countScaduti}
+                    </span>
+                ` : ''}
+            </div>
+            `;
+        }
+
+        const elScaduti = document.getElementById('badge-scaduti');
+        if (elScaduti && countScaduti > 0) {
+            elScaduti.style.animation = 'blink 1s infinite';
+            elScaduti.style.color = '#ef4444';
+        }
+
+        // --- FILTRAGGIO E ORDINAMENTO TABELLA ---
+        const valoreCercato = inputSearch?.value?.trim()?.toUpperCase() || "";
+
+        // Recupero dinamico dell'etichetta dello stato tabella
+        const statoTabella = document.getElementById('stato-tabella');
+
+        const lista = dati.filter(x => {
+            // Se c'è una ricerca testuale per targa/pass, mostra il risultato esatto a prescindere dai filtri
+            if (valoreCercato !== "") return x.npass?.toUpperCase() === valoreCercato;
+            
+            const f = getFlags(x);
+            
+            // Configurazione millisecondi per i confronti temporali precisi
+            const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
+            if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+            const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
+
+            const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
+            if (dataFineData) dataFineData.setHours(0,0,0,0);
+            const fineTime = dataFineData ? dataFineData.getTime() : 0;
+
+            // --- 1. SCHEDA DA VERIFICARE ---
+            if (filtroPiantone === 'verificare') return f.daVerificare;
+            
+            // 🎯 2. SCHEDA SCADUTI 
+            if (filtroPiantone === 'scaduti') {
+                const èScadutoNelPeriodo = (x.stato === 'SCADUTO' || (oggiTime > inizioTime && oggiTime <= fineTime)) && !x.orario_ingresso;
+                return èScadutoNelPeriodo;
+            }
+            
+            // 🚘 3. SCHEDA ATTIVI
+            if (filtroPiantone === 'attivi') {
+                if (x.orario_ingresso && !x.orario_uscita) return true; // È dentro adesso
+                if (f.daVerificare) return true;
+                return (x.stato === 'PRENOTATO' && inizioTime === oggiTime && !x.orario_ingresso);
+            }
+            
+            // 🕒 4. SCHEDA STORICO
+            if (filtroPiantone === 'storico') {
+                return x.stato === 'USCITO';
+            }
+            
+            return true;
+        })
+        .sort((a, b) => {
+            if (valoreCercato !== "") {
+                const getPriorita = (item) => {
+                    const f = getFlags(item);
+                    const dataInizioData = item.data_inizio ? new Date(item.data_inizio) : null;
+                    if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+                    const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
+
+                    if (f.entrato || (item.stato === 'PRENOTATO' && inizioTime === oggiTime)) return 1; 
+                    if (f.daVerificare) return 2;                
+                    if (f.scaduto) return 3;                    
+                    if (f.storico) return 4;                    
+                    return 5;
+                };
+                const pesoA = getPriorita(a); const pesoB = getPriorita(b);
+                if (pesoA !== pesoB) return pesoA - pesoB;
+                return (b.id || 0) - (a.id || 0);
+            } 
+            
+            if (filtroPiantone === 'verificare') {
+                return (a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0)) - (b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0));
+            }
+            if (filtroPiantone === 'storico') {
+                return (b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0)) - (a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0));
+            }
+            return (a.npass || "").localeCompare(b.npass || "", undefined, { numeric: true, sensitivity: 'base' });
+        });
+
+        if (valoreCercato !== "" && lista.length > 0) {
+            let label = ""; let colore = "#334155"; let sfondo = "#f8fafc";
+            const veicoloTrovato = lista[0]; const f = getFlags(veicoloTrovato);
+            const dataInizioData = veicoloTrovato.data_inizio ? new Date(veicoloTrovato.data_inizio) : null;
+            if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+            const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
+            
+            if (f.entrato || (veicoloTrovato.stato === 'PRENOTATO' && inizioTime === oggiTime)) { label = "📋 ATTIVO (Trovato da Ricerca)"; colore = "#2563eb"; sfondo = "#dbeafe"; } 
+            else if (f.daVerificare) { label = "🚨 DA VERIFICARE (Trovato da Ricerca)"; colore = "#ea580c"; sfondo = "#ffedd5"; } 
+            else if (f.scaduto) { label = "⏰ SCADUTO (Trovato da Ricerca)"; colore = "#dc2626"; sfondo = "#fee2e2"; } 
+            else if (f.storico) { label = "🕘 STORICO (Trovato da Ricerca)"; colore = "#475569"; sfondo = "#e2e8f0"; }
+            
+            if (statoTabella) {
+                statoTabella.style.color = colore; statoTabella.style.background = sfondo;
+                statoTabella.style.borderColor = colore; statoTabella.innerHTML = label;
             }
         }
+            
+        // --- INIEZIONE RIGHE IN TABELLA HTML ---
+        document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
+            const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
+            const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
+            const dataIng = ing ? ing.toLocaleDateString('it-IT') : '--';
+            const oraIng = ing ? ing.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
+            const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '';
+            const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '';
+            const evidenzia = x.npass === ultimoAggiornato; const f = getFlags(x);
+            
+            return `<tr style="
+                ${f.scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
+                ${f.storico ? 'background:#f1f5f9;' : ''}
+                ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
+                ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
+            ">
+                <td>
+                    <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline;">${x.npass}</button>
+                </td>
+                <td>${dataIng}</td>
+                <td style="font-weight:bold;">${oraIng}</td>
+                <td>${f.scaduto ? 'NON ENTRATO' : dataUsc}</td>
+                <td style="font-weight:bold;">${f.scaduto ? '' : oraUsc}</td>
+            </tr>`;
+        }).join('') || `<tr><td colspan="5" style="text-align:center; color:black; padding:16px;">Nessun veicolo presente</td></tr>`;
 
-        // Altri contatori operativi (escludiamo o includiamo a seconda se vuoi vederli nei badge in basso)
-        if (x.orario_ingresso && dataIngressoString === oggiString) {
-            countEntratiOggi++;
-        }
-        if (x.stato === 'PRENOTATO' && inizioTime === oggiTime) {
-            countPrenotatiOggi++;
-        }
-        const f = getFlags(x);
-        if (f.daVerificare) countVerificare++;
-        if (x.stato === 'PRENOTATO' && oggiTime > fineTime) countScaduti++;
-    });
-    
-    totaleScaduti = countScaduti;
-    totaleVerificare = countVerificare;
-    
-    // Matematica corretta basata solo sui non-V1P (Es: 90 - 52 = 38)
-    const postiLiberi = 90 - countDentro; 
-
-    // --- COSTRUZIONE DELLA STRINGA DINAMICA CON ELEMENTO LISTA SE PRESENTE ---
-    let stringaColorata = `
-        <span style="color:#16a34a; font-weight:bold;">Liberi: ${postiLiberi}</span> 
-        &nbsp;|&nbsp; 
-        <span style="color:#ea580c; font-weight:bold;">Dentro: ${countDentro}</span>
-    `;
-    if (countListaV1p > 0) {
-        stringaColorata += ` &nbsp;|&nbsp; <span style="color:#2563eb; font-weight:bold;">Lista: ${countListaV1p}</span>`;
-    }
-
-    // 1. Iniezione nel Box/Card principale
-    const displaySotto = document.getElementById('total-free-display');
-    const cardSbarraAlto = document.getElementById('card-sbarra-alto') || document.getElementById('status-parcheggio');
-    
-    if (displaySotto) {
-        displaySotto.innerHTML = stringaColorata;
-    } else if (cardSbarraAlto) {
-        cardSbarraAlto.innerHTML = stringaColorata;
-    }
-
-    // 2. Iniezione nella stringa centrale "CONTROLLO SBARRA 🚧"
-    const stringaSbarraCentro = document.getElementById('testo-sbarra-centro');
-    if (stringaSbarraCentro) {
-        let testoCentro = `🚧 CONTROLLO SBARRA | 🅿️ Liberi: ${postiLiberi} | 🚘 Dentro: ${countDentro}`;
-        if (countListaV1p > 0) {
-            testoCentro += ` | 🔹 Lista: ${countListaV1p}`;
-        }
-        stringaSbarraCentro.innerHTML = testoCentro;
-    }
-    
-    // ============================================================
-    // 2. INIEZIONE BADGE IN BASSO (SOTTO BOTTONE ARRIVI)
-    // ============================================================
-    const badge = document.getElementById('badge-contatori');
-    if (badge) {
-        badge.innerHTML = `
-        <div style="font-size: 13px; color: #475569; padding: 4px 0; font-weight: 500; text-align: center;">
-            🚗 <b>Entrati oggi:</b> <span style="color:#1e293b; font-weight:bold;">${countEntratiOggi}</span>
-            &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
-            📅 <b>Prenotati:</b> <span style="color:#1e293b; font-weight:bold;">${countPrenotatiOggi}</span>
-            &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
-            🚨 <b>Da verificare:</b> <span style="color:${countVerificare > 0 ? '#ea580c' : '#475569'}; font-weight:bold;">${countVerificare}</span>
-
-            ${countScaduti > 0 ? `
-                &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
-                <span id="badge-scaduti" style="font-weight:bold;">
-                    ⏰ <b>Scaduti:</b> ${countScaduti}
-                </span>
-            ` : ''}
-        </div>
-        `;
-    }
-
-    const elScaduti = document.getElementById('badge-scaduti');
-    if (elScaduti && countScaduti > 0) {
-        elScaduti.style.animation = 'blink 1s infinite';
-        elScaduti.style.color = '#ef4444';
-    }
-
-    // --- FILTRAGGIO E ORDINAMENTO TABELLA ---
-    const valoreCercato = inputSearch?.value?.trim()?.toUpperCase() || "";
-
-    // Recupero dinamico dell'etichetta dello stato tabella
-    const statoTabella = document.getElementById('stato-tabella');
-
-    const lista = dati.filter(x => {
-    // Se c'è una ricerca testuale per targa/pass, mostra il risultato esatto a prescindere dai filtri
-    if (valoreCercato !== "") return x.npass?.toUpperCase() === valoreCercato;
-    
-    const f = getFlags(x);
-    
-    // Configurazione millisecondi per i confronti temporali precisi
-    const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
-    if (dataInizioData) dataInizioData.setHours(0,0,0,0);
-    const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
-
-    const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
-    if (dataFineData) dataFineData.setHours(0,0,0,0);
-    const fineTime = dataFineData ? dataFineData.getTime() : 0;
-
-    // --- 1. SCHEDA DA VERIFICARE ---
-    if (filtroPiantone === 'verificare') return f.daVerificare;
-    
-    // 🎯 2. SCHEDA SCADUTI (VERSIONE SICURA ED ELASTICA)
-    // Mostra il veicolo se il server lo ha marcato 'SCADUTO' OPPURE se la data di inizio è passata,
-    // il periodo non è ancora finito (fineTime >= oggiTime) e non è mai entrato.
-    if (filtroPiantone === 'scaduti') {
-        const èScadutoNelPeriodo = (x.stato === 'SCADUTO' || (oggiTime > inizioTime && oggiTime <= fineTime)) && !x.orario_ingresso;
-        return èScadutoNelPeriodo;
-    }
-    
-    // 🚘 3. SCHEDA ATTIVI
-    // Mostra chi è dentro (f.entrato), chi deve entrare oggi, o chi è da verificare.
-    // Esclude tassativamente chi è "scaduto nei giorni scorsi" così non intasa la lista principale.
-    if (filtroPiantone === 'attivi') {
-        if (x.orario_ingresso && !x.orario_uscita) return true; // È dentro adesso
-        if (f.daVerificare) return true;
-        // Se non è entrato, lo mostriamo tra gli attivi SOLO se oggi è il primo giorno di prenotazione
-        return (x.stato === 'PRENOTATO' && inizioTime === oggiTime && !x.orario_ingresso);
-    }
-    
-    // 🕒 4. SCHEDA STORICO
-    // Se questa funzione gestisce anche la scheda storico, mostriamo tutti i record passati a 'USCITO'
-    if (filtroPiantone === 'storico') {
-        return x.stato === 'USCITO';
-    }
-    
-    return true;
-})
-    .sort((a, b) => {
-        if (valoreCercato !== "") {
-            const getPriorita = (item) => {
-                const f = getFlags(item);
-                const dataInizioData = item.data_inizio ? new Date(item.data_inizio) : null;
-                if (dataInizioData) dataInizioData.setHours(0,0,0,0);
-                const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
-
-                if (f.entrato || (item.stato === 'PRENOTATO' && inizioTime === oggiTime)) return 1; 
-                if (f.daVerificare) return 2;                
-                if (f.scaduto) return 3;                    
-                if (f.storico) return 4;                    
-                return 5;
-            };
-            const pesoA = getPriorita(a); const pesoB = getPriorita(b);
-            if (pesoA !== pesoB) return pesoA - pesoB;
-            return (b.id || 0) - (a.id || 0);
-        } 
-        
-        if (filtroPiantone === 'verificare') {
-            return (a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0)) - (b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0));
-        }
-        if (filtroPiantone === 'storico') {
-            return (b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0)) - (a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0));
-        }
-        return (a.npass || "").localeCompare(b.npass || "", undefined, { numeric: true, sensitivity: 'base' });
-    });
-
-    if (valoreCercato !== "" && lista.length > 0) {
-        let label = ""; let colore = "#334155"; let sfondo = "#f8fafc";
-        const veicoloTrovato = lista[0]; const f = getFlags(veicoloTrovato);
-        const dataInizioData = veicoloTrovato.data_inizio ? new Date(veicoloTrovato.data_inizio) : null;
-        if (dataInizioData) dataInizioData.setHours(0,0,0,0);
-        const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
-        
-        if (f.entrato || (veicoloTrovato.stato === 'PRENOTATO' && inizioTime === oggiTime)) { label = "📋 ATTIVO (Trovato da Ricerca)"; colore = "#2563eb"; sfondo = "#dbeafe"; } 
-        else if (f.daVerificare) { label = "🚨 DA VERIFICARE (Trovato da Ricerca)"; colore = "#ea580c"; sfondo = "#ffedd5"; } 
-        else if (f.scaduto) { label = "⏰ SCADUTO (Trovato da Ricerca)"; colore = "#dc2626"; sfondo = "#fee2e2"; } 
-        else if (f.storico) { label = "🕘 STORICO (Trovato da Ricerca)"; colore = "#475569"; sfondo = "#e2e8f0"; }
-        
-        if (statoTabella) {
-            statoTabella.style.color = colore; statoTabella.style.background = sfondo;
-            statoTabella.style.borderColor = colore; statoTabella.innerHTML = label;
-        }
-    }
-        
-    // --- INIEZIONE RIGHE IN TABELLA HTML ---
-    document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
-        const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
-        const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
-        const dataIng = ing ? ing.toLocaleDateString('it-IT') : '--';
-        const oraIng = ing ? ing.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
-        const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '';
-        const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '';
-        const evidenzia = x.npass === ultimoAggiornato; const f = getFlags(x);
-        
-        return `<tr style="
-            ${f.scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
-            ${f.storico ? 'background:#f1f5f9;' : ''}
-            ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
-            ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
-        ">
-            <td>
-                <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline;">${x.npass}</button>
-            </td>
-            <td>${dataIng}</td>
-            <td style="font-weight:bold;">${oraIng}</td>
-            <td>${f.scaduto ? 'NON ENTRATO' : dataUsc}</td>
-            <td style="font-weight:bold;">${f.scaduto ? '' : oraUsc}</td>
-        </tr>`;
-    }).join('') || `<tr><td colspan="5" style="text-align:center; color:black; padding:16px;">Nessun veicolo presente</td></tr>`;
-
-    // Aggancio eventi pulsanti lista
-    document.querySelectorAll('.btn-pass').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const pass = btn.dataset.pass; const idRecord = btn.dataset.id; 
-            if (inputSearch) inputSearch.value = pass;
-            await cercaPass(pass, idRecord);
-            setTimeout(() => { document.getElementById('panel-piantone')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
+        // Aggancio eventi pulsanti lista
+        document.querySelectorAll('.btn-pass').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const pass = btn.dataset.pass; const idRecord = btn.dataset.id; 
+                if (inputSearch) inputSearch.value = pass;
+                await cercaPass(pass, idRecord);
+                setTimeout(() => { document.getElementById('panel-piantone')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
+            });
         });
-    });
 
-    const btnFiltro = document.getElementById('btn-filtro');
-    if (btnFiltro) btnFiltro.innerText = "MOSTRA STATI";
+        const btnFiltro = document.getElementById('btn-filtro');
+        if (btnFiltro) btnFiltro.innerText = "MOSTRA STATI";
+
+    } catch (err) {
+        console.error("💥 Errore critico durante l'aggiornamento dei veicoli:", err);
+    }
 }
 
 let loadingAzione = false;
@@ -1162,34 +1185,45 @@ async function mostraArriviOggi() {
 }
 window.addEventListener('DOMContentLoaded', async () => {
     // ============================================================
-    // 🚀 INIZIALIZZAZIONE AUTOMATICA E ALLINEAMENTO BADGE OPERATIVO
+    // 🚀 INIZIALIZZAZIONE AUTOMATICA PROTETTA
     // ============================================================
-    // 1. Facciamo un primo caricamento dati per calcolare i totali (totaleVerificare, totaleScaduti, ecc.)
-    if (typeof aggiornaVeicoli === 'function') {
-        await aggiornaVeicoli(); 
-    }
+    
+    // 🛡️ CONTROLLO DI SICUREZZA: Eseguiamo il caricamento iniziale SOLO se c'è un pass valido 
+    // e se l'utente è effettivamente loggato come piantone/admin.
+    // Se la pagina si apre sulla schermata di Login speculare, questo evita il crash 403.
+    if (typeof userPass !== 'undefined' && userPass && userPass.trim() !== "") {
+        
+        if (typeof aggiornaVeicoli === 'function') {
+            await aggiornaVeicoli(); 
+        }
 
-    // 2. Decidiamo lo stato di partenza esatto in base alla situazione reale del parcheggio
-    if (typeof totaleVerificare !== 'undefined' && totaleVerificare > 0) {
-        filtroPiantone = 'verificare';
-    } else if (typeof totaleScaduti !== 'undefined' && totaleScaduti > 0) {
-        filtroPiantone = 'scaduti';
+        // Decidiamo lo stato di partenza esatto in base alla situazione reale del parcheggio
+        if (typeof totaleVerificare !== 'undefined' && totaleVerificare > 0) {
+            filtroPiantone = 'verificare';
+        } else if (typeof totaleScaduti !== 'undefined' && totaleScaduti > 0) {
+            filtroPiantone = 'scaduti';
+        } else {
+            filtroPiantone = 'attivi';
+        }
+
+        // Forziamo immediatamente la grafica del badge ad allinearsi
+        if (typeof aggiornaGraficaBadge === 'function') {
+            aggiornaGraficaBadge();
+        }
+
+        // Secondo refresh rapido per disegnare la tabella coerente
+        if (typeof aggiornaVeicoli === 'function') {
+            await aggiornaVeicoli();
+        }
     } else {
+        // Se non è loggato, impostiamo un filtro di default ma NON chiamiamo il server a vuoto
         filtroPiantone = 'attivi';
-    }
-
-    // 3. Forziamo immediatamente la grafica del badge ad allinearsi (chiamando la funzione di supporto)
-    if (typeof aggiornaGraficaBadge === 'function') {
-        aggiornaGraficaBadge();
-    }
-
-    // 4. Secondo refresh rapido per disegnare la tabella coerente con il badge iniziale
-    if (typeof aggiornaVeicoli === 'function') {
-        await aggiornaVeicoli();
+        // (Opzionale) Se hai una funzione di login, ti assicurerai di chiamare 
+        // aggiornaVeicoli() subito DOPO che il login ha avuto successo.
     }
 
     // ============================================================
-    // 📋 EVENT LISTENERS STANDARD DELLA PAGINA
+    // 📋 EVENT LISTENERS STANDARD DELLA PAGINA (Invariati da qui in poi)
     // ============================================================
     document.getElementById('btn-login')?.addEventListener('click', doLogin);
     document.getElementById('btn-prenota')?.addEventListener('click', inviaPren);
