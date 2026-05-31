@@ -1027,17 +1027,17 @@ async function aggiornaVeicoli() {
         const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
         const evidenzia = x.npass === ultimoAggiornato; const f = getFlags(x);
         
-    // Distribuzione esatta delle larghezze per far respirare i testi (Totale 100%)
-    const wPass = 'width: 18%;';
-    const wDataIng = 'width: 25%;';
+    const wPass = 'width: 16%;';
+    const wDataIng = 'width: 26%;';
     const wOraIng = 'width: 15%;';
-    const wDataUsc = 'width: 27%;';
+    const wDataUsc = 'width: 28%;';
     const wOraUsc = 'width: 15%;';
 
-    // Padding comodo per il touch del cellulare (8px sopra/sotto, 4px ai lati)
-    const baseStyle = 'padding: 10px 4px; text-align: left; vertical-align: middle; box-sizing: border-box;';
+    // Padding bilanciato: 8px verticale per toccare bene col dito, 6px orizzontale di stacco
+    const baseStyle = 'padding: 8px 6px; text-align: left; vertical-align: middle; box-sizing: border-box;';
 
     return `<tr style="
+        border-bottom: 1px solid #f1f5f9;
         ${f.scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
         ${f.storico ? 'background:#f1f5f9;' : ''}
         ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
@@ -1049,13 +1049,13 @@ async function aggiornaVeicoli() {
                 ${x.npass}
             </button>
         </td>
-        <td style="${baseStyle} ${wDataIng}">${f.scaduto ? 'Non Entrato' : dataIng}</td>
+        <td style="${baseStyle} ${wDataIng}">${f.scaduto ? 'NON ENTRATO' : dataIng}</td>
         <td style="${baseStyle} ${wOraIng} font-weight:bold;">${f.scaduto ? '' : oraIng}</td>
         <td style="${baseStyle} ${wDataUsc}">${dataUsc}</td>
         <td style="${baseStyle} ${wOraUsc} font-weight:bold;">${oraUsc}</td>
     </tr>`;
 }).join('') || `<tr><td colspan="5" style="text-align:center; color:black; padding:16px;">Nessun veicolo presente</td></tr>`;
-
+        
         // Aggancio eventi pulsanti lista
         document.querySelectorAll('.btn-pass').forEach(btn => {
             btn.addEventListener('click', async () => {
