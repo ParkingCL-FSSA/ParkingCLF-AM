@@ -1209,26 +1209,37 @@ async function mostraArriviOggi() {
         lista.innerHTML = '';
 
         if (!dati || dati.length === 0) {
-            lista.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:12px; color:var(--gray);">Nessun arrivo previsto oggi</td></tr>`;
+            // Aggiornato colspan a 3 per coprire le nuove colonne
+            lista.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:12px; color:var(--gray);">Nessun arrivo previsto oggi</td></tr>`;
         } else {
             let htmlRighe = '';
+            
+            // Stili inline coordinati al 100% con le intestazioni HTML (34% - 33% - 33%)
+            const cellStylePass = 'style="width: 34%; padding: 10px 6px; text-align: left;"';
+            const cellStyleDate = 'style="width: 33%; padding: 10px 6px; text-align: left; color: #475569; font-weight: 500;"';
+
             dati.forEach(r => {
-                // Il server restituisce solo chi deve entrare oggi
-                let badge = `<span class="badge-stato"><span class="dot dot-orange"></span>Deve Entrare</span>`;
+                // Estrazione e formattazione italiana delle date del periodo
+                const dInizio = r.inizio || r.data_inizio ? new Date(r.inizio || r.data_inizio) : null;
+                const dataInizioStr = dInizio ? dInizio.toLocaleDateString('it-IT') : '--';
+
+                const dFine = r.fine || r.data_fine ? new Date(r.fine || r.data_fine) : null;
+                const dataFineStr = dFine ? dFine.toLocaleDateString('it-IT') : '--';
 
                 htmlRighe += `
                 <tr>
-                    <td style="padding: 10px 6px;">
+                    <td ${cellStylePass}>
                         <button class="btn-pass-diretto" data-pass="${r.npass}" data-id="${r.id || ''}" type="button" style="border:none; background:none; color:var(--blue); font-weight:bold; cursor:pointer; text-decoration:underline; font-size:15px; padding:0;">
                             ${r.npass}
                         </button>
                     </td>
-                    <td style="padding: 10px 6px;">${badge}</td>
+                    <td ${cellStyleDate}>${dataInizioStr}</td>
+                    <td ${cellStyleDate}>${dataFineStr}</td>
                 </tr>`;
             });
             lista.innerHTML = htmlRighe;
 
-            // Aggancio dei listener sui bottoni pass generati
+            // Aggancio dei listener sui bottoni pass generati (rimasto invariato)
             document.querySelectorAll('.btn-pass-diretto').forEach(b => {
                 b.addEventListener('click', async (e) => {
                     e.preventDefault();
@@ -1253,6 +1264,7 @@ async function mostraArriviOggi() {
         alert('Errore caricamento arrivi');
     }
 }
+
 window.addEventListener('DOMContentLoaded', async () => {
     // ============================================================
     // 🚀 INIZIALIZZAZIONE AUTOMATICA PROTETTA
