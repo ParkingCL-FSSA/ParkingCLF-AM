@@ -843,13 +843,13 @@ async function aggiornaVeicoli() {
             badge.innerHTML = `
             <div style="font-size: 13px; color: #475569; padding: 4px 0; font-weight: 500; text-align: center;">
                 🚗 <b>Entrati oggi:</b> <span style="color:#1e293b; font-weight:bold;">${countEntratiOggi}</span>
-                &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
-                &nbsp;📅 <b>Prenotati:</b> <span style="color:#1e293b; font-weight:bold;">${countPrenotatiOggi}</span>
-                &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+                &nbsp;&nbsp;|&nbsp;&nbsp;
+                📅 <b>Prenotati:</b> <span style="color:#1e293b; font-weight:bold;">${countPrenotatiOggi}</span>
+                &nbsp;&nbsp;|&nbsp;&nbsp;
                 🚨 <b>Da verificare:</b> <span style="color:${countVerificare > 0 ? '#ea580c' : '#475569'}; font-weight:bold;">${countVerificare}</span>
 
                 ${countScaduti > 0 ? `
-                    &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;|&nbsp;&nbsp;
                     <span id="badge-scaduti" style="font-weight:bold;">
                         ⏰ <b>Scaduti:</b> ${countScaduti}
                     </span>
