@@ -858,7 +858,7 @@ async function aggiornaVeicoli() {
         if (filtroPiantone === 'attivi') return (f.entrato || (x.stato === 'PRENOTATO' && inizioTime === oggiTime) || f.daVerificare);
         if (filtroPiantone === 'storico') return f.storico;
         return true;
-    });
+    })
     .sort((a, b) => {
         if (valoreCercato !== "") {
             const getPriorita = (item) => {
