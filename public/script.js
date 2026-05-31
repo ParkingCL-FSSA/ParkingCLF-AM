@@ -173,7 +173,6 @@ function aggiornaGraficaBadge() {
     }
 }
 
-
 async function doLogin() {
     const card = document.querySelector('.card');
     if (card) {
@@ -217,10 +216,36 @@ async function doLogin() {
         const avviso = document.getElementById('avviso-manutenzione');
         if (avviso) avviso.style.display = 'none';
         
-        // Gestione dei ruoli
+        // ============================================================
+        // 🚨 GESTIONE DEI RUOLI CON ALLINEAMENTO DINAMICO DEI FILTRI
+        // ============================================================
         if (data.ruolo === 'piantone') {
             show('view-piantone');
-            try { aggiornaVeicoli(); } catch(e){ console.log(e); }
+            
+            try {
+                // A. Scarichiamo i dati per popolare le variabili globali (totaleVerificare, ecc.)
+                await aggiornaVeicoli();
+                
+                // B. Decidiamo lo stato di partenza in base alla situazione reale del parcheggio
+                if (typeof totaleVerificare !== 'undefined' && totaleVerificare > 0) {
+                    filtroPiantone = 'verificare';
+                } else if (typeof totaleScaduti !== 'undefined' && totaleScaduti > 0) {
+                    filtroPiantone = 'scaduti';
+                } else {
+                    filtroPiantone = 'attivi';
+                }
+
+                // C. Forziamo la UI a scriversi e colorarsi correttamente tramite la nuova funzione
+                if (typeof aggiornaGraficaBadge === 'function') {
+                    aggiornaGraficaBadge();
+                }
+
+                // D. Secondo refresh per disegnare la tabella filtrata e sincronizzata
+                await aggiornaVeicoli();
+            } catch(e) { 
+                console.log("Errore inizializzazione dati piantone:", e); 
+            }
+            
             try { aggiornaPostiLiberiPiantone(); } catch(e){ console.log(e); }
         }
         else if (data.ruolo === 'admin') { 
@@ -228,6 +253,25 @@ async function doLogin() {
                 card.classList.add('admin-wide');
             }
             show('view-admin'); 
+            
+            // Applichiamo la stessa logica di allineamento anche se l'admin guarda la visuale piantone
+            try {
+                await aggiornaVeicoli();
+                if (typeof totaleVerificare !== 'undefined' && totaleVerificare > 0) {
+                    filtroPiantone = 'verificare';
+                } else if (typeof totaleScaduti !== 'undefined' && totaleScaduti > 0) {
+                    filtroPiantone = 'scaduti';
+                } else {
+                    filtroPiantone = 'attivi';
+                }
+                if (typeof aggiornaGraficaBadge === 'function') {
+                    aggiornaGraficaBadge();
+                }
+                await aggiornaVeicoli();
+            } catch(e) {
+                console.log(e);
+            }
+
             try { mostraAdmin(); } catch(e){ console.log(e); }
         }
         else {
