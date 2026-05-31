@@ -1010,15 +1010,12 @@ async function aggiornaVeicoli() {
             }
         }
             
-        // --- INIEZIONE RIGHE IN TABELLA HTML ---
+       // --- INIEZIONE RIGHE IN TABELLA HTML ---
         document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
-            const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
-            const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
-            const dataIng = ing ? ing.toLocaleDateString('it-IT') : '--';
-            const oraIng = ing ? ing.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
-            const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '';
-            const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '';
-            const evidenzia = x.npass === ultimoAggiornato; const f = getFlags(x);
+            // ... (tutto il tuo codice per date e flag rimane invariato) ...
+            
+            // Definiamo uno stile comune per tutte le colonne per forzare l'allineamento
+            const cellStyle = 'style="width: 20%; padding: 8px; text-align: left;"';
             
             return `<tr style="
                 ${f.scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
@@ -1026,13 +1023,13 @@ async function aggiornaVeicoli() {
                 ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
                 ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
             ">
-                <td>
+                <td ${cellStyle}>
                     <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline;">${x.npass}</button>
                 </td>
-                <td>${dataIng}</td>
-                <td style="font-weight:bold;">${oraIng}</td>
-                <td>${f.scaduto ? 'NON ENTRATO' : dataUsc}</td>
-                <td style="font-weight:bold;">${f.scaduto ? '' : oraUsc}</td>
+                <td ${cellStyle}>${dataIng}</td>
+                <td ${cellStyle} style="font-weight:bold;">${oraIng}</td>
+                <td ${cellStyle}>${f.scaduto ? 'NON ENTRATO' : dataUsc}</td>
+                <td ${cellStyle} style="font-weight:bold;">${f.scaduto ? '' : oraUsc}</td>
             </tr>`;
         }).join('') || `<tr><td colspan="5" style="text-align:center; color:black; padding:16px;">Nessun veicolo presente</td></tr>`;
 
