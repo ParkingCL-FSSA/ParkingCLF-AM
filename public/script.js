@@ -88,7 +88,6 @@ function show(id) {
 }
 
 function toggleScaduti() {
-
     // 🌟 RESETTIAMO LA UI DEL PANNELLO QUANDO SI CAMBIA SCHEDA
     document.getElementById('box-verifica')?.classList.add('hidden');
     document.getElementById('panel-piantone')?.classList.add('hidden');
@@ -130,45 +129,50 @@ function toggleScaduti() {
         }
     }
 
-    // === AGGIORNAMENTO DEL BADGE COLORATO ===
-    const statoTabella = document.getElementById('stato-tabella');
-
-    if (statoTabella) {
-        if (filtroPiantone === 'verificare') {
-            statoTabella.innerHTML = "🚨 DA VERIFICARE";
-            statoTabella.style.color = "#ea580c";
-            statoTabella.style.background = "#ffedd5";
-            statoTabella.style.borderColor = "#ea580c";
-        }
-        else if (filtroPiantone === 'scaduti') {
-            statoTabella.innerHTML = "⏰ SCADUTI";
-            statoTabella.style.color = "#dc2626";
-            statoTabella.style.background = "#fee2e2";
-            statoTabella.style.borderColor = "#dc2626";
-        }
-        else if (filtroPiantone === 'attivi') {
-            statoTabella.innerHTML = "📋 ATTIVI";
-            statoTabella.style.color = "#2563eb";
-            statoTabella.style.background = "#dbeafe";
-            statoTabella.style.borderColor = "#2563eb";
-        }
-        else if (filtroPiantone === 'tutti') {
-            statoTabella.innerHTML = "📑 TUTTI";
-            statoTabella.style.color = "#7c3aed";
-            statoTabella.style.background = "#ede9fe";
-            statoTabella.style.borderColor = "#7c3aed";
-        }
-        else {
-            statoTabella.innerHTML = "🕘 STORICO";
-            statoTabella.style.color = "#475569";
-            statoTabella.style.background = "#e2e8f0";
-            statoTabella.style.borderColor = "#475569";
-        }
-    }
+    // 🎨 Aggiorna subito il testo e il colore del badge in base al nuovo filtro
+    aggiornaGraficaBadge();
 
     // Ricarica la lista veicoli in base al nuovo filtro
     aggiornaVeicoli();
 }
+
+// Function creata per allineare al volo la grafica del badge (usata sia al click che all'avvio)
+function aggiornaGraficaBadge() {
+    const statoTabella = document.getElementById('stato-tabella');
+    if (!statoTabella) return;
+
+    if (filtroPiantone === 'verificare') {
+        statoTabella.innerHTML = "🚨 DA VERIFICARE";
+        statoTabella.style.color = "#ea580c";
+        statoTabella.style.background = "#ffedd5";
+        statoTabella.style.borderColor = "#ea580c";
+    }
+    else if (filtroPiantone === 'scaduti') {
+        statoTabella.innerHTML = "⏰ SCADUTI";
+        statoTabella.style.color = "#dc2626";
+        statoTabella.style.background = "#fee2e2";
+        statoTabella.style.borderColor = "#dc2626";
+    }
+    else if (filtroPiantone === 'attivi') {
+        statoTabella.innerHTML = "📋 ATTIVI";
+        statoTabella.style.color = "#2563eb";
+        statoTabella.style.background = "#dbeafe";
+        statoTabella.style.borderColor = "#2563eb";
+    }
+    else if (filtroPiantone === 'tutti') {
+        statoTabella.innerHTML = "📑 TUTTI";
+        statoTabella.style.color = "#7c3aed";
+        statoTabella.style.background = "#ede9fe";
+        statoTabella.style.borderColor = "#7c3aed";
+    }
+    else {
+        statoTabella.innerHTML = "🕘 STORICO";
+        statoTabella.style.color = "#475569";
+        statoTabella.style.background = "#e2e8f0";
+        statoTabella.style.borderColor = "#475569";
+    }
+}
+
 
 async function doLogin() {
     const card = document.querySelector('.card');
@@ -1156,7 +1160,37 @@ async function mostraArriviOggi() {
         alert('Errore caricamento arrivi');
     }
 }
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+    // ============================================================
+    // 🚀 INIZIALIZZAZIONE AUTOMATICA E ALLINEAMENTO BADGE OPERATIVO
+    // ============================================================
+    // 1. Facciamo un primo caricamento dati per calcolare i totali (totaleVerificare, totaleScaduti, ecc.)
+    if (typeof aggiornaVeicoli === 'function') {
+        await aggiornaVeicoli(); 
+    }
+
+    // 2. Decidiamo lo stato di partenza esatto in base alla situazione reale del parcheggio
+    if (typeof totaleVerificare !== 'undefined' && totaleVerificare > 0) {
+        filtroPiantone = 'verificare';
+    } else if (typeof totaleScaduti !== 'undefined' && totaleScaduti > 0) {
+        filtroPiantone = 'scaduti';
+    } else {
+        filtroPiantone = 'attivi';
+    }
+
+    // 3. Forziamo immediatamente la grafica del badge ad allinearsi (chiamando la funzione di supporto)
+    if (typeof aggiornaGraficaBadge === 'function') {
+        aggiornaGraficaBadge();
+    }
+
+    // 4. Secondo refresh rapido per disegnare la tabella coerente con il badge iniziale
+    if (typeof aggiornaVeicoli === 'function') {
+        await aggiornaVeicoli();
+    }
+
+    // ============================================================
+    // 📋 EVENT LISTENERS STANDARD DELLA PAGINA
+    // ============================================================
     document.getElementById('btn-login')?.addEventListener('click', doLogin);
     document.getElementById('btn-prenota')?.addEventListener('click', inviaPren);
     document.getElementById('btn-reset-days')?.addEventListener('click', resetSelezione);
@@ -1210,6 +1244,7 @@ window.addEventListener('DOMContentLoaded', () => {
         filtroPiantone = 'attivi'; 
         document.getElementById('panel-piantone')?.classList.add('hidden');
         document.getElementById('box-verifica')?.classList.add('hidden'); 
+        if (typeof aggiornaGraficaBadge === 'function') aggiornaGraficaBadge();
         aggiornaVeicoli();
     });
 
@@ -1228,10 +1263,12 @@ window.addEventListener('DOMContentLoaded', () => {
             await aggiornaVeicoli();
             document.getElementById('box-verifica')?.classList.add('hidden');
             const btnUscita = document.getElementById('btn-uscita');
-            btnUscita.style.display = 'inline-block';
-            btnUscita.disabled = true;
-            btnUscita.innerText = 'VERIFICATO';
-            btnUscita.style.background = '#64748b';
+            if (btnUscita) {
+                btnUscita.style.display = 'inline-block';
+                btnUscita.disabled = true;
+                btnUscita.innerText = 'VERIFICATO';
+                btnUscita.style.background = '#64748b';
+            }
         }
     });
 
@@ -1272,9 +1309,8 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-logout-admin')?.addEventListener('click', () => { location.reload(); });
 
     // ============================================================
-    // 🚀 CHICCA AUTOMAZIONE: FOCUS AL RAGGIUNGIMENTO DELLE 5 CIFRE
+    // 🎯 AUTOMAZIONE FOCUS AUTOMATICO AL RAGGIUNGIMENTO DELLE 5 CIFRE
     // ============================================================
-    
     // 1. Sposta il focus sul tasto Login appena si inserisce il pass a 5 cifre
     const inputLogin = document.getElementById('in-npass');
     inputLogin?.addEventListener('input', () => {
