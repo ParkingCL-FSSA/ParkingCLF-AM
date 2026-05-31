@@ -983,7 +983,13 @@ async function aggiornaVeicoli() {
                 if (pesoA !== pesoB) return pesoA - pesoB;
                 return (b.id || 0) - (a.id || 0);
             } 
-            
+            // LOGICA ORDINAMENTO PER GLI ATTIVI
+            if (filtroPiantone === 'attivi') {
+                const dateA = a.orario_ingresso ? new Date(a.orario_ingresso).getTime() : 0;
+                const dateB = b.orario_ingresso ? new Date(b.orario_ingresso).getTime() : 0;
+                // Ordine decrescente: il più recente in alto (b - a)
+                return dateB - dateA; 
+            }
             if (filtroPiantone === 'verificare') {
                 return (a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0)) - (b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0));
             }
@@ -1024,20 +1030,24 @@ async function aggiornaVeicoli() {
         // Definiamo uno stile comune per tutte le colonne per forzare l'allineamento
         const cellStyle = 'style="width: 20%; padding: 8px; text-align: left;"';
             
-            return `<tr style="
-                ${f.scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
-                ${f.storico ? 'background:#f1f5f9;' : ''}
-                ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
-                ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
-            ">
-                <td ${cellStyle}>
-                    <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline;">${x.npass}</button>
-                </td>
-                <td ${cellStyle}>${dataIng}</td>
-                <td ${cellStyle} style="font-weight:bold;">${oraIng}</td>
-                <td ${cellStyle}>${f.scaduto ? 'NON ENTRATO' : dataIng}</td>
-                <td ${cellStyle} style="font-weight:bold;">${f.scaduto ? '' : oraIng}</td>
-            </tr>`;
+        return `<tr style="
+            ${f.scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
+            ${f.storico ? 'background:#f1f5f9;' : ''}
+            ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
+            ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
+        ">
+            <td ${cellStyle}>
+                <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline;">${x.npass}</button>
+            </td>
+            
+            <td ${cellStyle}>${f.scaduto ? 'NON ENTRATO' : dataIng}</td>
+            
+            <td ${cellStyle} style="font-weight:bold;">${f.scaduto ? '' : oraIng}</td>
+            
+            <td ${cellStyle}>${dataUsc}</td>
+            
+            <td ${cellStyle} style="font-weight:bold;">${oraUsc}</td>
+        </tr>`;
         }).join('') || `<tr><td colspan="5" style="text-align:center; color:black; padding:16px;">Nessun veicolo presente</td></tr>`;
 
         // Aggancio eventi pulsanti lista
