@@ -1017,8 +1017,8 @@ async function aggiornaVeicoli() {
         const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
         const dataIng = ing ? ing.toLocaleDateString('it-IT') : '--';
         const oraIng = ing ? ing.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
-        const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '';
-        const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '';
+        const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '--';
+        const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
         const evidenzia = x.npass === ultimoAggiornato; const f = getFlags(x);
         
         // Definiamo uno stile comune per tutte le colonne per forzare l'allineamento
@@ -1035,8 +1035,8 @@ async function aggiornaVeicoli() {
                 </td>
                 <td ${cellStyle}>${dataIng}</td>
                 <td ${cellStyle} style="font-weight:bold;">${oraIng}</td>
-                <td ${cellStyle}>${f.scaduto ? 'NON ENTRATO' : dataUsc}</td>
-                <td ${cellStyle} style="font-weight:bold;">${f.scaduto ? '' : oraUsc}</td>
+                <td ${cellStyle}>${f.scaduto ? 'NON ENTRATO' : dataIng}</td>
+                <td ${cellStyle} style="font-weight:bold;">${f.scaduto ? '' : oraIng}</td>
             </tr>`;
         }).join('') || `<tr><td colspan="5" style="text-align:center; color:black; padding:16px;">Nessun veicolo presente</td></tr>`;
 
