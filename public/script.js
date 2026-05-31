@@ -146,6 +146,9 @@ function aggiornaGraficaBadge() {
         statoTabella.style.color = "#ea580c";
         statoTabella.style.background = "#ffedd5";
         statoTabella.style.borderColor = "#ea580c";
+        if (typeof totaleVerificare !== 'undefined' && totaleVerificare > 0) {
+            statoTabella.classList.add('badge-blink');
+        }
     }
     else if (filtroPiantone === 'scaduti') {
         statoTabella.innerHTML = "⏰ SCADUTI";
