@@ -1029,13 +1029,13 @@ async function aggiornaVeicoli() {
         
     // Distribuzione esatta delle larghezze per far respirare i testi (Totale 100%)
     const wPass = 'width: 18%;';
-    const wDataIng = 'width: 25%;';
-    const wOraIng = 'width: 15%;';
+    const wDataIng = 'width: 27%;';
+    const wOraIng = 'width: 14%;';
     const wDataUsc = 'width: 27%;';
-    const wOraUsc = 'width: 15%;';
+    const wOraUsc = 'width: 14%;';
 
     // Padding comodo per il touch del cellulare (8px sopra/sotto, 4px ai lati)
-    const baseStyle = 'padding: 8px 4px; text-align: left; vertical-align: middle; box-sizing: border-box;';
+    const baseStyle = 'padding: 10px 4px; text-align: left; vertical-align: middle; box-sizing: border-box;';
 
     return `<tr style="
         ${f.scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
@@ -1049,7 +1049,7 @@ async function aggiornaVeicoli() {
                 ${x.npass}
             </button>
         </td>
-        <td style="${baseStyle} ${wDataIng}">${f.scaduto ? 'NON ENTRATO' : dataIng}</td>
+        <td style="${baseStyle} ${wDataIng}">${f.scaduto ? 'Non Entrato' : dataIng}</td>
         <td style="${baseStyle} ${wOraIng} font-weight:bold;">${f.scaduto ? '' : oraIng}</td>
         <td style="${baseStyle} ${wDataUsc}">${dataUsc}</td>
         <td style="${baseStyle} ${wOraUsc} font-weight:bold;">${oraUsc}</td>
