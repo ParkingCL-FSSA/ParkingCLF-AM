@@ -892,7 +892,7 @@ async function aggiornaVeicoli() {
                 &nbsp;|&nbsp;
                 🚨 <b>Da verificare:</b> <span style="color:${countVerificare > 0 ? '#ea580c' : '#475569'}; font-weight:bold;">${countVerificare}</span>
                 &nbsp;|&nbsp;
-                ⏰ <b>Scaduti:</b> <span style="color:${countScaduti > 0 ? '#ea580c' : '#475569'}; font-weight:bold;">${countScaduti}</span>
+                ⏰ <b>Scaduti:</b> <span style="color:${countScaduti > 0 ? '#dc2626' : '#475569'}; font-weight:bold;">${countScaduti}</span>
             </div>
             `;
         }
