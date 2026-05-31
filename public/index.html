@@ -330,24 +330,29 @@
         </div>
       </div> 
       
-      <h4 style="margin-top:25px; text-align:center;font-size:18px;">🚘Accesso Veicoli</h4>
-      <button id="btn-filtro" class="btn-blue" type="button" style="margin-top:0px; width:220px; padding:8px 0;">MOSTRA STATI</button>
-      <button id="btn-arrivi-oggi" class="btn-gray" type="button" style="width:320px; padding:6px 0;">📋 Arrivi di Oggi</button>
-
-      <div id="box-arrivi-oggi" class="hidden" style="margin-top:15px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px;">
-  <h4 style="margin-top:0; margin-bottom:10px;">📅 Prenotati in Arrivo Oggi</h4>
-  
-  <table style="width: 100%; table-layout: fixed; font-size: 14px; border-collapse: collapse;">
-    <thead>
-      <tr>
-        <th style="width: 34%; text-align: left; color: var(--blue); padding-bottom: 6px;">PASS</th>
-        <th style="width: 33%; text-align: left; color: var(--gray); padding-bottom: 6px;">Dal giorno</th>
-        <th style="width: 33%; text-align: left; color: var(--gray); padding-bottom: 6px;">Al giorno</th>
-      </tr>
-    </thead>
-    <tbody id="lista-arrivi-oggi"></tbody>
-  </table>
-</div>
+<h4 style="margin-top:25px; text-align:center; font-size:18px;">🚘 Accesso Veicoli</h4>
+    
+    <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 15px;">
+      <button id="btn-filtro" class="btn-blue" type="button" style="margin-top:0px; flex: 1; min-width: 200px; max-width: 320px; padding: 10px 0; font-size: 15px;">MOSTRA STATI</button>
+      <button id="btn-arrivi-oggi" class="btn-gray" type="button" style="flex: 1; min-width: 200px; max-width: 320px; padding: 10px 0; font-size: 15px;">📋 Arrivi di Oggi</button>
+    </div>
+    
+    <div id="box-arrivi-oggi" class="hidden" style="margin-top:15px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding: 12px; box-sizing: border-box;">
+      <h4 style="margin-top:0; margin-bottom:12px;">📅 Prenotati in Arrivo Oggi</h4>
+      
+      <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+        <table style="width: 100%; min-width: 320px; table-layout: fixed; font-size: 13px; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="width: 34%; text-align: left; color: var(--blue); padding-bottom: 8px; font-weight: bold;">PASS</th>
+              <th style="width: 33%; text-align: left; color: var(--gray); padding-bottom: 8px; font-weight: bold;">Dal giorno</th>
+              <th style="width: 33%; text-align: left; color: var(--gray); padding-bottom: 8px; font-weight: bold;">Al giorno</th>
+            </tr>
+          </thead>
+          <tbody id="lista-arrivi-oggi"></tbody>
+        </table>
+      </div>
+    </div>
 
       <div id="badge-contatori" style="margin:15px 0 10px 0; font-size:14px;"></div>
 
