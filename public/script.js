@@ -141,12 +141,18 @@ function aggiornaGraficaBadge() {
     const statoTabella = document.getElementById('stato-tabella');
     if (!statoTabella) return;
 
+    // 1. Reset: rimuoviamo sempre l'animazione all'inizio
+    statoTabella.classList.remove('badge-blink');
+
+    // 2. Logica dei colori e testi
     if (filtroPiantone === 'verificare') {
         statoTabella.innerHTML = "🚨 DA VERIFICARE";
         statoTabella.style.color = "#ea580c";
         statoTabella.style.background = "#ffedd5";
         statoTabella.style.borderColor = "#ea580c";
-        if (typeof totaleVerificare !== 'undefined' && totaleVerificare > 0) {
+        
+        // Blink attivo solo per le criticità
+        if (totaleVerificare > 0) {
             statoTabella.classList.add('badge-blink');
         }
     }
@@ -155,24 +161,32 @@ function aggiornaGraficaBadge() {
         statoTabella.style.color = "#dc2626";
         statoTabella.style.background = "#fee2e2";
         statoTabella.style.borderColor = "#dc2626";
+        
+        // Blink attivo solo per le criticità
+        if (totaleScaduti > 0) {
+            statoTabella.classList.add('badge-blink');
+        }
     }
     else if (filtroPiantone === 'attivi') {
         statoTabella.innerHTML = "📋 ATTIVI";
         statoTabella.style.color = "#2563eb";
         statoTabella.style.background = "#dbeafe";
         statoTabella.style.borderColor = "#2563eb";
+        // NESSUN BLINK QUI
     }
     else if (filtroPiantone === 'tutti') {
         statoTabella.innerHTML = "📑 TUTTI";
         statoTabella.style.color = "#7c3aed";
         statoTabella.style.background = "#ede9fe";
         statoTabella.style.borderColor = "#7c3aed";
+        // NESSUN BLINK QUI
     }
     else {
         statoTabella.innerHTML = "🕘 STORICO";
         statoTabella.style.color = "#475569";
         statoTabella.style.background = "#e2e8f0";
         statoTabella.style.borderColor = "#475569";
+        // NESSUN BLINK QUI
     }
 }
 
