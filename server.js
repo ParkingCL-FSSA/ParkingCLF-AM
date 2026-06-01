@@ -741,7 +741,8 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
         UPPER(p.npass) AS npass,
         r.ente,
         'PRENOTATO' AS stato,
-        p.data_inizio
+        p.data_inizio,
+        p.data_fine
       FROM prenotazioni p
       LEFT JOIN registro_pass r ON UPPER(p.npass) = UPPER(r.npass)
       WHERE p.data_inizio = CURRENT_DATE 
@@ -749,11 +750,11 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
       ORDER BY UPPER(p.npass), p.id DESC
     `);
 
-    // Ordina i risultati (se necessario, anche se nascendo tutti oggi l'ordinamento è già coerente)
+    // Ordina i risultati (essendo tutti oggi l'ordinamento rimane coerente)
     const righeOrdinate = r.rows.sort((a, b) => new Date(a.data_inizio) - new Date(b.data_inizio));
     res.json(righeOrdinate);
   } catch (e) {
-    console.error(e);
+    console.error("Errore endpoint arrivi-oggi:", e);
     res.status(500).json({ error: 'Errore server' });
   }
 });
