@@ -707,8 +707,7 @@ app.get('/api/admin/ritardi', async (req, res) => {
     }
 });
 
-// PIANTONE STORICO (RIPRISTINATO E ORDINATO) 
-// PIANTONE STORICO (OTTIMIZZATO - MOSTRA TUTTI GLI USCITI) 
+// PIANTONE STORICO (OTTIMIZZATO - MOSTRA USCITI E ARCHIVIATI DELL'ULTIMA SETTIMANA) 
 app.get('/api/piantone/storico', async (req, res) => {
     const npass = req.query.npass;
 
@@ -717,19 +716,21 @@ app.get('/api/piantone/storico', async (req, res) => {
     }
 
     try {
-        // Rimosso il vincolo 'orario_uscita IS NOT NULL' per includere le azioni "Non Presente".
-        // COALESCE ordina per orario_uscita; se manca, usa l'orario_ingresso o la data_fine.
+        // 1. Includiamo sia lo stato 'USCITO' che lo stato 'ARCHIVIATO'
+        // 2. Filtriamo per mostrare solo i record degli ultimi 7 giorni (data_fine >= CURRENT_DATE - INTERVAL '7 days')
+        // 3. Ordiniamo dinamicamente usando COALESCE per gestire i campi orario vuoti
         const r = await pool.query(`
             SELECT npass, orario_ingresso, orario_uscita, stato, data_inizio, data_fine
             FROM prenotazioni
-            WHERE stato = 'USCITO'
+            WHERE stato IN ('USCITO', 'ARCHIVIATO')
+              AND data_fine >= CURRENT_DATE - INTERVAL '7 days'
             ORDER BY COALESCE(orario_uscita, orario_ingresso, data_fine::timestamp) DESC
-            LIMIT 50
+            LIMIT 100
         `);
         res.json(r.rows);
     } catch (err) {
-        console.error("Errore Storico:", err);
-        res.status(500).json({ error: "Errore interno" });
+        console.error("💥 ERRORE STORICO:", err);
+        res.status(500).json({ error: "Errore interno server dello storico" });
     }
 });
 
