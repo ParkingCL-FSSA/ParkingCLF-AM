@@ -1214,18 +1214,22 @@ async function mostraArriviOggi() {
         lista.innerHTML = '';
 
         if (!dati || dati.length === 0) {
-            lista.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:16px; color:var(--gray);">Nessun arrivo previsto oggi</td></tr>`;
+            lista.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:16px; color:var(--gray);">Nessun arrivo previsto oggi</td></tr>`;
         } else {
             let htmlRighe = '';
             
-            // Proporzioni speculari all'HTML (40% e 60%) con allineamento perfetto a sinistra
-            const cellStylePass = 'style="width: 40%; padding: 10px 6px; text-align: left; vertical-align: middle;"';
-            const cellStyleDate = 'style="width: 60%; padding: 10px 6px; text-align: left; vertical-align: middle; color: #475569; font-weight: 500;"';
+            // Allineamento a sinistra (left) e larghezze speculari all'head dell'HTML (34% - 33% - 33%)
+            const cellStylePass = 'style="width: 34%; padding: 10px 6px; text-align: left; vertical-align: middle;"';
+            const cellStyleDal = 'style="width: 33%; padding: 10px 6px; text-align: left; vertical-align: middle; color: #475569; font-weight: 500;"';
+            const cellStyleAl = 'style="width: 33%; padding: 10px 6px; text-align: left; vertical-align: middle; color: #475569; font-weight: 500;"';
 
             dati.forEach(r => {
-                // Utilizza il campo esatto restituito dal server: data_inizio
+                // Formattazione "Dal giorno"
                 const dInizio = r.data_inizio ? new Date(r.data_inizio) : null;
                 const dataInizioStr = (dInizio && !isNaN(dInizio.getTime())) ? dInizio.toLocaleDateString('it-IT') : '--';
+
+                // "Al giorno" impostato come richiesto con i trattini fisso
+                const dataFineStr = '--'; 
 
                 htmlRighe += `
                 <tr style="border-bottom: 1px solid #f1f5f9;">
@@ -1235,7 +1239,8 @@ async function mostraArriviOggi() {
                             ${r.npass}
                         </button>
                     </td>
-                    <td ${cellStyleDate}>${dataInizioStr}</td>
+                    <td ${cellStyleDal}>${dataInizioStr}</td>
+                    <td ${cellStyleAl}>${dataFineStr}</td>
                 </tr>`;
             });
             lista.innerHTML = htmlRighe;
