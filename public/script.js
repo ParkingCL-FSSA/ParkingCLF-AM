@@ -1211,6 +1211,7 @@ async function mostraArriviOggi() {
         if (!res.ok) throw new Error(`Risposta server KO: ${res.status}`);
 
         const dati = await res.json();
+        console.log("DATI ARRIVI DAL SERVER:", dati);
         lista.innerHTML = '';
 
         if (!dati || dati.length === 0) {
