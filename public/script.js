@@ -1218,18 +1218,20 @@ async function mostraArriviOggi() {
         } else {
             let htmlRighe = '';
             
-            // Allineamento a sinistra (left) e larghezze speculari all'head dell'HTML (34% - 33% - 33%)
+            // Allineamento perfetto a sinistra e larghezze 34% - 33% - 33%
             const cellStylePass = 'style="width: 34%; padding: 10px 6px; text-align: left; vertical-align: middle;"';
             const cellStyleDal = 'style="width: 33%; padding: 10px 6px; text-align: left; vertical-align: middle; color: #475569; font-weight: 500;"';
             const cellStyleAl = 'style="width: 33%; padding: 10px 6px; text-align: left; vertical-align: middle; color: #475569; font-weight: 500;"';
 
             dati.forEach(r => {
-                // Formattazione "Dal giorno"
+                // 1. Formattazione "Dal giorno" (data_inizio)
                 const dInizio = r.data_inizio ? new Date(r.data_inizio) : null;
                 const dataInizioStr = (dInizio && !isNaN(dInizio.getTime())) ? dInizio.toLocaleDateString('it-IT') : '--';
 
-                // "Al giorno" impostato come richiesto con i trattini fisso
-                const dataFineStr = '--'; 
+                // 2. Formattazione "Al giorno" (cerca data_fine, fine o scadenza)
+                const campoFine = r.data_fine || r.fine || r.scadenza || r.data_scadenza;
+                const dFine = campoFine ? new Date(campoFine) : null;
+                const dataFineStr = (dFine && !isNaN(dFine.getTime())) ? dFine.toLocaleDateString('it-IT') : '--';
 
                 htmlRighe += `
                 <tr style="border-bottom: 1px solid #f1f5f9;">
