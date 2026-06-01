@@ -1211,25 +1211,21 @@ async function mostraArriviOggi() {
         if (!res.ok) throw new Error(`Risposta server KO: ${res.status}`);
 
         const dati = await res.json();
-        console.log("DATI ARRIVI DAL SERVER:", dati);
         lista.innerHTML = '';
 
         if (!dati || dati.length === 0) {
-            lista.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:16px; color:var(--gray);">Nessun arrivo previsto oggi</td></tr>`;
+            lista.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:16px; color:var(--gray);">Nessun arrivo previsto oggi</td></tr>`;
         } else {
             let htmlRighe = '';
             
-            // Stili di cella con allineamento a sinistra (left) e distanziamento identico all'HTML
-            const cellStylePass = 'style="width: 34%; padding: 10px 6px; text-align: left; vertical-align: middle;"';
-            const cellStyleDate = 'style="width: 33%; padding: 10px 6px; text-align: left; vertical-align: middle; color: #475569; font-weight: 500;"';
+            // Proporzioni speculari all'HTML (40% e 60%) con allineamento perfetto a sinistra
+            const cellStylePass = 'style="width: 40%; padding: 10px 6px; text-align: left; vertical-align: middle;"';
+            const cellStyleDate = 'style="width: 60%; padding: 10px 6px; text-align: left; vertical-align: middle; color: #475569; font-weight: 500;"';
 
             dati.forEach(r => {
-                // Lettura dinamica dei campi data dal server
-                const dInizio = r.inizio || r.data_inizio ? new Date(r.inizio || r.data_inizio) : null;
-                const dataInizioStr = dInizio ? dInizio.toLocaleDateString('it-IT') : '--';
-
-                const dFine = r.fine || r.data_fine ? new Date(r.fine || r.data_fine) : null;
-                const dataFineStr = dFine ? dFine.toLocaleDateString('it-IT') : '--';
+                // Utilizza il campo esatto restituito dal server: data_inizio
+                const dInizio = r.data_inizio ? new Date(r.data_inizio) : null;
+                const dataInizioStr = (dInizio && !isNaN(dInizio.getTime())) ? dInizio.toLocaleDateString('it-IT') : '--';
 
                 htmlRighe += `
                 <tr style="border-bottom: 1px solid #f1f5f9;">
@@ -1240,12 +1236,11 @@ async function mostraArriviOggi() {
                         </button>
                     </td>
                     <td ${cellStyleDate}>${dataInizioStr}</td>
-                    <td ${cellStyleDate}>${dataFineStr}</td>
                 </tr>`;
             });
             lista.innerHTML = htmlRighe;
 
-            // Listener sui bottoni pass generati
+            // Aggancio dei listener sui bottoni pass generati
             document.querySelectorAll('.btn-pass-diretto').forEach(b => {
                 b.addEventListener('click', async (e) => {
                     e.preventDefault();
@@ -1268,6 +1263,7 @@ async function mostraArriviOggi() {
         alert('Errore caricamento arrivi');
     }
 }
+
 window.addEventListener('DOMContentLoaded', async () => {
     // ============================================================
     // 🚀 INIZIALIZZAZIONE AUTOMATICA PROTETTA
