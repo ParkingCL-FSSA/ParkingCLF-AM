@@ -1214,17 +1214,16 @@ async function mostraArriviOggi() {
         lista.innerHTML = '';
 
         if (!dati || dati.length === 0) {
-            // Aggiornato colspan a 3 per coprire le nuove colonne
-            lista.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:12px; color:var(--gray);">Nessun arrivo previsto oggi</td></tr>`;
+            lista.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:16px; color:var(--gray);">Nessun arrivo previsto oggi</td></tr>`;
         } else {
             let htmlRighe = '';
             
-            // Stili inline coordinati al 100% con le intestazioni HTML (34% - 33% - 33%)
-            const cellStylePass = 'style="width: 34%; padding: 10px 6px; text-align: left;"';
-            const cellStyleDate = 'style="width: 33%; padding: 10px 6px; text-align: left; color: #475569; font-weight: 500;"';
+            // Stili di cella con allineamento a sinistra (left) e distanziamento identico all'HTML
+            const cellStylePass = 'style="width: 34%; padding: 10px 6px; text-align: left; vertical-align: middle;"';
+            const cellStyleDate = 'style="width: 33%; padding: 10px 6px; text-align: left; vertical-align: middle; color: #475569; font-weight: 500;"';
 
             dati.forEach(r => {
-                // Estrazione e formattazione italiana delle date del periodo
+                // Lettura dinamica dei campi data dal server
                 const dInizio = r.inizio || r.data_inizio ? new Date(r.inizio || r.data_inizio) : null;
                 const dataInizioStr = dInizio ? dInizio.toLocaleDateString('it-IT') : '--';
 
@@ -1232,9 +1231,10 @@ async function mostraArriviOggi() {
                 const dataFineStr = dFine ? dFine.toLocaleDateString('it-IT') : '--';
 
                 htmlRighe += `
-                <tr>
+                <tr style="border-bottom: 1px solid #f1f5f9;">
                     <td ${cellStylePass}>
-                        <button class="btn-pass-diretto" data-pass="${r.npass}" data-id="${r.id || ''}" type="button" style="border:none; background:none; color:var(--blue); font-weight:bold; cursor:pointer; text-decoration:underline; font-size:15px; padding:0;">
+                        <button class="btn-pass-diretto" data-pass="${r.npass}" data-id="${r.id || ''}" type="button" 
+                            style="border:none; background:none; color:var(--blue); font-weight:bold; cursor:pointer; text-decoration:underline; font-size:14px; padding:0; margin:0; display:inline-block; text-align:left;">
                             ${r.npass}
                         </button>
                     </td>
@@ -1244,7 +1244,7 @@ async function mostraArriviOggi() {
             });
             lista.innerHTML = htmlRighe;
 
-            // Aggancio dei listener sui bottoni pass generati (rimasto invariato)
+            // Listener sui bottoni pass generati
             document.querySelectorAll('.btn-pass-diretto').forEach(b => {
                 b.addEventListener('click', async (e) => {
                     e.preventDefault();
@@ -1253,9 +1253,7 @@ async function mostraArriviOggi() {
                     const inputSearch = document.getElementById('search-p');
                     if (inputSearch) inputSearch.value = passClick;
                     
-                    // Esegue la ricerca nativa usando pass ed eventuale ID
                     await cercaPass(passClick, idClick);
-                    
                     document.getElementById('panel-piantone')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 });
             });
@@ -1269,7 +1267,6 @@ async function mostraArriviOggi() {
         alert('Errore caricamento arrivi');
     }
 }
-
 window.addEventListener('DOMContentLoaded', async () => {
     // ============================================================
     // 🚀 INIZIALIZZAZIONE AUTOMATICA PROTETTA
