@@ -953,8 +953,9 @@ async function aggiornaVeicoli() {
             
             // 🚘 3. SCHEDA ATTIVI
             if (filtroPiantone === 'attivi') {
-                if (x.orario_ingresso && !x.orario_uscita) return true; // È dentro adesso
-                if (f.daVerificare) return true;
+                // 🚀 MODIFICA: Se è in stato da verificare, deve sparire da questa scheda
+                if (f.daVerificare) return false;
+                if (x.orario_ingresso && !x.orario_uscita) return true; // È dentro ed è regolare
                 return (x.stato === 'PRENOTATO' && inizioTime === oggiTime && !x.orario_ingresso);
             }
             
@@ -973,9 +974,10 @@ async function aggiornaVeicoli() {
                     if (dataInizioData) dataInizioData.setHours(0,0,0,0);
                     const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
-                    if (f.entrato || (item.stato === 'PRENOTATO' && inizioTime === oggiTime)) return 1; 
-                    if (f.daVerificare) return 2;                
-                    if (f.scaduto) return 3;                    
+                    // Priorità assoluta allo stato critico rispetto alla semplice presenza fisica
+                    if (f.daVerificare) return 1; 
+                    if (f.entrato || (item.stato === 'PRENOTATO' && inizioTime === oggiTime)) return 2; 
+                    if (f.scaduto) return 3;                
                     if (f.storico) return 4;                    
                     return 5;
                 };
@@ -987,7 +989,6 @@ async function aggiornaVeicoli() {
             if (filtroPiantone === 'attivi') {
                 const dateA = a.orario_ingresso ? new Date(a.orario_ingresso).getTime() : 0;
                 const dateB = b.orario_ingresso ? new Date(b.orario_ingresso).getTime() : 0;
-                // Ordine decrescente: il più recente in alto (b - a)
                 return dateB - dateA; 
             }
             if (filtroPiantone === 'verificare') {
@@ -1006,8 +1007,9 @@ async function aggiornaVeicoli() {
             if (dataInizioData) dataInizioData.setHours(0,0,0,0);
             const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
             
-            if (f.entrato || (veicoloTrovato.stato === 'PRENOTATO' && inizioTime === oggiTime)) { label = "📋 ATTIVO (Trovato da Ricerca)"; colore = "#2563eb"; sfondo = "#dbeafe"; } 
-            else if (f.daVerificare) { label = "🚨 DA VERIFICARE (Trovato da Ricerca)"; colore = "#ea580c"; sfondo = "#ffedd5"; } 
+            // 🚀 MODIFICA: Spostato il controllo di verifica in cima per non farsi scavalcare da f.entrato
+            if (f.daVerificare) { label = "🚨 DA VERIFICARE (Trovato da Ricerca)"; colore = "#ea580c"; sfondo = "#ffedd5"; } 
+            else if (f.entrato || (veicoloTrovato.stato === 'PRENOTATO' && inizioTime === oggiTime)) { label = "📋 ATTIVO (Trovato da Ricerca)"; colore = "#2563eb"; sfondo = "#dbeafe"; } 
             else if (f.scaduto) { label = "⏰ SCADUTO (Trovato da Ricerca)"; colore = "#dc2626"; sfondo = "#fee2e2"; } 
             else if (f.storico) { label = "🕘 STORICO (Trovato da Ricerca)"; colore = "#475569"; sfondo = "#e2e8f0"; }
             
