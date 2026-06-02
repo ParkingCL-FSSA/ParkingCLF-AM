@@ -464,7 +464,7 @@ app.get('/api/veicoli-dentro', async (req, res) => {
     }
 });
 
-// --- PIANTONE CERCA ---
+// --- PIANTONE CERCA (AGGIORNATO E ISOLATO) ---
 app.get('/api/piantone/cerca/:npass', async (req, res) => {
     const authPass = req.query.auth;
     const view = req.query.view || 'all'; // Default broad se non specificato
@@ -477,33 +477,34 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
     try {
         let query = "";
         let params = [];
+        let whereFiltro = "";
+
+        // Generiamo il filtro in base alla scheda (view) per usarlo in entrambi i casi
+        if (view === 'attivi') {
+            // 🚀 ISOLATO: Rimosso 'DA_VERIFICARE' dagli attivi reali
+            whereFiltro = `AND stato IN ('PRENOTATO', 'ENTRATO')`;
+        } else if (view === 'scaduti') {
+            whereFiltro = `AND stato = 'SCADUTO'`;
+        } else if (view === 'verificare') {
+            // Ora quando clicchi qui, la ricerca sa che deve cercare solo tra questi
+            whereFiltro = `AND stato = 'DA_VERIFICARE'`;
+        } else if (view === 'storico') {
+            whereFiltro = `AND stato IN ('USCITO', 'ARCHIVIATO')`;
+        } else {
+            whereFiltro = `AND stato IN ('PRENOTATO', 'ENTRATO', 'USCITO', 'DA_VERIFICARE', 'SCADUTO', 'ARCHIVIATO')`;
+        }
 
         // 🚀 CASO A: Il piantone ha CLICCATO su una riga specifica della tabella (Abbiamo l'ID univoco)
         if (idSelezionato) {
             query = `
                 SELECT id, npass, data_inizio, data_fine, orario_ingresso, orario_uscita, stato, note
                 FROM prenotazioni
-                WHERE id = $1 AND UPPER(npass) = $2
+                WHERE id = $1 AND UPPER(npass) = $2 ${whereFiltro}
             `;
             params = [idSelezionato, req.params.npass.toUpperCase()];
         } 
         // 🔍 CASO B: Il piantone ha SCRITTO a mano il pass nella barra di ricerca (Senza ID)
         else {
-            let whereFiltro = "";
-
-            if (view === 'attivi') {
-                whereFiltro = `AND stato IN ('PRENOTATO', 'ENTRATO', 'DA_VERIFICARE')`;
-            } else if (view === 'scaduti') {
-                // 🚀 Ripristinato lo stato SCADUTO reale
-                whereFiltro = `AND stato = 'SCADUTO'`;
-            } else if (view === 'verificare') {
-                whereFiltro = `AND stato = 'DA_VERIFICARE'`;
-            } else if (view === 'storico') {
-                whereFiltro = `AND stato IN ('USCITO', 'ARCHIVIATO')`;
-            } else {
-                whereFiltro = `AND stato IN ('PRENOTATO', 'ENTRATO', 'USCITO', 'DA_VERIFICARE', 'SCADUTO', 'ARCHIVIATO')`;
-            }
-
             query = `
                 SELECT id, npass, data_inizio, data_fine, orario_ingresso, orario_uscita, stato, note
                 FROM prenotazioni
