@@ -521,7 +521,6 @@ async function eliminaPren(id) {
     }
 }
 
-// 🌟 AGGIORNATO: Ora accetta in maniera solida l'idRecord per discriminare tra pass identici e ripulito da MAI_ENTRATO
 async function cercaPass(passManuale = null, idRecord = null) {
 
     const input = document.getElementById('search-p');
@@ -690,13 +689,20 @@ async function cercaPass(passManuale = null, idRecord = null) {
             const tabellaCorpo = document.getElementById('lista-veicoli');
 
             const isScadutoCorrente = (currentPren.stato === 'SCADUTO');
+            const isDaVerificareCorrente = (currentPren.stato === 'DA_VERIFICARE');
 
+            // 🚀 APPLICAZIONE DINAMICA BANNER CERCA (RISOLTO IL BUG DEL BLOCCO FISSO)
             if (bannerCerca) {
                 if (isScadutoCorrente) {
                     bannerCerca.style.background = '#ffeeef'; 
                     bannerCerca.style.color = '#ef4444';
                     bannerCerca.style.borderColor = '#fca5a5';
                     bannerCerca.innerHTML = `⏰ SCADUTO (Trovato da Ricerca)`;
+                } else if (isDaVerificareCorrente) {
+                    bannerCerca.style.background = '#ffedd5'; 
+                    bannerCerca.style.color = '#ea580c';
+                    bannerCerca.style.borderColor = '#fdba74';
+                    bannerCerca.innerHTML = `🚨 DA VERIFICARE (Trovato da Ricerca)`;
                 } else {
                     bannerCerca.style.background = '#eff6ff'; 
                     bannerCerca.style.color = '#3b82f6';
@@ -712,6 +718,9 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 if (isScadutoCorrente) {
                     // Se sopra visualizzi lo SCADUTO, sotto vedi l'ATTIVO per poterci cliccare e fare switch
                     righeDaMostrare = data.storico.filter(x => ['PRENOTATO', 'ENTRATO', 'DA_VERIFICARE'].includes(x.stato));
+                } else if (isDaVerificareCorrente) {
+                    // Se sopra sei in verifica, mostra gli altri record storici o scaduti sotto se necessario
+                    righeDaMostrare = data.storico.filter(x => x.stato !== 'DA_VERIFICARE');
                 } else {
                     // Se sopra visualizzi l'ATTIVO, sotto vedi lo SCADUTO
                     righeDaMostrare = data.storico.filter(x => x.stato === 'SCADUTO');
