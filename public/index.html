@@ -162,7 +162,7 @@
         può cancellare e rifare adesso una nuova prenotazione.<br>
         Il sistema ha ripreso a funzionare regolarmente. Scusate per il disagio.<br><br>
       NOTICE: Anyone who didn't receive the PDF when booking yesterday can cancel and 
-      rebook now. The system is back up and running. We apologize for the inconvenience.<br>
+      rebook now. The system is back up and running. We apologize for the inconvenien.ce.<br>
     </div>
 
     <button
@@ -185,13 +185,16 @@
       📲 INSTALLA APP PARCHEGGIO
     </button>
 
-<div id="view-user" class="hidden">
-      <h3 id="user-title">📅 Prenota Posto</h3>
+  <div id="view-user" class="hidden" style="padding-top: 0;">
+      <!-- Alzato il titolo azzerando il margine superiore, ridotto quello inferiore -->
+      <h3 id="user-title" style="margin: 0px 0 4px 0; padding-top: 0;">📅 Prenota Posto</h3>
 
-      <p style="font-size:14px; color:var(--green); margin:0;">【Lunga Sosta】</p>
+      <!-- Avvicinato a Prenota Posto azzerando il margine superiore, creato spazio sotto -->
+      <p style="font-size:14px; color:var(--green); margin: 0 0 16px 0; font-weight: bold;">【Lunga Sosta】</p>
       
-      <div style="margin-top: 12px; text-align: left;">
-        <label for="select-profilo" style="font-size: 13px; font-weight: bold; color: var(--blue); display: block; margin-bottom: 4px;">Tipo di Servizio / Esigenza:</label>
+      <!-- Spostato leggermente più giù per dare interlinea sufficiente dall'intestazione sopra -->
+      <div style="margin-top: 20px; text-align: left;">
+        <label for="select-profilo" style="font-size: 13px; font-weight: bold; color: var(--blue); display: block; margin-bottom: 6px;">Tipo di Servizio / Esigenza:</label>
         <select id="select-profilo" style="width:100%; padding:12px; border-radius:12px; border:1px solid #cbd5e1; font-size:15px; background: white; font-family: inherit;">
           <option value="STD">Standard (Finestra 15 giorni)</option>
           <option value="MIS">MIS (Missione - 45 gg. Max)</option>
