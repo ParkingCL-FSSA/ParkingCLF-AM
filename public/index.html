@@ -84,7 +84,16 @@
       border:1px solid #eee;
       border-radius:10px;
     }
-
+    #cal-box {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr); /* Mantiene 5 colonne (da Lunedì a Venerdì) */
+      gap: 10px;
+      margin: 15px 0;
+      max-height: 300px;                    /* Limita l'altezza massima per 45 giorni */
+      overflow-y: auto;                     /* Mostra la barra di scorrimento se necessario */
+      padding-right: 5px;                   /* Evita il taglio dei quadratini con la scrollbar */
+    }
+    
     .day-slot {
       padding:10px;
       border:1px solid #e2e8f0;
