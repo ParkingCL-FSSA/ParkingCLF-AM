@@ -303,34 +303,66 @@ async function doLogin() {
     }
 }
 
+// 1. MODIFICA NELLA FUNZIONE DI GENERAZIONE DEL CALENDARIO (buildCal)
 function buildCal() {
-    const grid = document.getElementById('cal-grid');
-    grid.innerHTML = "";
-    selectedDays = [];
-    let d = new Date();
-    for (let i = 0; i < 45; i++) {
-        const iso = d.toISOString().split('T')[0];
-        const slot = document.createElement('div');
-        slot.className = "day-slot";
-        slot.innerText = d.toLocaleDateString('it-IT', {
-            day: '2-digit',
-            month: '2-digit'
-        });
-        slot.addEventListener('click', () => {
-            slot.classList.toggle('selected');
-            if (slot.classList.contains('selected')) {
-                if (!selectedDays.includes(iso)) {
-                    selectedDays.push(iso);
-                }
+    const box = document.getElementById('cal-box');
+    if (!box) return;
+    box.innerHTML = '';
+
+    // Recuperiamo il valore massimo selezionato dalla combobox (es. "15" o "45")
+    // Se non trova l'elemento o non è valido, usa 45 come default di sicurezza
+    const selectGiorni = document.getElementById('select-days');
+    const maxGiorniDaMostrare = selectGiorni ? parseInt(selectGiorni.value, 10) : 45;
+
+    const oggi = new Date();
+
+    // Cicliamo per il numero di giorni scelto nella combobox (fino a 45)
+    for (let i = 0; i < maxGiorniDaMostrare; i++) {
+        const d = new Date(oggi);
+        d.setDate(oggi.getDate() + i);
+
+        const isoStr = d.toISOString().split('T')[0];
+        const sett = d.getDay(); // 0=Dom, 6=Sab
+        if (sett === 0 || sett === 6) continue; // Salta i fine settimana se previsto
+
+        const div = document.createElement('div');
+        div.className = 'day-cell';
+        div.textContent = d.getDate();
+        div.setAttribute('data-date', isoStr);
+
+        // Se il giorno era già stato selezionato, mantiene la classe active
+        if (selectedDays.includes(isoStr)) {
+            div.classList.add('active');
+        }
+
+        div.addEventListener('click', () => {
+            if (div.classList.contains('active')) {
+                div.classList.remove('active');
+                selectedDays = selectedDays.filter(x => x !== isoStr);
             } else {
-                selectedDays =
-                    selectedDays.filter(x => x !== iso);
+                // AGGIORNAMENTO LIMITE MASSIMO DI SELEZIONE A 45
+                if (selectedDays.length >= 45) {
+                    alert("⚠️ Puoi selezionare al massimo 45 giorni!");
+                    return;
+                }
+                div.classList.add('active');
+                selectedDays.push(isoStr);
             }
+            aggiornaRiepilogoGiorni();
         });
-        grid.appendChild(slot);
-        d.setDate(d.getDate() + 1);
+
+        box.appendChild(div);
     }
 }
+
+// 2. AGGIORNARE L'EVENT LISTENER SULLA COMBOBOX PER RIGENERARE IL CALENDARIO
+// Incolla questo frammento dentro la funzione window.onload (o dove inizializzi i listener)
+document.getElementById('select-days')?.addEventListener('change', () => {
+    // Svuota i giorni precedentemente selezionati per evitare incongruenze se si stringe il range
+    selectedDays = []; 
+    buildCal();
+    aggiornaRiepilogoGiorni();
+});
 
 let loadingPrenotazione = false;
 
