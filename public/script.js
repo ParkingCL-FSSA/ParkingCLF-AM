@@ -37,27 +37,29 @@ window.onload = () => {
         }, 1500);
     }
 };
+
+// ============================================================  
+// 🎯 GESTIONE DINAMICA PROFILO CORRETTA (15/45 GG CONSECUTIVI)
 // ============================================================
-    // 🎯 GESTIONE DINAMICA PROFILO 15/45 GIORNI E NOTA LEGALE
-    // ============================================================
     document.getElementById('select-profilo')?.addEventListener('change', (e) => {
         const profilo = e.target.value;
         const nota = document.getElementById('nota-responsabilita');
         const testoLimite = document.getElementById('testo-limite-giorni');
         
         if (profilo === 'MIS' || profilo === 'TRN' || profilo === 'SWK') {
-            if (nota) nota.style.display = 'block';       // Mostra la responsabilità civile/penale
+            if (nota) nota.style.display = 'block';       // Mostra avviso penale DPR 445/2000
             if (testoLimite) testoLimite.textContent = 'Max 45';
         } else {
-            if (nota) nota.style.display = 'none';        // Nasconde la nota se torna su Standard
+            if (nota) nota.style.display = 'none';        // Nasconde l'avviso per lo Standard
             if (testoLimite) testoLimite.textContent = 'Max 15';
         }
 
-        // Svuota la selezione corrente per evitare che si portino dietro giorni fuori limite
+        // Svuota i giorni vecchi quando si cambia profilo per evitare disallineamenti
         selectedDays = []; 
-        buildCal(); // Rigenera immediatamente la griglia del calendario
+        buildCal(); // Ridisegna subito i 15 o 45 quadratini consecutivi
         if (typeof aggiornaRiepilogoGiorni === 'function') aggiornaRiepilogoGiorni();
     });
+
 const btnEsci = document.getElementById('btnEsciApp');
 const beepIngresso = new Audio('/beep_i.mp3');
 const beepUscita = new Audio('/beep_u.mp3');
@@ -332,7 +334,7 @@ function buildCal() {
     const selectProfilo = document.getElementById('select-profilo');
     const profilo = selectProfilo ? selectProfilo.value : 'STD';
     
-    // Determina la finestra temporale massima di prenotazione
+    // Determina la finestra temporale massima di prenotazione (15 o 45 consecutivi)
     let maxGiorniDaMostrare = 15;
     if (profilo === 'MIS' || profilo === 'TRN' || profilo === 'SWK') {
         maxGiorniDaMostrare = 45;
@@ -340,25 +342,22 @@ function buildCal() {
 
     const oggi = new Date();
 
-    // Genera i quadratini per la griglia
+    // Genera i quadratini consecutivi (Compresi Sabati, Domeniche e Festivi)
     for (let i = 0; i < maxGiorniDaMostrare; i++) {
         const d = new Date(oggi);
         d.setDate(oggi.getDate() + i);
 
         const isoStr = d.toISOString().split('T')[0];
-        
-        // Manteniamo il salto dei fine settimana se previsto dal tuo codice
-        const sett = d.getDay(); // 0=Dom, 6=Sab
-        if (sett === 0 || sett === 6) continue; 
 
         const div = document.createElement('div');
-        div.className = 'day-slot'; // Classe corretta della tua interfaccia mobile
+        div.className = 'day-slot';
+        // Mostra il numero del giorno del mese
         div.textContent = d.getDate();
         div.setAttribute('data-date', isoStr);
 
-        // Se il giorno è nell'array dei selezionati, accendi il quadratino
+        // Se il giorno è già stato cliccato ed è nell'elenco, riaccendilo
         if (selectedDays.includes(isoStr)) {
-            div.classList.add('selected'); // Classe di selezione corretta della tua interfaccia
+            div.classList.add('selected');
         }
 
         div.addEventListener('click', () => {
@@ -366,7 +365,7 @@ function buildCal() {
                 div.classList.remove('selected');
                 selectedDays = selectedDays.filter(x => x !== isoStr);
             } else {
-                // Controllo sul limite massimo dinamico (15 o 45)
+                // Controllo di sicurezza sul tetto massimo (15 o 45)
                 if (selectedDays.length >= maxGiorniDaMostrare) {
                     alert(`⚠️ Profilo ${profilo}: Puoi selezionare al massimo ${maxGiorniDaMostrare} giorni!`);
                     return;
@@ -374,13 +373,13 @@ function buildCal() {
                 div.classList.add('selected');
                 selectedDays.push(isoStr);
             }
-            // Chiama la tua funzione nativa che aggiorna il riepilogo a schermo
             if (typeof aggiornaRiepilogoGiorni === 'function') aggiornaRiepilogoGiorni();
         });
 
         box.appendChild(div);
     }
 }
+
 let loadingPrenotazione = false;
 
 async function inviaPren() {
