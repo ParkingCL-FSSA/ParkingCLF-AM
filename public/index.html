@@ -72,12 +72,12 @@
     .btn-red { background:var(--red); }
     .btn-gray { background:var(--gray); }
 
-  /* Calendario 45gg Consecutivi (7 colonne) */
+  /* Calendario panoramico a 45gg sempre visibile */
     #cal-grid {
       display: grid;
-      grid-template-columns: repeat(7, 1fr); /* 7 colonne per mostrare l'intera settimana dal Lun al Dom */
-      gap: 6px;
-      max-height: 280px;
+      grid-template-columns: repeat(5, 1fr); /* 5 colonne classiche */
+      gap: 8px;
+      max-height: 280px; /* Consente lo scorrimento dei 45 giorni senza deformare la pagina */
       overflow-y: auto;
       margin: 15px 0;
       padding: 8px;
