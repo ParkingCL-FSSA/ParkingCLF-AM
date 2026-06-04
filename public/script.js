@@ -48,10 +48,10 @@ window.onload = () => {
         
         if (profilo === 'MIS' || profilo === 'TRN' || profilo === 'SWK') {
             if (nota) nota.style.display = 'block'; // Mostra autocertificazione DPR 445
-            if (testoLimite) testoLimite.textContent = 'Max 45 giorni su 45 disponibili';
+            if (testoLimite) testoLimite.textContent = 'Max 45 giorni';
         } else {
             if (nota) nota.style.display = 'none';  // Nasconde autocertificazione se Standard
-            if (testoLimite) testoLimite.textContent = 'Max 15 giorni su 45 disponibili';
+            if (testoLimite) testoLimite.textContent = 'Max 15 giorni';
             
             // Controllo di sicurezza: se passa a STD ma aveva selezionato più di 15 giorni, svuota per evitare anomalie
             if (selectedDays.length > 15) {
