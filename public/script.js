@@ -39,28 +39,37 @@ window.onload = () => {
 };
 
 // ============================================================
-// 🎯 GESTIONE CAMBIO PROFILO (GRID FISSA 45GG - LIMITI DINAMICI)
-// ============================================================
+    // 🎯 GESTIONE DINAMICA CAMBIO PROFILO (NUOVI LIMITI 45/30/15 GG)
+    // ============================================================
     document.getElementById('select-profilo')?.addEventListener('change', (e) => {
         const profilo = e.target.value;
         const nota = document.getElementById('nota-responsabilita');
         const testoLimite = document.getElementById('testo-limite-giorni');
         
-        if (profilo === 'MIS' || profilo === 'TRN' || profilo === 'SWK') {
-            if (nota) nota.style.display = 'block'; // Mostra autocertificazione DPR 445
-            if (testoLimite) testoLimite.textContent = 'Max 45 giorni';
+        let limiteMassimo = 15;
+
+        if (profilo === 'MIS') {
+            limiteMassimo = 45;
+            if (nota) nota.style.display = 'block';
+            if (testoLimite) testoLimite.textContent = 'Max 45 gg.';
+        } else if (profilo === 'TRN' || profilo === 'SWK') {
+            limiteMassimo = 30;
+            if (nota) nota.style.display = 'block';
+            if (testoLimite) testoLimite.textContent = 'Max 30 gg.';
         } else {
-            if (nota) nota.style.display = 'none';  // Nasconde autocertificazione se Standard
-            if (testoLimite) testoLimite.textContent = 'Max 15 giorni';
-            
-            // Controllo di sicurezza: se passa a STD ma aveva selezionato più di 15 giorni, svuota per evitare anomalie
-            if (selectedDays.length > 15) {
-                selectedDays = [];
-                alert("Profilo reimpostato su Standard. La selezione precedente superava i 15 giorni consentiti ed è stata azzerata.");
-            }
+            limiteMassimo = 15; // Standard
+            if (nota) nota.style.display = 'none';
+            if (testoLimite) testoLimite.textContent = 'Max 15 gg.';
         }
 
-        // Rinfresca visivamente lo stato dei quadratini mantenendo la griglia intatta
+        // Controllo di sicurezza: se il nuovo profilo selezionato ha un limite inferiore 
+        // ai giorni già cliccati, svuota la selezione per evitare anomalie nel database
+        if (selectedDays.length > limiteMassimo) {
+            selectedDays = [];
+            alert(`Profilo modificato. La selezione precedente superava il limite di ${limiteMassimo} gg. ed è stata azzerata.`);
+        }
+
+        // Rigenera i quadratini mantenendo intatta la griglia a 45 caselle
         buildCal();
         if (typeof aggiornaRiepilogoGiorni === 'function') aggiornaRiepilogoGiorni();
     });
