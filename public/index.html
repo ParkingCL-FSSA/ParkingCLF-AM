@@ -72,15 +72,18 @@
     .btn-red { background:var(--red); }
     .btn-gray { background:var(--gray); }
 
-    /* Calendario 45gg */
+  /* Calendario 45gg Consecutivi (7 colonne) */
     #cal-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr); /* Mantiene 5 colonne (da Lunedì a Venerdì) */
-      gap: 10px;
+      grid-template-columns: repeat(7, 1fr); /* 7 colonne per mostrare l'intera settimana dal Lun al Dom */
+      gap: 6px;
+      max-height: 280px;
+      overflow-y: auto;
       margin: 15px 0;
-      max-height: 300px;                    /* Limita l'altezza massima per 45 giorni */
-      overflow-y: auto;                     /* Mostra la barra di scorrimento se necessario */
-      padding-right: 5px;                   /* Evita il taglio dei quadratini con la scrollbar */
+      padding: 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
     }
     
     .day-slot {
@@ -182,22 +185,22 @@
       📲 INSTALLA APP PARCHEGGIO
     </button>
 
-      <div id="view-user" class="hidden">
+<div id="view-user" class="hidden">
       <h3 id="user-title">📅 Prenota Posto</h3>
 
       <p style="font-size:14px; color:var(--green); margin:0;">【Lunga Sosta】</p>
       
       <div style="margin-top: 12px; text-align: left;">
         <label for="select-profilo" style="font-size: 13px; font-weight: bold; color: var(--blue); display: block; margin-bottom: 4px;">Tipo di Servizio / Esigenza:</label>
-        <select id="select-profilo" style="width:100%; padding:10px; border-radius:10px; border:1px solid #cbd5e1; font-size:14px; background: white;">
-          <option value="STD">Standard (FEO - max 15gg)</option>
-          <option value="MIS">MIS (Missione - max 45gg)</option>
-          <option value="TRN">TRN (Turnista)</option>
-          <option value="SWK">SWK (Smart Working)</option>
+        <select id="select-profilo" style="width:100%; padding:12px; border-radius:12px; border:1px solid #cbd5e1; font-size:15px; background: white; font-family: inherit;">
+          <option value="STD">Standard (Finestra 15 giorni)</option>
+          <option value="MIS">MIS (Missione - Finestra 45 giorni)</option>
+          <option value="TRN">TRN (Turnista - Finestra 45 giorni)</option>
+          <option value="SWK">SWK (Smart Working - Finestra 45 giorni)</option>
         </select>
       </div>
 
-      <p id="nota-responsabilita" style="font-size:10.5px; color:#b45309; text-align:justify; line-height:1.4; margin: 8px 0; background: #fffbeb; padding: 8px; border-radius: 8px; border: 1px solid #fef3c7; display: none;">
+      <p id="nota-responsabilita" style="font-size:11px; color:#b45309; text-align:justify; line-height:1.4; margin: 10px 0; background: #fffbeb; padding: 10px; border-radius: 10px; border: 1px solid #fef3c7; display: none;">
         ⚠️ <em>Il dichiarante si assume la responsabilità della veridicità di quanto dichiarato ai sensi del D.P.R. 445/2000. Si informa che potrebbero essere effettuati accertamenti e verifiche d'ufficio sulla reale sussistenza dei requisiti autocertificati.</em>
       </p>
 
