@@ -335,11 +335,11 @@ function buildCal() {
     if (!box) return;
     box.innerHTML = '';
 
-    // Mostriamo SEMPRE una griglia panoramica fissa di 45 giorni consecutivi
+    // Mostriamo SEMPRE l'intera griglia panoramica fissa di 45 giorni consecutivi
     const maxGiorniDaMostrare = 45;
     const oggi = new Date();
 
-    // Genera tutti i quadratini consecutivi (compresi i festivi) per i prossimi 45 giorni
+    // Genera tutti i quadratini consecutivi per i prossimi 45 giorni
     for (let i = 0; i < maxGiorniDaMostrare; i++) {
         const d = new Date(oggi);
         d.setDate(oggi.getDate() + i);
@@ -351,7 +351,7 @@ function buildCal() {
         div.textContent = d.getDate();
         div.setAttribute('data-date', isoStr);
 
-        // Se il giorno è già stato selezionato precedentemente, mantiene la classe attiva
+        // Se il giorno è già stato selezionato, mantiene la classe attiva
         if (selectedDays.includes(isoStr)) {
             div.classList.add('selected');
         }
@@ -362,23 +362,24 @@ function buildCal() {
                 div.classList.remove('selected');
                 selectedDays = selectedDays.filter(x => x !== isoStr);
             } else {
-                // CONTROLLO DINAMICO DEL PROFILO E DEL TETTO MASSIMO DI CLIC
+                // CONTROLLO DINAMICO DEL PROFILO E DEI NUOVI LIMITI PERSONALIZZATI
                 const selectProfilo = document.getElementById('select-profilo');
                 const profilo = selectProfilo ? selectProfilo.value : 'STD';
                 
-                // Imposta il tetto massimo di giorni selezionabili in base al profilo dichiarato
-                let limiteSelezionabili = (profilo === 'MIS' || profilo === 'TRN' || profilo === 'SWK') ? 45 : 15;
+                // Imposta il tetto massimo specifico richiesto
+                let limiteSelezionabili = 15; // Default Standard
+                if (profilo === 'MIS') {
+                    limiteSelezionabili = 45;
+                } else if (profilo === 'TRN' || profilo === 'SWK') {
+                    limiteSelezionabili = 30;
+                }
 
                 if (selectedDays.length >= limiteSelezionabili) {
-                    if (limiteSelezionabili === 15) {
-                        alert("⚠️ Profilo Standard: Puoi selezionare al massimo 15 giorni (anche spezzettati) all'interno dei 45 giorni visibili!");
-                    } else {
-                        alert("⚠️ Hai raggiunto il limite massimo assoluto di 45 giorni consentiti!");
-                    }
+                    alert(`⚠️ Profilo ${profilo}: Puoi selezionare al massimo ${limiteSelezionabili} gg.!`);
                     return;
                 }
                 
-                // Attiva visivamente il quadratino e aggiungilo all'array di prenotazione
+                // Attiva visivamente il quadratino e inseriscilo nell'array
                 div.classList.add('selected');
                 selectedDays.push(isoStr);
             }
