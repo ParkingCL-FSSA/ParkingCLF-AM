@@ -37,7 +37,27 @@ window.onload = () => {
         }, 1500);
     }
 };
+// ============================================================
+    // 🎯 GESTIONE DINAMICA PROFILO 15/45 GIORNI E NOTA LEGALE
+    // ============================================================
+    document.getElementById('select-profilo')?.addEventListener('change', (e) => {
+        const profilo = e.target.value;
+        const nota = document.getElementById('nota-responsabilita');
+        const testoLimite = document.getElementById('testo-limite-giorni');
+        
+        if (profilo === 'MIS' || profilo === 'TRN' || profilo === 'SWK') {
+            if (nota) nota.style.display = 'block';       // Mostra la responsabilità civile/penale
+            if (testoLimite) testoLimite.textContent = 'Max 45';
+        } else {
+            if (nota) nota.style.display = 'none';        // Nasconde la nota se torna su Standard
+            if (testoLimite) testoLimite.textContent = 'Max 15';
+        }
 
+        // Svuota la selezione corrente per evitare che si portino dietro giorni fuori limite
+        selectedDays = []; 
+        buildCal(); // Rigenera immediatamente la griglia del calendario
+        if (typeof aggiornaRiepilogoGiorni === 'function') aggiornaRiepilogoGiorni();
+    });
 const btnEsci = document.getElementById('btnEsciApp');
 const beepIngresso = new Audio('/beep_i.mp3');
 const beepUscita = new Audio('/beep_u.mp3');
@@ -303,67 +323,64 @@ async function doLogin() {
     }
 }
 
-// 1. MODIFICA NELLA FUNZIONE DI GENERAZIONE DEL CALENDARIO (buildCal)
 function buildCal() {
-    const box = document.getElementById('cal-box');
+    const box = document.getElementById('cal-grid');
     if (!box) return;
     box.innerHTML = '';
 
-    // Recuperiamo il valore massimo selezionato dalla combobox (es. "15" o "45")
-    // Se non trova l'elemento o non è valido, usa 45 come default di sicurezza
-    const selectGiorni = document.getElementById('select-days');
-    const maxGiorniDaMostrare = selectGiorni ? parseInt(selectGiorni.value, 10) : 45;
+    // Legge il tipo di profilo selezionato
+    const selectProfilo = document.getElementById('select-profilo');
+    const profilo = selectProfilo ? selectProfilo.value : 'STD';
+    
+    // Determina la finestra temporale massima di prenotazione
+    let maxGiorniDaMostrare = 15;
+    if (profilo === 'MIS' || profilo === 'TRN' || profilo === 'SWK') {
+        maxGiorniDaMostrare = 45;
+    }
 
     const oggi = new Date();
 
-    // Cicliamo per il numero di giorni scelto nella combobox (fino a 45)
+    // Genera i quadratini per la griglia
     for (let i = 0; i < maxGiorniDaMostrare; i++) {
         const d = new Date(oggi);
         d.setDate(oggi.getDate() + i);
 
         const isoStr = d.toISOString().split('T')[0];
+        
+        // Manteniamo il salto dei fine settimana se previsto dal tuo codice
         const sett = d.getDay(); // 0=Dom, 6=Sab
-        if (sett === 0 || sett === 6) continue; // Salta i fine settimana se previsto
+        if (sett === 0 || sett === 6) continue; 
 
         const div = document.createElement('div');
-        div.className = 'day-cell';
+        div.className = 'day-slot'; // Classe corretta della tua interfaccia mobile
         div.textContent = d.getDate();
         div.setAttribute('data-date', isoStr);
 
-        // Se il giorno era già stato selezionato, mantiene la classe active
+        // Se il giorno è nell'array dei selezionati, accendi il quadratino
         if (selectedDays.includes(isoStr)) {
-            div.classList.add('active');
+            div.classList.add('selected'); // Classe di selezione corretta della tua interfaccia
         }
 
         div.addEventListener('click', () => {
-            if (div.classList.contains('active')) {
-                div.classList.remove('active');
+            if (div.classList.contains('selected')) {
+                div.classList.remove('selected');
                 selectedDays = selectedDays.filter(x => x !== isoStr);
             } else {
-                // AGGIORNAMENTO LIMITE MASSIMO DI SELEZIONE A 45
-                if (selectedDays.length >= 45) {
-                    alert("⚠️ Puoi selezionare al massimo 45 giorni!");
+                // Controllo sul limite massimo dinamico (15 o 45)
+                if (selectedDays.length >= maxGiorniDaMostrare) {
+                    alert(`⚠️ Profilo ${profilo}: Puoi selezionare al massimo ${maxGiorniDaMostrare} giorni!`);
                     return;
                 }
-                div.classList.add('active');
+                div.classList.add('selected');
                 selectedDays.push(isoStr);
             }
-            aggiornaRiepilogoGiorni();
+            // Chiama la tua funzione nativa che aggiorna il riepilogo a schermo
+            if (typeof aggiornaRiepilogoGiorni === 'function') aggiornaRiepilogoGiorni();
         });
 
         box.appendChild(div);
     }
 }
-
-// 2. AGGIORNARE L'EVENT LISTENER SULLA COMBOBOX PER RIGENERARE IL CALENDARIO
-// Incolla questo frammento dentro la funzione window.onload (o dove inizializzi i listener)
-document.getElementById('select-days')?.addEventListener('change', () => {
-    // Svuota i giorni precedentemente selezionati per evitare incongruenze se si stringe il range
-    selectedDays = []; 
-    buildCal();
-    aggiornaRiepilogoGiorni();
-});
-
 let loadingPrenotazione = false;
 
 async function inviaPren() {
