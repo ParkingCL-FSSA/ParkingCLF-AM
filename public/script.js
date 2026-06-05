@@ -44,22 +44,18 @@ window.onload = () => {
     document.getElementById('select-profilo')?.addEventListener('change', (e) => {
         const profilo = e.target.value;
         const nota = document.getElementById('nota-responsabilita');
-        const testoLimite = document.getElementById('testo-limite-giorni');
         
         let limiteMassimo = 15;
 
         if (profilo === 'MIS') {
             limiteMassimo = 45;
             if (nota) nota.style.display = 'block';
-            if (testoLimite) testoLimite.textContent = 'Max 45 gg.';
         } else if (profilo === 'TRN') {
-            limiteMassimo = 30; // Copre Turnisti e Smart Working accorpati
+            limiteMassimo = 30;
             if (nota) nota.style.display = 'block';
-            if (testoLimite) testoLimite.textContent = 'Max 30 gg.';
         } else {
-            limiteMassimo = 15; // Standard
+            limiteMassimo = 15;
             if (nota) nota.style.display = 'none';
-            if (testoLimite) testoLimite.textContent = 'Max 15 gg.';
         }
 
         if (selectedDays.length > limiteMassimo) {
@@ -67,10 +63,11 @@ window.onload = () => {
             alert(`Profilo modificato. La selezione precedente superava il limite di ${limiteMassimo} gg. ed è stata azzerata.`);
         }
 
+        // 🔄 AGGIORNA IL TESTO DELLE DATE E RIGENERA LA GRIGLIA
+        aggiornaTestoFinestra();
         buildCal();
         if (typeof aggiornaRiepilogoGiorni === 'function') aggiornaRiepilogoGiorni();
     });
-
 const btnEsci = document.getElementById('btnEsciApp');
 const beepIngresso = new Audio('/beep_i.mp3');
 const beepUscita = new Audio('/beep_u.mp3');
@@ -336,6 +333,34 @@ async function doLogin() {
     }
 }
 
+// ============================================================
+// 🗓️ FUNZIONE PER AGGIORNARE IL TESTO DELLE DATE DINAMICHE (45 GG)
+// ============================================================
+function aggiornaTestoFinestra() {
+    const el = document.getElementById('testo-limite-giorni');
+    if (!el) return;
+
+    const selectProfilo = document.getElementById('select-profilo');
+    const profilo = selectProfilo ? selectProfilo.value : 'STD';
+
+    // Determina il Max in base al profilo
+    let maxGg = 15;
+    if (profilo === 'MIS') maxGg = 45;
+    if (profilo === 'TRN') maxGg = 30;
+
+    // Calcolo range date (Finestra fissa a 45 giorni totali)
+    const oggi = new Date();
+    const fineFinestra = new Date();
+    fineFinestra.setDate(oggi.getDate() + 44); // +44 per includere oggi nel conteggio dei 45gg
+
+    // Formato giorno/mese (es. 5/6)
+    const strInizio = `${oggi.getDate()}/${oggi.getMonth() + 1}`;
+    const strFine = `${fineFinestra.getDate()}/${fineFinestra.getMonth() + 1}`;
+
+    // Inserisce la stringa formattata esattamente come richiesto
+    el.innerHTML = `Seleziona i giorni (Min 2 | <b>Max ${maxGg}</b>) dal <b>${strInizio}</b> al <b>${strFine}</b>`;
+}
+
 function buildCal() {
     const box = document.getElementById('cal-grid');
     if (!box) return;
@@ -376,7 +401,7 @@ function buildCal() {
                 let limiteSelezionabili = 15; // Default Standard
                 if (profilo === 'MIS') {
                     limiteSelezionabili = 45;
-                } else if (profilo === 'TRN' || profilo === 'SWK') {
+                } else if (profilo === 'TRN') {
                     limiteSelezionabili = 30;
                 }
 
