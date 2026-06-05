@@ -427,13 +427,10 @@ let loadingPrenotazione = false;
 // 🗓️ FUNZIONI DI CALCOLO DINAMICO (Definite prima dell'avvio)
 // ============================================================
 function inizializzaFinestraDate() {
-    // ... qui c'è il tuo codice esistente che calcola le date del calendario ...
-    // Ipotizziamo che le variabili delle date calcolate si chiamino 'dataMinima' e 'dataMassima'
-    // o che tu le possa estrarre direttamente dai millisecondi/oggetti Date gestiti dal tuo script.
-
+ 
     const oggi = new Date(); // Primo giorno disponibile
     const dataFineFinestra = new Date();
-    dataFineFinestra.setDate(oggi.getDate() + 45); // Ultimo giorno disponibile (45gg)
+    dataFineFinestra.setDate(oggi.getDate() + 44); // Ultimo giorno disponibile (45gg)
 
     // Formattazione in GG/MM
     const opzioni = { day: '2-digit', month: '2-digit' };
