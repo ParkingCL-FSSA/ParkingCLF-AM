@@ -399,62 +399,59 @@ function buildCal() {
 let loadingPrenotazione = false;
 
 async function inviaPren() {
-     if (loadingPrenotazione) return;
-
+    // Sicurezza secondaria per evitare doppi invii accidentali
+    if (loadingPrenotazione) return;
     loadingPrenotazione = true;
 
     const btn = document.getElementById('btn-prenota');
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
+
+    const modalLoading = document.getElementById('modal-loading');
+    const email = document.getElementById('u-email').value.trim().toLowerCase();
 
     try {
-    const email = document.getElementById('u-email').value.trim().toLowerCase();
-    // 🚫 blocco mail difesa
-    if (email.includes('@') && email.endsWith('.difesa.it')) {
-        alert('Inserisci la tua mail privata!');
-        return;
-    }
-    if (!email) { return alert("Inserisci la tua email!"); }
-    if (selectedDays.length === 0) { return alert("Seleziona almeno 2 giorni"); }
-    if (selectedDays.length === 1) { return alert("Per il parcheggio【Lunga Sosta】il minimo di giorni prenotabili sono 2"); }
-    if (selectedDays.length > 15) { 
-        resetSelezione();
-        return alert("Massimo 15 giorni selezionabili!"); 
-    }
+        const res = await fetch('/api/prenota', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                npass: userPass,
+                giorni: selectedDays,
+                email: email
+            })
+        });
 
-   const res = await fetch('/api/prenota', {
-
-    method: 'POST',
-
-    headers: {
-        'Content-Type': 'application/json'
-    },
-
-    body: JSON.stringify({
-        npass: userPass,
-        giorni: selectedDays,
-        email: email
-    })
-
-});
-    if (res.ok) {
-        selectedDays.sort();
-        //const totaleGiorni = selectedDays.length;
-        document.getElementById('summary-details').innerHTML =
-            `<b>Pass:</b> ${userPass}<br><b>Dal:</b> ${fmtData(selectedDays[0])}<br><b>Al:</b> ${fmtData(selectedDays[selectedDays.length - 1])}`;
-        show('view-success');
-         setTimeout(() => {
-         mostraMie();
-         }, 10000);
-    } else {
-        // Gestisci errori di validazione dal server
-        const err = await res.json();
-        resetSelezione();
-        alert(err.error || "Errore durante la prenotazione.");
-    }
-} finally {
-
+        if (res.ok) {
+            selectedDays.sort();
+            document.getElementById('summary-details').innerHTML =
+                `<b>Pass:</b> ${userPass}<br><b>Dal:</b> ${fmtData(selectedDays[0])}<br><b>Al:</b> ${fmtData(selectedDays[selectedDays.length - 1])}`;
+            
+            // Spegne il caricamento prima di passare alla vista di successo
+            if (modalLoading) modalLoading.style.display = 'none';
+            
+            show('view-success');
+            
+            setTimeout(() => {
+                mostraMie();
+            }, 10000);
+        } else {
+            // Gestisci gli errori di validazione provenienti dal server PostgreSQL/Node
+            const err = await res.json();
+            
+            if (modalLoading) modalLoading.style.display = 'none';
+            resetSelezione();
+            alert(err.error || "Errore durante la prenotazione.");
+        }
+    } catch (error) {
+        console.error("Errore di rete nell'invio:", error);
+        if (modalLoading) modalLoading.style.display = 'none';
+        alert("Errore di connessione durante l'invio dei dati.");
+    } finally {
         loadingPrenotazione = false;
-        btn.disabled = false;
+        if (btn) btn.disabled = false;
+        // Chiusura di sicurezza del caricamento in ogni scenario rimasto scoperto
+        if (modalLoading) modalLoading.style.display = 'none';
     }
 }
 
@@ -1385,35 +1382,63 @@ window.addEventListener('DOMContentLoaded', async () => {
         // aggiornaVeicoli() subito DOPO che il login ha avuto successo.
     }
 
-    // ============================================================
-    // 📋 EVENT LISTENERS STANDARD DELLA PAGINA (Invariati da qui in poi)
-    // ============================================================
-    document.getElementById('btn-login')?.addEventListener('click', doLogin);
-  //  document.getElementById('btn-prenota')?.addEventListener('click', inviaPren);
-    document.getElementById('btn-reset-days')?.addEventListener('click', resetSelezione);
-    document.getElementById('btn-mie')?.addEventListener('click', mostraMie);
-    document.getElementById('btn-back-user')?.addEventListener('click', () => { show('view-user'); });
+// ============================================================
+// 📋 EVENT LISTENERS STANDARD DELLA PAGINA (Sbloccato e Coordinato)
+// ============================================================
+document.getElementById('btn-login')?.addEventListener('click', doLogin);
+document.getElementById('btn-reset-days')?.addEventListener('click', resetSelezione);
+document.getElementById('btn-mie')?.addEventListener('click', mostraMie);
+document.getElementById('btn-back-user')?.addEventListener('click', () => { show('view-user'); });
 
 // ============================================================
-// 🎯 GESTIONE INVIO PRENOTAZIONE CON POPUP DI ACCETTAZIONE REGOLAMENTO
+// 🎯 INTERCETTAZIONE E CONTROLLI PRIMA DEL BANNER REGOLE
 // ============================================================
 document.getElementById('btn-prenota')?.addEventListener('click', () => {
-    // 1. Controlli preliminari standard (es. se ha selezionato giorni o inserito l'email)
-    if (selectedDays.length === 0) {
-        alert("⚠️ Seleziona almeno un giorno sulla griglia del calendario prima di procedere!");
-        return;
+    if (loadingPrenotazione) return;
+
+    // A. Controllo Selezione Giorni (Minimo 2)
+    if (selectedDays.length === 0) { 
+        alert("⚠️ Seleziona almeno un giorno sulla griglia del calendario prima di procedere!"); 
+        return; 
     }
-    
+    if (selectedDays.length === 1) { 
+        alert("Per il parcheggio【Lunga Sosta】il minimo di giorni prenotabili sono 2"); 
+        return; 
+    }
+
+    // B. Controllo Email Privata e Validazioni Obbligatorie
     const emailInput = document.getElementById('u-email');
     if (!emailInput || !emailInput.value.trim()) {
-        alert("⚠️ Inserisci un indirizzo email valido per ricevere il PASS!");
+        alert("⚠️ Inserisci il tuo indirizzo email per ricevere il PASS!");
+        return;
+    }
+    const email = emailInput.value.trim().toLowerCase();
+    if (email.includes('@') && email.endsWith('.difesa.it')) {
+        alert('🚫 Inserisci la tua mail privata! Non sono ammessi indirizzi istituzionali.');
         return;
     }
 
-    // 2. Se i controlli sono OK, blocca l'interfaccia e mostra il Banner di responsabilità
-    const modal = document.getElementById('modal-conferma-regole');
-    if (modal) {
-        modal.style.display = 'flex'; // Mostra il popup centrandolo a schermo
+    // C. Controllo Tetto Massimo Dinamico in base al Profilo
+    const selectProfilo = document.getElementById('select-profilo');
+    const profilo = selectProfilo ? selectProfilo.value : 'STD';
+    
+    let limiteMassimo = 15;
+    if (profilo === 'MIS') {
+        limiteMassimo = 45;
+    } else if (profilo === 'TRN') {
+        limiteMassimo = 30; // Copre sia Turnisti che Smart Working accorpati
+    }
+
+    if (selectedDays.length > limiteMassimo) {
+        resetSelezione();
+        alert(`⚠️ Profilo ${profilo}: Massimo ${limiteMassimo} giorni selezionabili!`);
+        return;
+    }
+
+    // Se tutti i controlli preliminari sono superati, mostra il Banner di responsabilità
+    const modalRegole = document.getElementById('modal-conferma-regole');
+    if (modalRegole) {
+        modalRegole.style.display = 'flex';
     }
 });
 
@@ -1421,41 +1446,24 @@ document.getElementById('btn-prenota')?.addEventListener('click', () => {
 // ⚙️ GESTIONE PULSANTI INTERNI AL BANNER DI CONFERMA
 // ============================================================
 
-// AZIONE A: L'utente annulla per modificare i giorni
+// AZIONE A: L'utente annulla per correggere la selezione
 document.getElementById('modal-btn-annulla')?.addEventListener('click', () => {
     const modalRegole = document.getElementById('modal-conferma-regole');
     if (modalRegole) modalRegole.style.display = 'none';
 });
 
-// AZIONE B: L'utente accetta -> Mostra caricamento temporizzato ed ESEGUE L'INVIO REALE
+// AZIONE B: L'utente accetta le condizioni -> Mostra caricamento ed ESEGUE L'INVIO
 document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
     const modalRegole = document.getElementById('modal-conferma-regole');
     const modalLoading = document.getElementById('modal-loading');
 
-    // 1. Chiudi il popup delle regole
+    // Chiude il popup delle regole e attiva la rotellina fluida (senza blocco OK)
     if (modalRegole) modalRegole.style.display = 'none';
-
-    // 2. Mostra il banner di caricamento (senza bottoni, non blocca l'utente con "OK")
     if (modalLoading) modalLoading.style.display = 'flex';
 
-    // 🚀 3. RIPRISTINO DELL'INVIO REALE DEI DATI
-    // Sostituisci "tuaFunzioneRealeDiInvio()" con il nome esatto della funzione 
-    // che avevi prima nel tuo script per salvare i dati (es. inviaDati(), salvaSulFoglio(), ecc.)
-    
-    if (typeof tuaFunzioneRealeDiInvio === "function") {
-        tuaFunzioneRealeDiInvio(); 
-        
-        // Il banner di caricamento si chiuderà dentro la tua funzione originale 
-        // inserendo: document.getElementById('modal-loading').style.display = 'none';
-    } else {
-        // Se l'invio è gestito direttamente in linea, simula la chiusura automatica dopo 2 secondi
-        setTimeout(() => {
-            if (modalLoading) modalLoading.style.display = 'none';
-            // Se avevi un codice nativo qui dentro per la fetch, inseriscilo qui sotto!
-        }, 2000);
-    }
+    // Lancia l'invio nativo
+    inviaPren();
 });
-    
     document.getElementById('btn-invia-nota')?.addEventListener('click', async () => {
         const notaInput = document.getElementById('u-note'); 
         const notaTesto = notaInput ? notaInput.value.trim() : '';
