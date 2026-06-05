@@ -333,7 +333,7 @@ async function doLogin() {
         }
         else {
             show('view-user');
-            try { buildCal(); } catch(e){ console.log(e); }
+            try { buildCal(); aggiornaTestoFinestra(); } catch(e){ console.log(e); }
         }
 
     } catch (err) {
