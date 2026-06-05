@@ -1436,50 +1436,7 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
     // Esempio: eseguiInvioPrenotazioneFinale();
     alert("Procedura accettata. Invio della prenotazione in corso..."); 
 });
-Perché questa soluzione funziona molto meglio di un semplice testo scritto:
-Effetto "Sorgente" (Backdrop blur): Lo sfondo della pagina dietro al banner si sfuoca leggermente, attirando in modo perentorio l'attenzione del collega solo sul testo del diniego.
-
-Nessuna distrazione: L'utente non può cliccare altrove nella pagina finché non prende una decisione sui due tasti del banner.
-
-Tutela logistica: Avendo cliccato espressamente su un pulsante con scritto "Ho compreso e accetto le condizioni", l'utente non potrà più usare la scusa del "Io non lo sapevo" in caso di contestazioni o di rifiuto d'accesso al cancello da parte dei verificatori.
-// ============================================================
-// ⚙️ GESTIONE PULSANTI INTERNI AL BANNER DI CONFERMA
-// ============================================================
-
-// AZIONE A: L'utente annulla per modificare i giorni
-document.getElementById('modal-btn-annulla')?.addEventListener('click', () => {
-    const modalRegole = document.getElementById('modal-conferma-regole');
-    if (modalRegole) modalRegole.style.display = 'none';
-});
-
-// AZIONE B: L'utente accetta -> Mostra caricamento temporizzato ed ESEGUE L'INVIO REALE
-document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
-    const modalRegole = document.getElementById('modal-conferma-regole');
-    const modalLoading = document.getElementById('modal-loading');
-
-    // 1. Chiudi il popup delle regole
-    if (modalRegole) modalRegole.style.display = 'none';
-
-    // 2. Mostra il banner di caricamento (senza bottoni, non blocca l'utente con "OK")
-    if (modalLoading) modalLoading.style.display = 'flex';
-
-    // 🚀 3. RIPRISTINO DELL'INVIO REALE DEI DATI
-    // Sostituisci "tuaFunzioneRealeDiInvio()" con il nome esatto della funzione 
-    // che avevi prima nel tuo script per salvare i dati (es. inviaDati(), salvaSulFoglio(), ecc.)
     
-    if (typeof tuaFunzioneRealeDiInvio === "function") {
-        tuaFunzioneRealeDiInvio(); 
-        
-        // Il banner di caricamento si chiuderà dentro la tua funzione originale 
-        // inserendo: document.getElementById('modal-loading').style.display = 'none';
-    } else {
-        // Se l'invio è gestito direttamente in linea, simula la chiusura automatica dopo 2 secondi
-        setTimeout(() => {
-            if (modalLoading) modalLoading.style.display = 'none';
-            // Se avevi un codice nativo qui dentro per la fetch, inseriscilo qui sotto!
-        }, 2000);
-    }
-});
     document.getElementById('btn-invia-nota')?.addEventListener('click', async () => {
         const notaInput = document.getElementById('u-note'); 
         const notaTesto = notaInput ? notaInput.value.trim() : '';
