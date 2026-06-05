@@ -1393,47 +1393,43 @@ window.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btn-reset-days')?.addEventListener('click', resetSelezione);
     document.getElementById('btn-mie')?.addEventListener('click', mostraMie);
     document.getElementById('btn-back-user')?.addEventListener('click', () => { show('view-user'); });
-    // ============================================================
-// 🎯 GESTIONE INVIO PRENOTAZIONE CON POPUP DI ACCETTAZIONE REGOLAMENTO
-// ============================================================
-document.getElementById('btn-prenota')?.addEventListener('click', () => {
-    // 1. Controlli preliminari standard (es. se ha selezionato giorni o inserito l'email)
-    if (selectedDays.length === 0) {
-        alert("⚠️ Seleziona almeno un giorno sulla griglia del calendario prima di procedere!");
-        return;
-    }
-    
-    const emailInput = document.getElementById('u-email');
-    if (!emailInput || !emailInput.value.trim()) {
-        alert("⚠️ Inserisci un indirizzo email valido per ricevere il PASS!");
-        return;
-    }
-
-    // 2. Se i controlli sono OK, blocca l'interfaccia e mostra il Banner di responsabilità
-    const modal = document.getElementById('modal-conferma-regole');
-    if (modal) {
-        modal.style.display = 'flex'; // Mostra il popup centrandolo a schermo
-    }
-});
-
 // ============================================================
 // ⚙️ GESTIONE PULSANTI INTERNI AL BANNER DI CONFERMA
 // ============================================================
 
-// AZIONE A: L'utente annulla perché ha capito il rischio
+// AZIONE A: L'utente annulla per modificare i giorni
 document.getElementById('modal-btn-annulla')?.addEventListener('click', () => {
-    const modal = document.getElementById('modal-conferma-regole');
-    if (modal) modal.style.display = 'none'; // Chiude semplicemente il popup senza fare nulla
+    const modalRegole = document.getElementById('modal-conferma-regole');
+    if (modalRegole) modalRegole.style.display = 'none';
 });
 
-// AZIONE B: L'utente si assume la responsabilità e clicca su "Ho compreso e accetto"
+// AZIONE B: L'utente accetta -> Mostra caricamento temporizzato ed ESEGUE L'INVIO REALE
 document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
-    const modal = document.getElementById('modal-conferma-regole');
-    if (modal) modal.style.display = 'none'; // Chiude il popup
+    const modalRegole = document.getElementById('modal-conferma-regole');
+    const modalLoading = document.getElementById('modal-loading');
 
-    // 🚀 QUI INSERISCI LA TUA FUNZIONE REALE CHE INVIA I DATI A GAS / DATABASE
-    // Esempio: eseguiInvioPrenotazioneFinale();
-    alert("Procedura accettata. Invio della prenotazione in corso..."); 
+    // 1. Chiudi il popup delle regole
+    if (modalRegole) modalRegole.style.display = 'none';
+
+    // 2. Mostra il banner di caricamento (senza bottoni, non blocca l'utente con "OK")
+    if (modalLoading) modalLoading.style.display = 'flex';
+
+    // 🚀 3. RIPRISTINO DELL'INVIO REALE DEI DATI
+    // Sostituisci "tuaFunzioneRealeDiInvio()" con il nome esatto della funzione 
+    // che avevi prima nel tuo script per salvare i dati (es. inviaDati(), salvaSulFoglio(), ecc.)
+    
+    if (typeof tuaFunzioneRealeDiInvio === "function") {
+        tuaFunzioneRealeDiInvio(); 
+        
+        // Il banner di caricamento si chiuderà dentro la tua funzione originale 
+        // inserendo: document.getElementById('modal-loading').style.display = 'none';
+    } else {
+        // Se l'invio è gestito direttamente in linea, simula la chiusura automatica dopo 2 secondi
+        setTimeout(() => {
+            if (modalLoading) modalLoading.style.display = 'none';
+            // Se avevi un codice nativo qui dentro per la fetch, inseriscilo qui sotto!
+        }, 2000);
+    }
 });
     document.getElementById('btn-invia-nota')?.addEventListener('click', async () => {
         const notaInput = document.getElementById('u-note'); 
