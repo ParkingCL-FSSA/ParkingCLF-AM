@@ -434,7 +434,7 @@ async function inviaPren() {
             
             setTimeout(() => {
                 mostraMie();
-            }, 10000);
+            }, 5000);
         } else {
             // Gestisci gli errori di validazione provenienti dal server PostgreSQL/Node
             const err = await res.json();
