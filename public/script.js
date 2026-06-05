@@ -436,19 +436,25 @@ let loadingPrenotazione = false;
 // 🗓️ FUNZIONI DI CALCOLO DINAMICO (Definite prima dell'avvio)
 // ============================================================
 function inizializzaFinestraDate() {
-    const oggi = new Date();
-    const fineFinestra = new Date();
-    fineFinestra.setDate(oggi.getDate() + 44); // Finestra fissa di 45 giorni totali da oggi
+    // ... qui c'è il tuo codice esistente che calcola le date del calendario ...
+    // Ipotizziamo che le variabili delle date calcolate si chiamino 'dataMinima' e 'dataMassima'
+    // o che tu le possa estrarre direttamente dai millisecondi/oggetti Date gestiti dal tuo script.
 
-    // Formatta le date come Gg/Mm (es. 5/6 e 19/7)
-    const strInizio = `${oggi.getDate()}/${oggi.getMonth() + 1}`;
-    const strFine = `${fineFinestra.getDate()}/${fineFinestra.getMonth() + 1}`;
+    const oggi = new Date(); // Primo giorno disponibile
+    const dataFineFinestra = new Date();
+    dataFineFinestra.setDate(oggi.getDate() + 45); // Ultimo giorno disponibile (45gg)
 
-    const elInizio = document.getElementById('dinamico-inizio');
-    const elFine = document.getElementById('dinamico-fine');
-    
-    if (elInizio) elInizio.textContent = strInizio;
-    if (elFine) elFine.textContent = strFine;
+    // Formattazione in GG/MM
+    const opzioni = { day: '2-digit', month: '2-digit' };
+    const strInizio = oggi.toLocaleDateString('it-IT', opzioni);
+    const strFine = dataFineFinestra.toLocaleDateString('it-IT', opzioni);
+
+    // Iniezione dinamica nei campi subito dopo il login
+    const elInizio = document.getElementById('calendar-inizio');
+    const elFine = document.getElementById('calendar-fine');
+
+    if (elInizio) elInizio.innerText = strInizio;
+    if (elFine) elFine.innerText = strFine;
 }
 
 function aggiornaSoloMax() {
