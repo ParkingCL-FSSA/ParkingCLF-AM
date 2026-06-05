@@ -380,7 +380,7 @@ function buildCal() {
     const oggi = new Date();
 
     // Genera tutti i quadratini consecutivi per i prossimi 45 giorni
-    for (let i = 1; i < maxGiorniDaMostrare; i++) {
+    for (let i = 0; i < maxGiorniDaMostrare; i++) {
         const d = new Date(oggi);
         d.setDate(oggi.getDate() + i);
 
