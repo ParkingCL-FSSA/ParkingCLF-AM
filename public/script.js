@@ -356,7 +356,7 @@ function buildCal() {
         const isoStr = d.toISOString().split('T')[0];
 
         const div = document.createElement('div');
-        div.className = 'day-slot';
+        div.className = 'day-slot'; // <--- Assicurati che usi questa classe coordinata con il CSS sopra
         div.textContent = d.getDate();
         div.setAttribute('data-date', isoStr);
 
