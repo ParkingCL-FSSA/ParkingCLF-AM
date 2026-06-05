@@ -1389,11 +1389,52 @@ window.addEventListener('DOMContentLoaded', async () => {
     // 📋 EVENT LISTENERS STANDARD DELLA PAGINA (Invariati da qui in poi)
     // ============================================================
     document.getElementById('btn-login')?.addEventListener('click', doLogin);
-    document.getElementById('btn-prenota')?.addEventListener('click', inviaPren);
+  //  document.getElementById('btn-prenota')?.addEventListener('click', inviaPren);
     document.getElementById('btn-reset-days')?.addEventListener('click', resetSelezione);
     document.getElementById('btn-mie')?.addEventListener('click', mostraMie);
     document.getElementById('btn-back-user')?.addEventListener('click', () => { show('view-user'); });
+    // ============================================================
+// 🎯 GESTIONE INVIO PRENOTAZIONE CON POPUP DI ACCETTAZIONE REGOLAMENTO
+// ============================================================
+document.getElementById('btn-prenota')?.addEventListener('click', () => {
+    // 1. Controlli preliminari standard (es. se ha selezionato giorni o inserito l'email)
+    if (selectedDays.length === 0) {
+        alert("⚠️ Seleziona almeno un giorno sulla griglia del calendario prima di procedere!");
+        return;
+    }
     
+    const emailInput = document.getElementById('u-email');
+    if (!emailInput || !emailInput.value.trim()) {
+        alert("⚠️ Inserisci un indirizzo email valido per ricevere il PASS!");
+        return;
+    }
+
+    // 2. Se i controlli sono OK, blocca l'interfaccia e mostra il Banner di responsabilità
+    const modal = document.getElementById('modal-conferma-regole');
+    if (modal) {
+        modal.style.display = 'flex'; // Mostra il popup centrandolo a schermo
+    }
+});
+
+// ============================================================
+// ⚙️ GESTIONE PULSANTI INTERNI AL BANNER DI CONFERMA
+// ============================================================
+
+// AZIONE A: L'utente annulla perché ha capito il rischio
+document.getElementById('modal-btn-annulla')?.addEventListener('click', () => {
+    const modal = document.getElementById('modal-conferma-regole');
+    if (modal) modal.style.display = 'none'; // Chiude semplicemente il popup senza fare nulla
+});
+
+// AZIONE B: L'utente si assume la responsabilità e clicca su "Ho compreso e accetto"
+document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
+    const modal = document.getElementById('modal-conferma-regole');
+    if (modal) modal.style.display = 'none'; // Chiude il popup
+
+    // 🚀 QUI INSERISCI LA TUA FUNZIONE REALE CHE INVIA I DATI A GAS / DATABASE
+    // Esempio: eseguiInvioPrenotazioneFinale();
+    alert("Procedura accettata. Invio della prenotazione in corso..."); 
+});
     document.getElementById('btn-invia-nota')?.addEventListener('click', async () => {
         const notaInput = document.getElementById('u-note'); 
         const notaTesto = notaInput ? notaInput.value.trim() : '';
