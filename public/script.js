@@ -364,7 +364,7 @@ function aggiornaTestoFinestra() {
 
     // Formato giorno/mese (es. 5/6)
     const strInizio = `${oggi.getDate()}/${oggi.getMonth() + 1}`;
-    const strFine = `${fineFinestra.getDate()}/${fineFinestra.getMonth() + 1}`;
+    const strFine = `${fineFinestra.getDate()}/${fineFinestra.getMonth()}`;
 
     // Inserisce la stringa formattata esattamente come richiesto
     el.innerHTML = `Seleziona i giorni (Min 2 | <b>Max ${maxGg}</b>) dal <b>${strInizio}</b> al <b>${strFine}</b>`;
