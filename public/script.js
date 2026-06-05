@@ -21,25 +21,32 @@ window.addEventListener('beforeinstallprompt', (e) => {
         });
     }
 });
-// Quando la pagina si carica...
-window.onload = () => {
+// ============================================================
+// 🏁 BLOCCO DI AVVIO UNICO AL CARICAMENTO DELLA PAGINA
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
+    
+    // 1. Esegui subito i calcoli grafici delle date e dei massimali
     inizializzaFinestraDate();
     aggiornaSoloMax();
-    // Se l'utente è arrivato tramite il QR code con mode=install
+    
+    // 2. Genera la griglia del calendario
+    if (typeof buildCal === "function") {
+        buildCal();
+    }
+
+    // 3. Controllo se l'utente arriva dal QR code con mode=install
     if (urlParams.get('mode') === 'install') {
-        // Aspettiamo un secondo e poi mostriamo un avviso o evidenziamo il tasto installa
         setTimeout(() => {
             const btn = document.getElementById('btnInstalla');
             if (btn) {
-                btn.style.border = "4px solid #3b82f6"; // Lo rendiamo più visibile
+                btn.style.border = "4px solid #3b82f6"; // Evidenzia il tasto
                 alert("Benvenuto! Clicca sul tasto bianco e blu 'INSTALLA APP' per averla sempre sul telefono.");
             }
         }, 1500);
     }
-    if (typeof buildCal === "function") buildCal();
-};
-
+});
     // ============================================================
     // 🎯 GESTIONE DINAMICA CAMBIO PROFILO (NUOVI LIMITI 45/30/15 GG)
     // ============================================================
@@ -426,7 +433,7 @@ function buildCal() {
 let loadingPrenotazione = false;
 
 // ============================================================
-// 🗓️ 1. FUNZIONE DA FAR PARTIRE SUBITO AL CARICAMENTO (STARTUP)
+// 🗓️ FUNZIONI DI CALCOLO DINAMICO (Definite prima dell'avvio)
 // ============================================================
 function inizializzaFinestraDate() {
     const oggi = new Date();
@@ -437,7 +444,6 @@ function inizializzaFinestraDate() {
     const strInizio = `${oggi.getDate()}/${oggi.getMonth() + 1}`;
     const strFine = `${fineFinestra.getDate()}/${fineFinestra.getMonth() + 1}`;
 
-    // Inserisce stabilmente le date nei rispettivi nodi dell'HTML
     const elInizio = document.getElementById('dinamico-inizio');
     const elFine = document.getElementById('dinamico-fine');
     
@@ -445,7 +451,6 @@ function inizializzaFinestraDate() {
     if (elFine) elFine.textContent = strFine;
 }
 
-// ⚙️ Funzione d'appoggio per aggiornare solo il valore Max della stringa
 function aggiornaSoloMax() {
     const elMax = document.getElementById('dinamico-max');
     if (!elMax) return;
