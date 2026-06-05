@@ -357,8 +357,23 @@ function aggiornaTestoFinestra() {
     if (profilo === 'MIS') maxGg = 45;
     if (profilo === 'TRN') maxGg = 30;
 
-     // Inserisce la stringa formattata dinamicamente nell'HTML
-    el.innerHTML = `Seleziona i giorni (Min 2 | <b>Max ${maxGg}</b>)`;
+    // Calcolo range date (Finestra fissa a 45 giorni totali)
+    const oggi = new Date();
+    const fineFinestra = new Date();
+    fineFinestra.setDate(oggi.getDate() + 44); // +44 per includere oggi nel conteggio dei 45gg totali (Es. dal 05/06 al 19/07)
+
+    // Formato giorno/mese a due cifre (es. 05/06)
+    const dInizio = String(oggi.getDate()).padStart(2, '0');
+    const mInizio = String(oggi.getMonth() + 1).padStart(2, '0');
+    
+    const dFine = String(fineFinestra.getDate()).padStart(2, '0');
+    const mFine = String(fineFinestra.getMonth() + 1).padStart(2, '0');
+
+    const strInizio = `${dInizio}/${mInizio}`;
+    const strFine = `${dFine}/${mFine}`;
+
+    // Genera la stringa completa unificata dentro l'elemento
+    el.innerHTML = `Seleziona i giorni (Min 2 | <b>Max ${maxGg}</b>)<br>Calendario prenotazioni dal <span style="font-weight: bold; color: #2563eb;">${strInizio}</span> al <span style="font-weight: bold; color: #2563eb;">${strFine}</span>`;
 }
 
 function buildCal() {
