@@ -38,7 +38,7 @@ window.onload = () => {
     }
 };
 
-// ============================================================
+    // ============================================================
     // 🎯 GESTIONE DINAMICA CAMBIO PROFILO (NUOVI LIMITI 45/30/15 GG)
     // ============================================================
     document.getElementById('select-profilo')?.addEventListener('change', (e) => {
@@ -52,8 +52,8 @@ window.onload = () => {
             limiteMassimo = 45;
             if (nota) nota.style.display = 'block';
             if (testoLimite) testoLimite.textContent = 'Max 45 gg.';
-        } else if (profilo === 'TRN' || profilo === 'SWK') {
-            limiteMassimo = 30;
+        } else if (profilo === 'TRN') {
+            limiteMassimo = 30; // Copre Turnisti e Smart Working accorpati
             if (nota) nota.style.display = 'block';
             if (testoLimite) testoLimite.textContent = 'Max 30 gg.';
         } else {
@@ -62,14 +62,11 @@ window.onload = () => {
             if (testoLimite) testoLimite.textContent = 'Max 15 gg.';
         }
 
-        // Controllo di sicurezza: se il nuovo profilo selezionato ha un limite inferiore 
-        // ai giorni già cliccati, svuota la selezione per evitare anomalie nel database
         if (selectedDays.length > limiteMassimo) {
             selectedDays = [];
             alert(`Profilo modificato. La selezione precedente superava il limite di ${limiteMassimo} gg. ed è stata azzerata.`);
         }
 
-        // Rigenera i quadratini mantenendo intatta la griglia a 45 caselle
         buildCal();
         if (typeof aggiornaRiepilogoGiorni === 'function') aggiornaRiepilogoGiorni();
     });
