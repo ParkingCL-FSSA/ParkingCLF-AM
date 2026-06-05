@@ -72,27 +72,31 @@
     .btn-red { background:var(--red); }
     .btn-gray { background:var(--gray); }
 
-  /* Calendario panoramico a 45gg sempre visibile */
+  /* Calendario panoramico fissa a 45gg - Quadratini e Testi Ingranditi */
     #cal-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr); /* 5 colonne classiche */
-      gap: 8px;
-      max-height: 280px; /* Consente lo scorrimento dei 45 giorni senza deformare la pagina */
+      grid-template-columns: repeat(5, 1fr); /* Rimane a 5 colonne come preferisci */
+      gap: 10px;                             /* Più spazio di separazione tra i quadratini */
+      max-height: 320px;                     /* Alzata leggermente per ospitare i tasti più grandi */
       overflow-y: auto;
       margin: 15px 0;
-      padding: 8px;
+      padding: 10px;
       border: 1px solid #e2e8f0;
-      border-radius: 12px;
+      border-radius: 14px;
       background: #f8fafc;
     }
-    
+
+  /* Ottimizzazione dei singoli tasti giorno (se usi la classe day-slot) */
     .day-slot {
-      padding:10px;
-      border:1px solid #e2e8f0;
-      border-radius:8px;
-      cursor:pointer;
-      font-size:13px;
-      background:white;
+      padding: 14px 8px !important;          /* Più spessore verticale per renderli grandi e cliccabili */
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px !important;            /* 🌟 NUMERO DEL GIORNO PIÙ GRANDE E LEGGIBILE */
+      font-weight: bold;                     /* Testo in grassetto per risaltare */
+      background: white;
+      box-sizing: border-box;
+      transition: 0.2s;
     }
 
     .selected {
