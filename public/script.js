@@ -24,7 +24,8 @@ window.addEventListener('beforeinstallprompt', (e) => {
 // Quando la pagina si carica...
 window.onload = () => {
     const urlParams = new URLSearchParams(window.location.search);
-    
+    inizializzaFinestraDate();
+    aggiornaSoloMax();
     // Se l'utente è arrivato tramite il QR code con mode=install
     if (urlParams.get('mode') === 'install') {
         // Aspettiamo un secondo e poi mostriamo un avviso o evidenziamo il tasto installa
@@ -36,6 +37,7 @@ window.onload = () => {
             }
         }, 1500);
     }
+    if (typeof buildCal === "function") buildCal();
 };
 
     // ============================================================
@@ -64,7 +66,7 @@ window.onload = () => {
         }
 
         // 🔄 AGGIORNA IL TESTO DELLE DATE E RIGENERA LA GRIGLIA
-        aggiornaTestoFinestra();
+        aggiornaSoloMax();
         buildCal();
         if (typeof aggiornaRiepilogoGiorni === 'function') aggiornaRiepilogoGiorni();
     });
@@ -422,6 +424,41 @@ function buildCal() {
 }
 
 let loadingPrenotazione = false;
+
+// ============================================================
+// 🗓️ 1. FUNZIONE DA FAR PARTIRE SUBITO AL CARICAMENTO (STARTUP)
+// ============================================================
+function inizializzaFinestraDate() {
+    const oggi = new Date();
+    const fineFinestra = new Date();
+    fineFinestra.setDate(oggi.getDate() + 44); // Finestra fissa di 45 giorni totali da oggi
+
+    // Formatta le date come Gg/Mm (es. 5/6 e 19/7)
+    const strInizio = `${oggi.getDate()}/${oggi.getMonth() + 1}`;
+    const strFine = `${fineFinestra.getDate()}/${fineFinestra.getMonth() + 1}`;
+
+    // Inserisce stabilmente le date nei rispettivi nodi dell'HTML
+    const elInizio = document.getElementById('dinamico-inizio');
+    const elFine = document.getElementById('dinamico-fine');
+    
+    if (elInizio) elInizio.textContent = strInizio;
+    if (elFine) elFine.textContent = strFine;
+}
+
+// ⚙️ Funzione d'appoggio per aggiornare solo il valore Max della stringa
+function aggiornaSoloMax() {
+    const elMax = document.getElementById('dinamico-max');
+    if (!elMax) return;
+
+    const selectProfilo = document.getElementById('select-profilo');
+    const profilo = selectProfilo ? selectProfilo.value : 'STD';
+
+    let maxGg = 15;
+    if (profilo === 'MIS') maxGg = 45;
+    if (profilo === 'TRN') maxGg = 30;
+
+    elMax.innerHTML = `<b>Max ${maxGg}</b>`;
+}
 
 async function inviaPren() {
     // Sicurezza secondaria per evitare doppi invii accidentali
