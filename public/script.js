@@ -73,7 +73,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         // 🔄 AGGIORNA IL TESTO DELLE DATE E RIGENERA LA GRIGLIA
-        aaggiornaTestoFinestra();
+        aggiornaTestoFinestra();
         buildCal();
         if (typeof aggiornaRiepilogoGiorni === 'function') aggiornaRiepilogoGiorni();
     });
