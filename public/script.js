@@ -360,13 +360,19 @@ function aggiornaTestoFinestra() {
     // Calcolo range date (Finestra fissa a 45 giorni totali)
     const oggi = new Date();
     const fineFinestra = new Date();
-    fineFinestra.setDate(oggi.getDate() + 44); // +44 per includere oggi nel conteggio dei 45gg
+    fineFinestra.setDate(oggi.getDate() + 44); // +44 porta esattamente al 45° giorno (19/07)
 
-    // Formato giorno/mese (es. 5/6)
-    const strInizio = `${oggi.getDate()}/${oggi.getMonth() + 1}`;
-    const strFine = `${fineFinestra.getDate()}/${fineFinestra.getMonth() + 0}`;
+    // Formato giorno/mese (es. 05/06) con aggiunta dello zero se a una cifra
+    const dInizio = String(oggi.getDate()).padStart(2, '0');
+    const mInizio = String(oggi.getMonth() + 1).padStart(2, '0'); // Gennaio è 0, quindi +1
+    
+    const dFine = String(fineFinestra.getDate()).padStart(2, '0');
+    const mFine = String(fineFinestra.getMonth() + 1).padStart(2, '0'); // 🎯 CORRETTO: Anche qui va +1
 
-    // Inserisce la stringa formattata esattamente come richiesto
+    const strInizio = `${dInizio}/${mInizio}`;
+    const strFine = `${dFine}/${mFine}`;
+
+    // Inserisce la stringa formattata dinamicamente nell'HTML
     el.innerHTML = `Seleziona i giorni (Min 2 | <b>Max ${maxGg}</b>) dal <b>${strInizio}</b> al <b>${strFine}</b>`;
 }
 
