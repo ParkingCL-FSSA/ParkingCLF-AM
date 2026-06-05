@@ -373,7 +373,7 @@ function aggiornaTestoFinestra() {
     const strFine = `${dFine}/${mFine}`;
 
     // Genera la stringa completa unificata dentro l'elemento
-    el.innerHTML = `Seleziona i giorni (Min 2 | <b>Max ${maxGg}</b>)<br>Calendario prenotazioni dal <span style="font-weight: bold; color: #2563eb;">${strInizio}</span> al <span style="font-weight: bold; color: #2563eb;">${strFine}</span>`;
+    el.innerHTML = `Seleziona i giorni (Min 2 | <b>Max ${maxGg}</b>) dal <span style="font-weight: bold; color: #2563eb;">${strInizio}</span> al <span style="font-weight: bold; color: #2563eb;">${strFine}</span>`;
 }
 
 function buildCal() {
