@@ -1616,79 +1616,99 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
             if (inputSearch) inputSearch.value = '';
         }
     });
-    // ============================================================
-    // ⚙️ GESTIONE STRUMENTO DI VERIFICA AUTO SCADUTE
-    // ============================================================
+    
+ // ============================================================
+ // ⚙️ GESTIONE STRUMENTO DI VERIFICA AUTO SCADUTE
+ // ============================================================
 
-    // AZIONE 1: L'auto è dentro -> Riattiva la prenotazione
-    document.getElementById('btn-scaduto-dentro')?.addEventListener('click', async () => {
-        if (!currentPren) return;
-        
-        const adesso = new Date();
-        const dataStr = adesso.toLocaleDateString('it-IT');
-        const oraStr = adesso.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+// LISTENER PULSANTE: SI - DENTRO (RIATTIVA PRENOTAZIONE)
+document.getElementById('btn-scaduto-dentro')?.addEventListener('click', async () => {
+    if (!currentPren) return;
+    
+    if (!confirm(`Confermi che il veicolo ${currentPren.npass} è già presente nel parcheggio?`)) return;
 
-        if (!confirm(`Confermi che il veicolo è DENTRO? La prenotazione verrà riattivata in data ${dataStr} ore ${oraStr}.`)) return;
+    try {
+        const res = await fetch('/api/piantone/scaduto-riattiva', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: currentPren.id,
+                npass: currentPren.npass,
+                auth: userPass, // 🎯 Passiamo la chiave piantone per superare il controllo ruoli
+                data_verifica: new Date()
+            })
+        });
 
-        try {
-            const res = await fetch('/api/piantone/scaduto-riattiva', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    id: currentPren.id, 
-                    npass: userPass,
-                    data_verifica: adesso.toISOString() // Passa il timestamp preciso al server
-                })     
-            });
-            
-            if (!res.ok) { // 🌟 Controllo di sicurezza
-            alert("Errore di comunicazione con il server (Stato " + res.status + ")");
-            return; } 
-            
-            const data = await res.json();
-            if (data.success) {
-                alert(`Veicolo Verificato il ${dataStr} ore ${oraStr}. Prenotazione riattivata con successo!`);
-                await aggiornaVeicoli();
-                document.getElementById('box-verifica-scaduti')?.classList.add('hidden');
-                document.getElementById('panel-piantone')?.classList.add('hidden');
-                currentPren = null;
-                if (inputSearch) inputSearch.value = '';
-            } else {
-                alert('Errore durante la riattivazione: ' + (data.error || 'Riprova più tardi.'));
-            }
-        } catch (err) {
-            console.error(err);
-            alert('Errore di connessione al server.');
+        if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || 'Errore del server');
         }
-    });
 
-    // AZIONE 2: L'auto non è mai venuta -> Archivia subito per liberare i posti futuri
-    document.getElementById('btn-scaduto-mai-entrato')?.addEventListener('click', async () => {
-        if (!currentPren) return;
-        if (!confirm('Confermi che il veicolo NON È MAI ENTRATO? La prenotazione scaduta verrà archiviata definitivamente.')) return;
+        const data = await res.json();
 
-        try {
-            const res = await fetch('/api/piantone/scaduto-archivia', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: currentPren.id, npass: userPass })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert('Prenotazione archiviata come inutilizzata. Slot liberati.');
-                await aggiornaVeicoli();
-                document.getElementById('box-verifica-scaduti')?.classList.add('hidden');
-                document.getElementById('panel-piantone')?.classList.add('hidden');
-                currentPren = null;
-                if (inputSearch) inputSearch.value = '';
-            } else {
-                alert('Errore durante l\'archiviazione: ' + (data.error || 'Riprova più tardi.'));
+        if (data.success) {
+            alert("Operazione completata con successo!");
+            
+            // 🎯 Determina la scheda attiva per non perdere il focus (fallback su 'scaduti')
+            const schedaAttiva = typeof currentView !== 'undefined' ? currentView : (document.querySelector('.tab-link.active')?.dataset.view || 'scaduti');
+            
+            // Aggiorna la lista veicoli mantenendo la scheda corrente
+            if (typeof caricaVeicoliDentro === 'function') {
+                await caricaVeicoliDentro(schedaAttiva);
             }
-        } catch (err) {
-            console.error(err);
-            alert('Errore di connessione al server.');
+            
+            // Ricarica e resetta i box del pannello per il pass corrente
+            cercaPass(currentPren.npass);
         }
-    });
+    } catch (err) {
+        console.error(err);
+        alert("Errore durante l'operazione: " + err.message);
+    }
+});
+
+// LISTENER PULSANTE: NO - MAI ENTRATO (ARCHIVIA PRENOTAZIONE)
+document.getElementById('btn-scaduto-mai-entrato')?.addEventListener('click', async () => {
+    if (!currentPren) return;
+
+    if (!confirm(`Vuoi archiviare la prenotazione ${currentPren.id} come MAI ENTRATO? Il posto verrà liberato.`)) return;
+
+    try {
+        const res = await fetch('/api/piantone/scaduto-archivia', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: currentPren.id,
+                npass: currentPren.npass,
+                auth: userPass // 🎯 Passiamo la chiave piantone
+            })
+        });
+
+        if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || 'Errore del server');
+        }
+
+        const data = await res.json();
+
+        if (data.success) {
+            alert("Operazione completata con successo!");
+            
+            // 🎯 Determina la scheda attiva per rimanere dove eravamo
+            const schedaAttiva = typeof currentView !== 'undefined' ? currentView : (document.querySelector('.tab-link.active')?.dataset.view || 'scaduti');
+            
+            // Aggiorna la tabella principale
+            if (typeof caricaVeicoliDentro === 'function') {
+                await caricaVeicoliDentro(schedaAttiva);
+            }
+            
+            // Aggiorna lo stato del pannello di controllo
+            cercaPass(currentPren.npass);
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Errore durante l'archiviazione: " + err.message);
+    }
+});
     
     document.getElementById('btn-arrivi-oggi')?.addEventListener('click', mostraArriviOggi);
     document.getElementById('btn-ingresso')?.addEventListener('click', () => { mossa('E'); });
