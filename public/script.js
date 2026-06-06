@@ -645,16 +645,28 @@ async function eliminaPren(id) {
 }
 
 async function cercaPass(passManuale = null, idRecord = null) {
-
     const input = document.getElementById('search-p');
-    document.getElementById('box-verifica')?.classList.add('hidden');
-    // Nascondiamo anche il box scaduti ad ogni nuova ricerca per reset
-    document.getElementById('box-verifica-scaduti')?.classList.add('hidden');
+    
+    // 🎯 FIX RESET TOTALE: Nascondiamo e svuotiamo i box prima di qualsiasi elaborazione
+    const boxVerifica = document.getElementById('box-verifica');
+    const boxVerificaScaduti = document.getElementById('box-verifica-scaduti');
+    const regE = document.getElementById('reg-e');
+    const regU = document.getElementById('reg-u');
+    
+    if (boxVerifica) boxVerifica.classList.add('hidden');
+    if (boxVerificaScaduti) boxVerificaScaduti.classList.add('hidden');
+    if (regE) regE.innerHTML = '';
+    if (regU) regU.innerHTML = '';
+
     if (!input) return;
 
     const p = (passManuale || input.value).trim().toUpperCase();
     input.value = p;
-    if (!p) return;
+    
+    if (!p) {
+        document.getElementById('panel-piantone')?.classList.add('hidden');
+        return;
+    }
 
     try {
         // 🚀 SE ABBIAMO L'ID, LO MANDIAMO AL SERVER PER IDENTIFICARE IL RECORD UNIVOCO
