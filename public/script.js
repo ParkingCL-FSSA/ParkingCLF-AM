@@ -960,6 +960,9 @@ async function aggiornaVeicoli() {
         let countVerificare = 0;
         let countScaduti = 0; 
         
+        // Elenco dei pass da archiviare sul DB in background
+        const passDaArchiviareSuDB = [];
+
         dati.forEach(x => {
             const passCorrente = (x.npass || '').toUpperCase().trim();
 
@@ -968,23 +971,22 @@ async function aggiornaVeicoli() {
             if (dataInizioData) dataInizioData.setHours(0,0,0,0);
             const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
-            // Estrazione e azzeramento della data di fine prenotazione
+            // Estrazione della data di fine prenotazione
             const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
             if (dataFineData) dataFineData.setHours(0,0,0,0);
             const fineTime = dataFineData ? dataFineData.getTime() : 0;
 
             const dataIngressoString = x.orario_ingresso ? x.orario_ingresso.substring(0, 10) : '';
 
-            // 🎯 SEPARAZIONE CONTEGGIO: Se è dentro, verifichiamo se è V1P o standard
+            // Separazione conteggio interni
             if (x.orario_ingresso && !x.orario_uscita) {
                 if (passCorrente.startsWith('V1P')) {
-                    countListaV1p++; // Va in lista extra
+                    countListaV1p++;
                 } else {
-                    countDentro++; // Va nel computo dei 90 standard
+                    countDentro++;
                 }
             }
 
-            // Altri contatori operativi 
             if (x.orario_ingresso && dataIngressoString === oggiString) {
                 countEntratiOggi++;
             }
@@ -995,11 +997,14 @@ async function aggiornaVeicoli() {
             const f = getFlags(x);
             if (f.daVerificare) countVerificare++;
             
-            // 🎯 FIX BADGE SCADUTI CON ARCHIVIAZIONE AUTOMATICA:
-            // Conta come scaduto da verificare solo se NON ha superato la data di fine validità.
+            // 🎯 LOGICA DI CONTROLLO SCADUTI SUL DB
             if (['SCADUTO', 'MAI_ENTRATO'].includes(x.stato) && !x.orario_ingresso) {
                 if (fineTime && oggiTime > fineTime) {
-                    // Ha superato la data fine validità: va dritto in storico automaticamente, salta il contatore.
+                    // Se sul database è ancora segnato come SCADUTO ma ha superato la data fine validità,
+                    // lo inseriamo nella coda di archiviazione automatica sul DB.
+                    if (x.stato === 'SCADUTO') {
+                        passDaArchiviareSuDB.push({ id: x.id, npass: x.npass });
+                    }
                 } else {
                     countScaduti++;
                 }
@@ -1009,10 +1014,10 @@ async function aggiornaVeicoli() {
         totaleScaduti = countScaduti;
         totaleVerificare = countVerificare;
         
-        // Matematica corretta basata solo sui non-V1P (Es: 90 - 52 = 38)
+        // Matematica posti liberi
         const postiLiberi = 90 - countDentro; 
 
-        // --- COSTRUZIONE DELLA STRINGA DINAMICA CON ELEMENTO LISTA SE PRESENTE ---
+        // --- INIEZIONE SCRITTE SBARRA ---
         let stringaColorata = `
             <span style="color:#16a34a; font-weight:bold;">Liberi: ${postiLiberi}</span> 
             &nbsp;|&nbsp; 
@@ -1022,32 +1027,44 @@ async function aggiornaVeicoli() {
             stringaColorata += ` &nbsp;|&nbsp; <span style="color:#2563eb; font-weight:bold;">Lista: ${countListaV1p}</span>`;
         }
 
-        // 1. Iniezione nel Box/Card principale
         const displaySotto = document.getElementById('total-free-display');
         const cardSbarraAlto = document.getElementById('card-sbarra-alto') || document.getElementById('status-parcheggio');
-        
-        if (displaySotto) {
-            displaySotto.innerHTML = stringaColorata;
-        } else if (cardSbarraAlto) {
-            cardSbarraAlto.innerHTML = stringaColorata;
-        }
+        if (displaySotto) displaySotto.innerHTML = stringaColorata;
+        else if (cardSbarraAlto) cardSbarraAlto.innerHTML = stringaColorata;
 
-        // 2. Iniezione nella stringa centrale "CONTROLLO SBARRA 🚧"
         const stringaSbarraCentro = document.getElementById('testo-sbarra-centro');
         if (stringaSbarraCentro) {
             let testoCentro = `🚧 CONTROLLO SBARRA | 🅿️ Liberi: ${postiLiberi} | 🚘 Dentro: ${countDentro}`;
-            if (countListaV1p > 0) {
-                testoCentro += ` | 🔹 Lista: ${countListaV1p}`;
-            }
+            if (countListaV1p > 0) testoCentro += ` | 🔹 Lista: ${countListaV1p}`;
             stringaSbarraCentro.innerHTML = testoCentro;
         }
 
-        // 🚨 LOGICA DI FILTRAGGIO AGGIORNATA PER L'AUTOMATISMO SCADUTI 🚨
-        const valoreCercato = inputSearch?.value?.trim()?.toUpperCase() || "";
+        // 🚀 PROCESSO DI ARCHIVIAZIONE AUTOMATICA SUL SERVER (BACKGROUND) 🚀
+        // Se ci sono record scaduti oltre il termine, invia la richiesta all'endpoint
+        if (passDaArchiviareSuDB.length > 0) {
+            for (const item of passDaArchiviareSuDB) {
+                console.log(`🤖 Sistema: Archiviazione automatica DB per il pass scaduto ${item.npass} (ID: ${item.id})`);
+                try {
+                    // Esegue la fetch verso l'API inviando id e npass necessari
+                    fetch('/api/piantone/scaduto-archivia', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: item.id, npass: item.npass })
+                    }).then(response => {
+                        if (!response.ok) console.warn(`⚠️ Errore archiviazione DB per pass ${item.npass}`);
+                    });
+                } catch (e) {
+                    console.error("💥 Impossibile connettersi all'API di archiviazione:", e);
+                }
+            }
+        }
+
+        // --- FILTRAGGIO LOCALE DELLA LISTA CORRENTE ---
+        const valeurCercato = inputSearch?.value?.trim()?.toUpperCase() || "";
         const statoTabella = document.getElementById('stato-tabella');
 
         const lista = dati.filter(x => {
-            if (valoreCercato !== "") return x.npass?.toUpperCase() === valoreCercato;
+            if (valeurCercato !== "") return x.npass?.toUpperCase() === valeurCercato;
             
             const f = getFlags(x);
             const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
@@ -1058,14 +1075,14 @@ async function aggiornaVeicoli() {
             if (dataFineData) dataFineData.setHours(0,0,0,0);
             const fineTime = dataFineData ? dataFineData.getTime() : 0;
 
-            // Flag strutturale: Identifica se un record è scaduto ed è rimasto senza ingressi oltre la data fine validità
+            // Anche se il DB restituisce ancora lo stato vecchio (prima che la fetch asincrona si completi),
+            // lo nascondiamo localmente simulando già l'avvenuta archiviazione
             const èScadutoOltreFine = (x.stato === 'SCADUTO' || x.stato === 'MAI_ENTRATO') && !x.orario_ingresso && fineTime && oggiTime > fineTime;
 
             if (filtroPiantone === 'verificare') return f.daVerificare;
             
-            // Scheda Scaduti: Mostra solo i record rimasti in sospeso il cui intervallo non è ancora spirato del tutto
             if (filtroPiantone === 'scaduti') {
-                if (èScadutoOltreFine) return false; // Nascondi da qui, andrà in automatico nello storico
+                if (èScadutoOltreFine) return false; 
                 return x.stato === 'SCADUTO' && !x.orario_ingresso;
             }      
             
@@ -1076,7 +1093,6 @@ async function aggiornaVeicoli() {
                 return (x.stato === 'PRENOTATO' && inizioTime === oggiTime && !x.orario_ingresso);
             }
            
-            // Scheda Storico: Accorpa USCITI, MAI_ENTRATO di fabbrica e tutti i pass SCADUTI oltre la data fine
             if (filtroPiantone === 'storico') {
                 return x.stato === 'USCITO' || x.stato === 'MAI_ENTRATO' || èScadutoOltreFine;
             }
@@ -1084,7 +1100,7 @@ async function aggiornaVeicoli() {
             return true;
         })
         .sort((a, b) => {
-            if (valoreCercato !== "") {
+            if (valeurCercato !== "") {
                 const getPriorita = (item) => {
                     const f = getFlags(item);
                     const dataInizioData = item.data_inizio ? new Date(item.data_inizio) : null;
@@ -1116,7 +1132,7 @@ async function aggiornaVeicoli() {
         });
 
         // Banner per la ricerca testuale
-        if (valoreCercato !== "") {
+        if (valeurCercato !== "") {
             let label = ""; let colore = "#334155"; let sfondo = "#f8fafc";
             if (lista.length > 0) {
                 const veicoloTrovato = lista[0]; const f = getFlags(veicoloTrovato);
@@ -1153,8 +1169,6 @@ async function aggiornaVeicoli() {
             const evidenzia = x.npass === ultimoAggiornato; 
             const f = getFlags(x);
             
-            // 🎯 INTEGRAZIONE INTEGRATA: Se lo stato nel DB è ancora SCADUTO ma ha sforato la data fine senza mai entrare,
-            // trattalo graficamente come un MAI PRESENTATO dentro la tabella.
             const isMaiEntrato = x.stato === 'MAI_ENTRATO' || (x.stato === 'SCADUTO' && !x.orario_ingresso && fineTime && oggiTime > fineTime);
             const isScadutoEsplicito = x.stato === 'SCADUTO' && !isMaiEntrato;
 
