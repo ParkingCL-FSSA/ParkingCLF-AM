@@ -419,7 +419,7 @@ app.post('/api/user/salva-nota', async (req, res) => {
     }
 });
 
-// --- 5. VEICOLI DENTRO (CORRETTO PER SCADUTI IMMEDIATI) ---
+// --- 5. VEICOLI DENTRO (CORRETTO E FILTRATO) ---
 app.get('/api/veicoli-dentro', async (req, res) => {
     const npass = req.query.npass;
 
@@ -430,7 +430,8 @@ app.get('/api/veicoli-dentro', async (req, res) => {
     try {
         const oggi = new Date().toISOString().split('T')[0];
         
-        // 🚀 MODIFICA: Usiamo <= per includere subito chi doveva entrare ieri (Inizio + 1 giorno <= Oggi)
+        // 🚀 SICUREZZA: Scadono SOLO se l'inizio + 1 giorno è minore o uguale a OGGI 
+        // (Quindi se dovevano entrare ieri o prima). Oggi non viene toccato.
         await pool.query(`
             UPDATE prenotazioni 
             SET stato = 'SCADUTO' 
@@ -448,10 +449,11 @@ app.get('/api/veicoli-dentro', async (req, res) => {
               AND data_fine < $1
         `, [oggi]);
         
+        // Estraiamo i dati ordinati
         const r = await pool.query(`
-            SELECT id, npass, data_inizio, data_fine, orario_ingresso, orario_uscita, data_inserimento, stato
+            SELECT id, npass, data_inizio, data_fine, orario_ingresso, orario_uscita, data_inserimento, stato, note
             FROM prenotazioni
-            WHERE stato IN ('PRENOTATO', 'ENTRATO', 'DA_VERIFICARE', 'SCADUTO')
+            WHERE stato IN ('PRENOTATO', 'ENTRATO', 'DA_VERIFICARE', 'SCADUTO', 'MAI_ENTRATO')
                OR (stato = 'USCITO' AND orario_uscita::date = CURRENT_DATE)
             ORDER BY data_inizio ASC, orario_ingresso ASC
             LIMIT 300
