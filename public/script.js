@@ -1032,126 +1032,7 @@ async function aggiornaVeicoli() {
             stringaSbarraCentro.innerHTML = testoCentro;
         }
         
-        // ============================================================
-        // 2. INIEZIONE BADGE IN BASSO (SOTTO BOTTONE ARRIVI)
-        // ============================================================
-        const badge = document.getElementById('badge-contatori');
-        if (badge) {
-            badge.innerHTML = `
-            <div style="font-size: 13px; color: #475569; padding: 4px 0; font-weight: 500; text-align: center;">
-                🚗 <b>Entrati:</b> <span style="color:#1e293b; font-weight:bold;">${countEntratiOggi}</span>
-                &nbsp;|&nbsp;
-                📅 <b>Prenotati:</b> <span style="color:#1e293b; font-weight:bold;">${countPrenotatiOggi}</span>
-                &nbsp;|&nbsp;
-                🚨 <b>Da verificare:</b> <span style="color:${countVerificare > 0 ? '#ea580c' : '#475569'}; font-weight:bold;">${countVerificare}</span>
-                &nbsp;|&nbsp;
-                ⏰ <b>Scaduti:</b> <span style="color:${countScaduti > 0 ? '#dc2626' : '#475569'}; font-weight:bold;">${countScaduti}</span>
-            </div>
-            `;
-        }
-
-        const elScaduti = document.getElementById('badge-scaduti');
-        if (elScaduti && countScaduti > 0) {
-            elScaduti.style.color = '#ef4444';
-        }
-
-        // --- FILTRAGGIO E ORDINAMENTO TABELLA ---
-        const valoreCercato = inputSearch?.value?.trim()?.toUpperCase() || "";
-
-        // Recupero dinamico dell'etichetta dello stato tabella
-        const statoTabella = document.getElementById('stato-tabella');
-
-        const lista = dati.filter(x => {
-            // Se c'è una ricerca testuale per targa/pass, mostra il risultato esatto a prescindere dai filtri
-            if (valoreCercato !== "") return x.npass?.toUpperCase() === valoreCercato;
-            
-            const f = getFlags(x);
-            
-            const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
-            if (dataInizioData) dataInizioData.setHours(0,0,0,0);
-            const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
-
-            // --- 1. SCHEDA DA VERIFICARE ---
-            if (filtroPiantone === 'verificare') return f.daVerificare;
-            
-            // 🎯 2. SCHEDA SCADUTI: Solo quelli in stato SCADUTO puri (in attesa di verifica)
-            if (filtroPiantone === 'scaduti') {
-                return x.stato === 'SCADUTO' && !x.orario_ingresso;
-            }      
-            
-            // 🚘 3. SCHEDA ATTIVI
-            if (filtroPiantone === 'attivi') {
-                if (f.daVerificare) return false;
-                if (['SCADUTO', 'MAI_ENTRATO'].includes(x.stato)) return false; 
-                if (x.orario_ingresso && !x.orario_uscita) return true; // È dentro ed è regolare
-                return (x.stato === 'PRENOTATO' && inizioTime === oggiTime && !x.orario_ingresso);
-            }
-           
-            // 🕒 4. SCHEDA STORICO: Mostra sia gli USCITI che i MAI_ENTRATO (Mai Presentato)
-            if (filtroPiantone === 'storico') {
-                return x.stato === 'USCITO' || x.stato === 'MAI_ENTRATO';
-            }
-            
-            return true;
-        })
-        .sort((a, b) => {
-            if (valoreCercato !== "") {
-                const getPriorita = (item) => {
-                    const f = getFlags(item);
-                    const dataInizioData = item.data_inizio ? new Date(item.data_inizio) : null;
-                    if (dataInizioData) dataInizioData.setHours(0,0,0,0);
-                    const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
-
-                    if (f.daVerificare) return 1; 
-                    if (f.entrato || (item.stato === 'PRENOTATO' && inizioTime === oggiTime)) return 2; 
-                    if (['SCADUTO', 'MAI_ENTRATO'].includes(item.stato)) return 3;                
-                    if (f.storico) return 4;                    
-                    return 5;
-                };
-                const pesoA = getPriorita(a); const pesoB = getPriorita(b);
-                if (pesoA !== pesoB) return pesoA - pesoB;
-                return (b.id || 0) - (a.id || 0);
-            } 
-            // LOGICA ORDINAMENTO PER GLI ATTIVI
-            if (filtroPiantone === 'attivi') {
-                const dateA = a.orario_ingresso ? new Date(a.orario_ingresso).getTime() : 0;
-                const dateB = b.orario_ingresso ? new Date(b.orario_ingresso).getTime() : 0;
-                return dateB - dateA; 
-            }
-            if (filtroPiantone === 'verificare') {
-                return (a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0)) - (b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0));
-            }
-            if (filtroPiantone === 'storico') {
-                return (b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0)) - (a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0));
-            }
-            return (a.npass || "").localeCompare(b.npass || "", undefined, { numeric: true, sensitivity: 'base' });
-        });
-
-        if (valoreCercato !== "") {
-            let label = ""; let colore = "#334155"; let sfondo = "#f8fafc";
-            
-            if (lista.length > 0) {
-                const veicoloTrovato = lista[0]; const f = getFlags(veicoloTrovato);
-                const dataInizioData = veicoloTrovato.data_inizio ? new Date(veicoloTrovato.data_inizio) : null;
-                if (dataInizioData) dataInizioData.setHours(0,0,0,0);
-                const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
-                
-                if (f.daVerificare) { label = "🚨 DA VERIFICARE (Trovato da Ricerca)"; colore = "#ea580c"; sfondo = "#ffedd5"; } 
-                else if (f.entrato || (veicoloTrovato.stato === 'PRENOTATO' && inizioTime === oggiTime)) { label = "📋 ATTIVO (Trovato da Ricerca)"; colore = "#2563eb"; sfondo = "#dbeafe"; } 
-                else if (['SCADUTO', 'MAI_ENTRATO'].includes(veicoloTrovato.stato)) { label = `⏰ ${veicoloTrovato.stato} (Trovato da Ricerca)`; colore = "#dc2626"; sfondo = "#fee2e2"; } 
-                else if (f.storico) { label = "🕘 STORICO (Trovato da Ricerca)"; colore = "#475569"; sfondo = "#e2e8f0"; }
-            } else {
-                // Se cerchi qualcosa che non c'è, svuota il banner di stato ricerca
-                label = "🔍 NESSUN RISULTATO"; colore = "#64748b"; sfondo = "#f1f5f9";
-            }
-            
-            if (statoTabella) {
-                statoTabella.style.color = colore; statoTabella.style.background = sfondo;
-                statoTabella.style.borderColor = colore; statoTabella.innerHTML = label;
-            }
-        }
-            
-        // --- INIEZIONE RIGHE IN TABELLA HTML ---
+// --- INIEZIONE RIGHE IN TABELLA HTML ---
         document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
             const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
             const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
@@ -1159,19 +1040,12 @@ async function aggiornaVeicoli() {
             const oraIng = ing ? ing.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
             const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '--';
             const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
-            const evidenzia = x.npass === ultimoAggiornato; const f = getFlags(x);
+            
+            const evidenzia = x.npass === ultimoAggiornato; 
+            const f = getFlags(x);
             const isMaiEntrato = x.stato === 'MAI_ENTRATO';
             const isScadutoEsplicito = x.stato === 'SCADUTO';
 
-            return `<tr style="
-                border-bottom: 1px solid #f1f5f9;
-                ${isScadutoEsplicito ? 'background:#fee2e2; color:#991b1b;' : ''}
-                ${isMaiEntrato ? 'background:#f8fafc; color:#64748b;' : ''} 
-                ${f.storico && !isMaiEntrato ? 'background:#f1f5f9;' : ''}
-                ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
-                ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
-            ">
-            
             const wPass = 'width: 16%;';
             const wDataIng = 'width: 26%;';
             const wOraIng = 'width: 15%;';
@@ -1183,7 +1057,8 @@ async function aggiornaVeicoli() {
             return `<tr style="
                 border-bottom: 1px solid #f1f5f9;
                 ${isScadutoEsplicito ? 'background:#fee2e2; color:#991b1b;' : ''}
-                ${f.storico ? 'background:#f1f5f9;' : ''}
+                ${isMaiEntrato ? 'background:#f8fafc; color:#64748b;' : ''} 
+                ${f.storico && !isMaiEntrato ? 'background:#f1f5f9;' : ''}
                 ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
                 ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
             ">
@@ -1193,8 +1068,8 @@ async function aggiornaVeicoli() {
                         ${x.npass}
                     </button>
                 </td>
-                <td style="${baseStyle} ${wDataIng}">${isScadutoEsplicito ? (x.stato === 'MAI_ENTRATO' ? 'MAI PRESENTATO' : 'NON ENTRATO') : dataIng}</td>
-                <td style="${baseStyle} ${wOraIng} font-weight:bold;">${isScadutoEsplicito ? '' : oraIng}</td>
+                <td style="${baseStyle} ${wDataIng}">${isMaiEntrato ? 'MAI PRESENTATO' : (isScadutoEsplicito ? 'NON ENTRATO' : dataIng)}</td>
+                <td style="${baseStyle} ${wOraIng} font-weight:bold;">${isScadutoEsplicito || isMaiEntrato ? '' : oraIng}</td>
                 <td style="${baseStyle} ${wDataUsc}">${dataUsc}</td>
                 <td style="${baseStyle} ${wOraUsc} font-weight:bold;">${oraUsc}</td>
             </tr>`;
@@ -1203,7 +1078,8 @@ async function aggiornaVeicoli() {
         // Aggancio eventi pulsanti lista
         document.querySelectorAll('.btn-pass').forEach(btn => {
             btn.addEventListener('click', async () => {
-                const pass = btn.dataset.pass; const idRecord = btn.dataset.id; 
+                const pass = btn.dataset.pass; 
+                const idRecord = btn.dataset.id; 
                 if (inputSearch) inputSearch.value = pass;
                 await cercaPass(pass, idRecord);
                 setTimeout(() => { document.getElementById('panel-piantone')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
