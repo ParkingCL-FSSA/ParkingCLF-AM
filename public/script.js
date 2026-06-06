@@ -648,6 +648,8 @@ async function cercaPass(passManuale = null, idRecord = null) {
 
     const input = document.getElementById('search-p');
     document.getElementById('box-verifica')?.classList.add('hidden');
+    // Nascondiamo anche il box scaduti ad ogni nuova ricerca per reset
+    document.getElementById('box-verifica-scaduti')?.classList.add('hidden');
     if (!input) return;
 
     const p = (passManuale || input.value).trim().toUpperCase();
@@ -667,6 +669,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
         const btnIngresso = document.getElementById('btn-ingresso');
         const btnUscita = document.getElementById('btn-uscita');
         const boxVerifica = document.getElementById('box-verifica');
+        const boxVerificaScaduti = document.getElementById('box-verifica-scaduti');
 
         // RESET UI
         btnIngresso.style.display = 'inline-block';
@@ -681,10 +684,9 @@ async function cercaPass(passManuale = null, idRecord = null) {
         btnIngresso.style.background = '';
         btnUscita.style.background = '';
 
-        // NASCONDI SEMPRE verifica all'apertura
-        if (boxVerifica) {
-            boxVerifica.classList.add('hidden');
-        }
+        // NASCONDI SEMPRE i box di verifica all'apertura di una ricerca
+        if (boxVerifica) boxVerifica.classList.add('hidden');
+        if (boxVerificaScaduti) boxVerificaScaduti.classList.add('hidden');
 
         if (data.trovato) {
 
@@ -728,32 +730,29 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 btnUscita.style.background = '#ea580c';
                 btnUscita.innerText = 'VERIFICA';
             
-                boxVerifica.classList.add('hidden');
+                boxVerifica.classList.remove('hidden'); // Mostra lo strumento di verifica presenza per i DA_VERIFICARE
             }
                 
-            // 🚀 AGGIORNATO: Gestione rigida dello stato SCADUTO (Nuova regola comunitaria della mezzanotte)
+            // 🚀 AGGIORNATO: Strumento Sanatoria e Verifica Prenotazioni SCADUTE
             else if (currentPren.stato === 'SCADUTO') {
                 
-                // Se la vettura non è mai entrata nei tempi stabiliti, blocca tutto
+                // Se la vettura non ha una timbratura d'ingresso registrata
                 if (!currentPren.orario_ingresso) {
                     
-                    // Disabilita e colora di grigio il tasto ENTRATA
-                    btnIngresso.disabled = true;
-                    btnIngresso.innerText = 'PRENOTAZIONE SCADUTA';
-                    btnIngresso.style.background = '#64748b'; 
-                    
-                    // Nascondi completamente il tasto USCITA perché l'auto non è mai entrata
+                    // Nascondiamo i pulsanti d'azione standard perché usiamo lo strumento dedicato
+                    btnIngresso.style.display = 'none'; 
                     btnUscita.style.display = 'none'; 
                     
-                    // Scrivi il messaggio di avviso rosso per il piantone
-                    document.getElementById('reg-e').innerHTML = `
-                        <span style="color:#ef4444; font-weight:bold;">
-                            ⚠️ Termine d'ingresso superato. Posto liberato.
-                        </span>`;
+                    // Svuota i messaggi vecchi
+                    document.getElementById('reg-e').innerHTML = '';
+
+                    // 🛠️ ATTIVAZIONE STRUMENTO VERIFICA SCADUTI
+                    if (boxVerificaScaduti) {
+                        boxVerificaScaduti.classList.remove('hidden');
+                    }
                         
                 } else {
-                    // Fallback di sicurezza: se per qualche motivo la vettura resulta dentro, 
-                    // permette al piantone di farla uscire anche se il pass è contrassegnato scaduto
+                    // Fallback di sicurezza: se la vettura risulta già dentro, permette l'uscita straordinaria
                     btnIngresso.disabled = true;
                     btnIngresso.style.display = 'none';
                     
@@ -788,7 +787,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 </div>
             `;
         
-            // 🚀 STILE TIMBRI ORARI: L'orario di ingresso diventa più grande, scuro e in evidenza (15px Bold)
+            // 🚀 STILE TIMBRI ORARI: L'orario di ingresso (Se presente e non scaduto senza ingresso)
             if (oggiStr >= dataInizioStr && currentPren.stato !== 'SCADUTO') {
                 document.getElementById('reg-e').style.textAlign = 'center';
                 document.getElementById('reg-e').innerHTML = currentPren.orario_ingresso
@@ -814,7 +813,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
             const isScadutoCorrente = (currentPren.stato === 'SCADUTO');
             const isDaVerificareCorrente = (currentPren.stato === 'DA_VERIFICARE');
 
-            // 🚀 APPLICAZIONE DINAMICA BANNER CERCA (RISOLTO IL BUG DEL BLOCCO FISSO)
+            // 🚀 APPLICAZIONE DINAMICA BANNER CERCA
             if (bannerCerca) {
                 if (isScadutoCorrente) {
                     bannerCerca.style.background = '#ffeeef'; 
@@ -839,13 +838,10 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 let righeDaMostrare = [];
                 
                 if (isScadutoCorrente) {
-                    // Se sopra visualizzi lo SCADUTO, sotto vedi l'ATTIVO per poterci cliccare e fare switch
                     righeDaMostrare = data.storico.filter(x => ['PRENOTATO', 'ENTRATO', 'DA_VERIFICARE'].includes(x.stato));
                 } else if (isDaVerificareCorrente) {
-                    // Se sopra sei in verifica, mostra gli altri record storici o scaduti sotto se necessario
                     righeDaMostrare = data.storico.filter(x => x.stato !== 'DA_VERIFICARE');
                 } else {
-                    // Se sopra visualizzi l'ATTIVO, sotto vedi lo SCADUTO
                     righeDaMostrare = data.storico.filter(x => x.stato === 'SCADUTO');
                 }
                 
@@ -858,7 +854,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
             }
 
         } else {
-            alert("Nessuna prenotazione trovata per questo PASS.");
+            alert("Nessuna prenotazione trovato per questo PASS.");
             document.getElementById('panel-piantone').classList.add('hidden');
         }
 
@@ -1618,6 +1614,74 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
             document.getElementById('panel-piantone')?.classList.add('hidden');
             currentPren = null;
             if (inputSearch) inputSearch.value = '';
+        }
+    });
+    // ============================================================
+    // ⚙️ GESTIONE STRUMENTO DI VERIFICA AUTO SCADUTE
+    // ============================================================
+
+    // AZIONE 1: L'auto è dentro -> Riattiva la prenotazione
+    document.getElementById('btn-scaduto-dentro')?.addEventListener('click', async () => {
+        if (!currentPren) return;
+        
+        const adesso = new Date();
+        const dataStr = adesso.toLocaleDateString('it-IT');
+        const oraStr = adesso.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+        if (!confirm(`Confermi che il veicolo è DENTRO? La prenotazione verrà riattivata in data ${dataStr} ore ${oraStr}.`)) return;
+
+        try {
+            const res = await fetch('/api/piantone/scaduto-riattiva', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    id: currentPren.id, 
+                    npass: userPass,
+                    data_verifica: adesso.toISOString() // Passa il timestamp preciso al server
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`Veicolo Verificato il ${dataStr} ore ${oraStr}. Prenotazione riattivata con successo!`);
+                await aggiornaVeicoli();
+                document.getElementById('box-verifica-scaduti')?.classList.add('hidden');
+                document.getElementById('panel-piantone')?.classList.add('hidden');
+                currentPren = null;
+                if (inputSearch) inputSearch.value = '';
+            } else {
+                alert('Errore durante la riattivazione: ' + (data.error || 'Riprova più tardi.'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Errore di connessione al server.');
+        }
+    });
+
+    // AZIONE 2: L'auto non è mai venuta -> Archivia subito per liberare i posti futuri
+    document.getElementById('btn-scaduto-mai-entrato')?.addEventListener('click', async () => {
+        if (!currentPren) return;
+        if (!confirm('Confermi che il veicolo NON È MAI ENTRATO? La prenotazione scaduta verrà archiviata definitivamente.')) return;
+
+        try {
+            const res = await fetch('/api/piantone/scaduto-archivia', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: currentPren.id, npass: userPass })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Prenotazione archiviata come inutilizzata. Slot liberati.');
+                await aggiornaVeicoli();
+                document.getElementById('box-verifica-scaduti')?.classList.add('hidden');
+                document.getElementById('panel-piantone')?.classList.add('hidden');
+                currentPren = null;
+                if (inputSearch) inputSearch.value = '';
+            } else {
+                alert('Errore durante l\'archiviazione: ' + (data.error || 'Riprova più tardi.'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Errore di connessione al server.');
         }
     });
     
