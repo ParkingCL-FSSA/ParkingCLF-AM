@@ -834,7 +834,7 @@ app.post('/api/piantone/scaduto-archivia', async (req, res) => {
         const query = `
             UPDATE prenotazioni 
             SET stato = 'MAI_ENTRATO', 
-                note = CONCAT(COALESCE(note, ''), ' - Scaduta: Veicolo MAI ENTRATO')
+                note = CONCAT(COALESCE(note, ''), ' - Prenotazione Scaduta: ARCHIVIATO')
             WHERE id = $1
             RETURNING *;
         `;
