@@ -773,7 +773,7 @@ app.post('/api/piantone/non-presente', async (req, res) => {
 });
 
 // ============================================================
-// 📥 ROUTE 1: RIATTIVA PRENOTAZIONE SCADUTA (AUTO DENTRO)
+// 📥 ROUTE 1: RIATTIVA PRENOTAZIONE SCADUTA (AUTO DENTRO) - FIX 500
 // ============================================================
 app.post('/api/piantone/scaduto-riattiva', async (req, res) => {
     const { id, npass, data_verifica } = req.body;
@@ -787,12 +787,12 @@ app.post('/api/piantone/scaduto-riattiva', async (req, res) => {
     }
 
     try {
-        // 🎯 CORRETTO: Usiamo pool.query al posto di db.query
+        // 🎯 FIX: Usiamo 'note' (allineato al tuo DB) e forziamo il testo per evitare l'errore 500
         const query = `
             UPDATE prenotazioni 
             SET stato = 'ENTRATO', 
                 orario_ingresso = $1, 
-                note_piantone = CONCAT(COALESCE(note_piantone, ''), ' - Verificato presente in sosta il ', CURRENT_DATE)
+                note = CONCAT(COALESCE(note, ''), ' - Verificato presente in sosta il ', TO_CHAR(NOW(), 'DD/MM/YYYY HH24:MI'))
             WHERE id = $2
             RETURNING *;
         `;
@@ -806,8 +806,9 @@ app.post('/api/piantone/scaduto-riattiva', async (req, res) => {
         res.json({ success: true, message: "Veicolo riattivato e segnato come dentro." });
 
     } catch (err) {
-        console.error("Errore DB scaduto-riattiva:", err);
-        res.status(500).json({ success: false, error: "Errore interno del server." });
+        // Questo ti stamperà l'errore esatto nei log di Render se dovesse mancare altro
+        console.error("💥 ERRORE CRITICO DB scaduto-riattiva:", err.message);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
@@ -831,7 +832,7 @@ app.post('/api/piantone/scaduto-archivia', async (req, res) => {
         const query = `
             UPDATE prenotazioni 
             SET stato = 'USCITO', 
-                note_piantone = CONCAT(COALESCE(note_piantone, ''), ' - Archiviata: Veicolo MAI ENTRATO')
+                note = CONCAT(COALESCE(note, ''), ' - Archiviata: Veicolo MAI ENTRATO')
             WHERE id = $1
             RETURNING *;
         `;
@@ -849,7 +850,6 @@ app.post('/api/piantone/scaduto-archivia', async (req, res) => {
         res.status(500).json({ success: false, error: "Errore interno del server." });
     }
 });
-
 
 // avvio immediato job scadenze
 scadenzaPrenotazioni();
