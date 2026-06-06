@@ -792,7 +792,7 @@ app.post('/api/piantone/scaduto-riattiva', async (req, res) => {
             UPDATE prenotazioni 
             SET stato = 'ENTRATO', 
                 orario_ingresso = $1, 
-                note = CONCAT(COALESCE(note, ''), ' - Verificato presente in sosta il ', TO_CHAR(NOW(), 'DD/MM/YYYY HH24:MI'))
+                note = CONCAT(COALESCE(note, ''), ' - Verificato il ', TO_CHAR(NOW(), 'DD/MM/YYYY HH24:MI'))
             WHERE id = $2
             RETURNING *;
         `;
@@ -830,8 +830,8 @@ app.post('/api/piantone/scaduto-archivia', async (req, res) => {
         // 🎯 FIX: Cambiato note_piantone in note
         const query = `
             UPDATE prenotazioni 
-            SET stato = 'USCITO', 
-                note = CONCAT(COALESCE(note, ''), ' - Archiviata: Veicolo MAI ENTRATO')
+            SET stato = 'MAI_ENTRATO', 
+                note = CONCAT(COALESCE(note, ''), ' - Scaduta: Veicolo MAI ENTRATO')
             WHERE id = $1
             RETURNING *;
         `;
