@@ -723,7 +723,7 @@ app.get('/api/piantone/storico', async (req, res) => {
         const r = await pool.query(`
             SELECT npass, orario_ingresso, orario_uscita, stato, data_inizio, data_fine
             FROM prenotazioni
-            WHERE stato IN ('USCITO', 'ARCHIVIATO')
+            WHERE stato IN ('USCITO', 'ARCHIVIATO', 'MAI_ENTRATO')
               AND data_fine >= CURRENT_DATE - INTERVAL '7 days'
             ORDER BY COALESCE(orario_uscita, orario_ingresso, data_fine::timestamp) DESC
             LIMIT 100
