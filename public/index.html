@@ -72,12 +72,11 @@
     .btn-red { background:var(--red); }
     .btn-gray { background:var(--gray); }
 
-  /* Calendario panoramico fissa a 45gg - Quadratini e Testi Ingranditi */
     #cal-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr); /* Rimane a 5 colonne come preferisci */
-      gap: 10px;                             /* Più spazio di separazione tra i quadratini */
-      max-height: 320px;                     /* Alzata leggermente per ospitare i tasti più grandi */
+      grid-template-columns: repeat(5, 1fr); 
+      gap: 10px;                            
+      max-height: 320px;                    
       overflow-y: auto;
       margin: 15px 0;
       padding: 10px;
@@ -86,14 +85,13 @@
       background: #f8fafc;
     }
 
-  /* Ottimizzazione dei singoli tasti giorno (se usi la classe day-slot) */
-    .day-slot {
-      padding: 14px 8px !important;          /* Più spessore verticale per renderli grandi e cliccabili */
+     .day-slot {
+      padding: 14px 8px !important;         
       border: 1px solid #e2e8f0;
       border-radius: 10px;
       cursor: pointer;
-      font-size: 16px !important;            /* 🌟 NUMERO DEL GIORNO PIÙ GRANDE E LEGGIBILE */
-      font-weight: bold;                     /* Testo in grassetto per risaltare */
+      font-size: 16px !important;           
+      font-weight: bold;                    
       background: white;
       box-sizing: border-box;
       transition: 0.2s;
@@ -105,7 +103,6 @@
       border-color:var(--blue);
     }
 
-    /* Box Successo (Riepilogo) */
     .summary-box {
       background:var(--light);
       padding:15px;
