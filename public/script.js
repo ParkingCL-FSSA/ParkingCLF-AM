@@ -968,6 +968,11 @@ async function aggiornaVeicoli() {
             if (dataInizioData) dataInizioData.setHours(0,0,0,0);
             const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
+            // Estrazione e azzeramento della data di fine prenotazione
+            const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
+            if (dataFineData) dataFineData.setHours(0,0,0,0);
+            const fineTime = dataFineData ? dataFineData.getTime() : 0;
+
             const dataIngressoString = x.orario_ingresso ? x.orario_ingresso.substring(0, 10) : '';
 
             // 🎯 SEPARAZIONE CONTEGGIO: Se è dentro, verifichiamo se è V1P o standard
@@ -990,9 +995,14 @@ async function aggiornaVeicoli() {
             const f = getFlags(x);
             if (f.daVerificare) countVerificare++;
             
-            // 🎯 FIX BADGE SCADUTI: Conta solo i record che sono realmente SCADUTI o MAI_ENTRATO sul DB
+            // 🎯 FIX BADGE SCADUTI CON ARCHIVIAZIONE AUTOMATICA:
+            // Conta come scaduto da verificare solo se NON ha superato la data di fine validità.
             if (['SCADUTO', 'MAI_ENTRATO'].includes(x.stato) && !x.orario_ingresso) {
-                countScaduti++;
+                if (fineTime && oggiTime > fineTime) {
+                    // Ha superato la data fine validità: va dritto in storico automaticamente, salta il contatore.
+                } else {
+                    countScaduti++;
+                }
             }
         });
         
@@ -1032,7 +1042,7 @@ async function aggiornaVeicoli() {
             stringaSbarraCentro.innerHTML = testoCentro;
         }
 
-        // 🚨 RIPRISTINATA E INIETTATA LA LOGICA DI FILTRAGGIO MANCANTE 🚨
+        // 🚨 LOGICA DI FILTRAGGIO AGGIORNATA PER L'AUTOMATISMO SCADUTI 🚨
         const valoreCercato = inputSearch?.value?.trim()?.toUpperCase() || "";
         const statoTabella = document.getElementById('stato-tabella');
 
@@ -1044,10 +1054,18 @@ async function aggiornaVeicoli() {
             if (dataInizioData) dataInizioData.setHours(0,0,0,0);
             const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
+            const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
+            if (dataFineData) dataFineData.setHours(0,0,0,0);
+            const fineTime = dataFineData ? dataFineData.getTime() : 0;
+
+            // Flag strutturale: Identifica se un record è scaduto ed è rimasto senza ingressi oltre la data fine validità
+            const èScadutoOltreFine = (x.stato === 'SCADUTO' || x.stato === 'MAI_ENTRATO') && !x.orario_ingresso && fineTime && oggiTime > fineTime;
+
             if (filtroPiantone === 'verificare') return f.daVerificare;
             
-            // Scaduti mostra unicamente i record in stato SCADUTO
+            // Scheda Scaduti: Mostra solo i record rimasti in sospeso il cui intervallo non è ancora spirato del tutto
             if (filtroPiantone === 'scaduti') {
+                if (èScadutoOltreFine) return false; // Nascondi da qui, andrà in automatico nello storico
                 return x.stato === 'SCADUTO' && !x.orario_ingresso;
             }      
             
@@ -1058,9 +1076,9 @@ async function aggiornaVeicoli() {
                 return (x.stato === 'PRENOTATO' && inizioTime === oggiTime && !x.orario_ingresso);
             }
            
-            // Storico accorpa sia gli USCITI regolari che i MAI_ENTRATO
+            // Scheda Storico: Accorpa USCITI, MAI_ENTRATO di fabbrica e tutti i pass SCADUTI oltre la data fine
             if (filtroPiantone === 'storico') {
-                return x.stato === 'USCITO' || x.stato === 'MAI_ENTRATO';
+                return x.stato === 'USCITO' || x.stato === 'MAI_ENTRATO' || èScadutoOltreFine;
             }
             
             return true;
@@ -1128,10 +1146,17 @@ async function aggiornaVeicoli() {
             const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '--';
             const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
             
+            const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
+            if (dataFineData) dataFineData.setHours(0,0,0,0);
+            const fineTime = dataFineData ? dataFineData.getTime() : 0;
+
             const evidenzia = x.npass === ultimoAggiornato; 
             const f = getFlags(x);
-            const isMaiEntrato = x.stato === 'MAI_ENTRATO';
-            const isScadutoEsplicito = x.stato === 'SCADUTO';
+            
+            // 🎯 INTEGRAZIONE INTEGRATA: Se lo stato nel DB è ancora SCADUTO ma ha sforato la data fine senza mai entrare,
+            // trattalo graficamente come un MAI PRESENTATO dentro la tabella.
+            const isMaiEntrato = x.stato === 'MAI_ENTRATO' || (x.stato === 'SCADUTO' && !x.orario_ingresso && fineTime && oggiTime > fineTime);
+            const isScadutoEsplicito = x.stato === 'SCADUTO' && !isMaiEntrato;
 
             const wPass = 'width: 16%;';
             const wDataIng = 'width: 26%;';
