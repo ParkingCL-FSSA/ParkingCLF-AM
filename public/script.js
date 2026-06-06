@@ -1639,7 +1639,12 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
                     npass: userPass,
                     data_verifica: adesso.toISOString() // Passa il timestamp preciso al server
                 })
+                if (!res.ok) { // 🌟 Controllo di sicurezza
+                alert("Errore di comunicazione con il server (Stato " + res.status + ")");
+                return;
+                }
             });
+            
             const data = await res.json();
             if (data.success) {
                 alert(`Veicolo Verificato il ${dataStr} ore ${oraStr}. Prenotazione riattivata con successo!`);
