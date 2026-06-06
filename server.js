@@ -813,7 +813,7 @@ app.post('/api/piantone/scaduto-riattiva', async (req, res) => {
 });
 
 // ============================================================
-// ❌ ROUTE 2: ARCHIVIA PRENOTAZIONE SCADUTA (MAI ENTRATO)
+// ❌ ROUTE 2: ARCHIVIA PRENOTAZIONE SCADUTA (MAI ENTRATO) - FIX 500
 // ============================================================
 app.post('/api/piantone/scaduto-archivia', async (req, res) => {
     const { id, npass } = req.body;
@@ -827,8 +827,7 @@ app.post('/api/piantone/scaduto-archivia', async (req, res) => {
     }
 
     try {
-        // 🎯 CORRETTO: Usiamo pool.query al posto di db.query 
-        // e COALESCE per evitare problemi se note_piantone è NULL
+        // 🎯 FIX: Cambiato note_piantone in note
         const query = `
             UPDATE prenotazioni 
             SET stato = 'USCITO', 
@@ -846,8 +845,8 @@ app.post('/api/piantone/scaduto-archivia', async (req, res) => {
         res.json({ success: true, message: "Prenotazione inutilizzata archiviata con successo." });
 
     } catch (err) {
-        console.error("Errore DB scaduto-archivia:", err);
-        res.status(500).json({ success: false, error: "Errore interno del server." });
+        console.error("💥 ERRORE CRITICO DB scaduto-archivia:", err.message);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
