@@ -1074,22 +1074,22 @@ async function aggiornaVeicoli() {
             // --- 1. SCHEDA DA VERIFICARE ---
             if (filtroPiantone === 'verificare') return f.daVerificare;
             
-            // 🎯 2. SCHEDA SCADUTI (FIX: Filtra rigorosamente solo i record scaduti o non presentati)
+            // 🎯 2. SCHEDA SCADUTI: Solo quelli in stato SCADUTO puri (in attesa di verifica)
             if (filtroPiantone === 'scaduti') {
-                return ['SCADUTO', 'MAI_ENTRATO'].includes(x.stato) && !x.orario_ingresso;
+                return x.stato === 'SCADUTO' && !x.orario_ingresso;
             }      
             
             // 🚘 3. SCHEDA ATTIVI
             if (filtroPiantone === 'attivi') {
                 if (f.daVerificare) return false;
-                if (['SCADUTO', 'MAI_ENTRATO'].includes(x.stato)) return false; // Taglia fuori i vecchi pass
+                if (['SCADUTO', 'MAI_ENTRATO'].includes(x.stato)) return false; 
                 if (x.orario_ingresso && !x.orario_uscita) return true; // È dentro ed è regolare
                 return (x.stato === 'PRENOTATO' && inizioTime === oggiTime && !x.orario_ingresso);
             }
            
-            // 🕒 4. SCHEDA STORICO
+            // 🕒 4. SCHEDA STORICO: Mostra sia gli USCITI che i MAI_ENTRATO (Mai Presentato)
             if (filtroPiantone === 'storico') {
-                return x.stato === 'USCITO';
+                return x.stato === 'USCITO' || x.stato === 'MAI_ENTRATO';
             }
             
             return true;
@@ -1160,7 +1160,17 @@ async function aggiornaVeicoli() {
             const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '--';
             const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
             const evidenzia = x.npass === ultimoAggiornato; const f = getFlags(x);
-            const isScadutoEsplicito = ['SCADUTO', 'MAI_ENTRATO'].includes(x.stato);
+            const isMaiEntrato = x.stato === 'MAI_ENTRATO';
+            const isScadutoEsplicito = x.stato === 'SCADUTO';
+
+            return `<tr style="
+                border-bottom: 1px solid #f1f5f9;
+                ${isScadutoEsplicito ? 'background:#fee2e2; color:#991b1b;' : ''}
+                ${isMaiEntrato ? 'background:#f8fafc; color:#64748b;' : ''} 
+                ${f.storico && !isMaiEntrato ? 'background:#f1f5f9;' : ''}
+                ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
+                ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
+            ">
             
             const wPass = 'width: 16%;';
             const wDataIng = 'width: 26%;';
