@@ -1031,8 +1031,95 @@ async function aggiornaVeicoli() {
             }
             stringaSbarraCentro.innerHTML = testoCentro;
         }
+
+        // 🚨 RIPRISTINATA E INIETTATA LA LOGICA DI FILTRAGGIO MANCANTE 🚨
+        const valoreCercato = inputSearch?.value?.trim()?.toUpperCase() || "";
+        const statoTabella = document.getElementById('stato-tabella');
+
+        const lista = dati.filter(x => {
+            if (valoreCercato !== "") return x.npass?.toUpperCase() === valoreCercato;
+            
+            const f = getFlags(x);
+            const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
+            if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+            const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
+
+            if (filtroPiantone === 'verificare') return f.daVerificare;
+            
+            // Scaduti mostra unicamente i record in stato SCADUTO
+            if (filtroPiantone === 'scaduti') {
+                return x.stato === 'SCADUTO' && !x.orario_ingresso;
+            }      
+            
+            if (filtroPiantone === 'attivi') {
+                if (f.daVerificare) return false;
+                if (['SCADUTO', 'MAI_ENTRATO'].includes(x.stato)) return false; 
+                if (x.orario_ingresso && !x.orario_uscita) return true; 
+                return (x.stato === 'PRENOTATO' && inizioTime === oggiTime && !x.orario_ingresso);
+            }
+           
+            // Storico accorpa sia gli USCITI regolari che i MAI_ENTRATO
+            if (filtroPiantone === 'storico') {
+                return x.stato === 'USCITO' || x.stato === 'MAI_ENTRATO';
+            }
+            
+            return true;
+        })
+        .sort((a, b) => {
+            if (valoreCercato !== "") {
+                const getPriorita = (item) => {
+                    const f = getFlags(item);
+                    const dataInizioData = item.data_inizio ? new Date(item.data_inizio) : null;
+                    if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+                    const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
+
+                    if (f.daVerificare) return 1; 
+                    if (f.entrato || (item.stato === 'PRENOTATO' && inizioTime === oggiTime)) return 2; 
+                    if (['SCADUTO', 'MAI_ENTRATO'].includes(item.stato)) return 3;                
+                    if (f.storico) return 4;                    
+                    return 5;
+                };
+                const pesoA = getPriorita(a); const pesoB = getPriorita(b);
+                if (pesoA !== pesoB) return pesoA - pesoB;
+                return (b.id || 0) - (a.id || 0);
+            } 
+            if (filtroPiantone === 'attivi') {
+                const dateA = a.orario_ingresso ? new Date(a.orario_ingresso).getTime() : 0;
+                const dateB = b.orario_ingresso ? new Date(b.orario_ingresso).getTime() : 0;
+                return dateB - dateA; 
+            }
+            if (filtroPiantone === 'verificare') {
+                return (a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0)) - (b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0));
+            }
+            if (filtroPiantone === 'storico') {
+                return (b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0)) - (a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0));
+            }
+            return (a.npass || "").localeCompare(b.npass || "", undefined, { numeric: true, sensitivity: 'base' });
+        });
+
+        // Banner per la ricerca testuale
+        if (valoreCercato !== "") {
+            let label = ""; let colore = "#334155"; let sfondo = "#f8fafc";
+            if (lista.length > 0) {
+                const veicoloTrovato = lista[0]; const f = getFlags(veicoloTrovato);
+                const dataInizioData = veicoloTrovato.data_inizio ? new Date(veicoloTrovato.data_inizio) : null;
+                if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+                const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
+                
+                if (f.daVerificare) { label = "🚨 DA VERIFICARE (Trovato da Ricerca)"; colore = "#ea580c"; sfondo = "#ffedd5"; } 
+                else if (f.entrato || (veicoloTrovato.stato === 'PRENOTATO' && inizioTime === oggiTime)) { label = "📋 ATTIVO (Trovato da Ricerca)"; colore = "#2563eb"; sfondo = "#dbeafe"; } 
+                else if (['SCADUTO', 'MAI_ENTRATO'].includes(veicoloTrovato.stato)) { label = `⏰ ${veicoloTrovato.stato} (Trovato da Ricerca)`; colore = "#dc2626"; sfondo = "#fee2e2"; } 
+                else if (f.storico) { label = "🕘 STORICO (Trovato da Ricerca)"; colore = "#475569"; sfondo = "#e2e8f0"; }
+            } else {
+                label = "🔍 NESSUN RISULTATO"; colore = "#64748b"; sfondo = "#f1f5f9";
+            }
+            if (statoTabella) {
+                statoTabella.style.color = colore; statoTabella.style.background = sfondo;
+                statoTabella.style.borderColor = colore; statoTabella.innerHTML = label;
+            }
+        }
         
-// --- INIEZIONE RIGHE IN TABELLA HTML ---
+        // --- INIEZIONE RIGHE IN TABELLA HTML ---
         document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
             const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
             const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
