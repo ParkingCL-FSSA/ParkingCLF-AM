@@ -968,10 +968,6 @@ async function aggiornaVeicoli() {
             if (dataInizioData) dataInizioData.setHours(0,0,0,0);
             const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
-            const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
-            if (dataFineData) dataFineData.setHours(0,0,0,0);
-            const fineTime = dataFineData ? dataFineData.getTime() : 0;
-
             const dataIngressoString = x.orario_ingresso ? x.orario_ingresso.substring(0, 10) : '';
 
             // 🎯 SEPARAZIONE CONTEGGIO: Se è dentro, verifichiamo se è V1P o standard
@@ -994,9 +990,8 @@ async function aggiornaVeicoli() {
             const f = getFlags(x);
             if (f.daVerificare) countVerificare++;
             
-            // 🎯 ALLINEAMENTO CONTEGGIO BADGE: Usa la stessa logica elastica del filtro sotto
-            const èScadutoNelPeriodo = (x.stato === 'SCADUTO' || (oggiTime > inizioTime && oggiTime <= fineTime)) && !x.orario_ingresso;
-            if (èScadutoNelPeriodo) {
+            // 🎯 FIX BADGE SCADUTI: Conta solo i record che sono realmente SCADUTI o MAI_ENTRATO sul DB
+            if (['SCADUTO', 'MAI_ENTRATO'].includes(x.stato) && !x.orario_ingresso) {
                 countScaduti++;
             }
         });
@@ -1057,7 +1052,6 @@ async function aggiornaVeicoli() {
 
         const elScaduti = document.getElementById('badge-scaduti');
         if (elScaduti && countScaduti > 0) {
-            //elScaduti.style.animation = 'blink 1s infinite';
             elScaduti.style.color = '#ef4444';
         }
 
@@ -1073,28 +1067,22 @@ async function aggiornaVeicoli() {
             
             const f = getFlags(x);
             
-            // Configurazione millisecondi per i confronti temporali precisi
             const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
             if (dataInizioData) dataInizioData.setHours(0,0,0,0);
             const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
-            const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
-            if (dataFineData) dataFineData.setHours(0,0,0,0);
-            const fineTime = dataFineData ? dataFineData.getTime() : 0;
-
             // --- 1. SCHEDA DA VERIFICARE ---
             if (filtroPiantone === 'verificare') return f.daVerificare;
             
-            // 🎯 2. SCHEDA SCADUTI 
+            // 🎯 2. SCHEDA SCADUTI (FIX: Filtra rigorosamente solo i record scaduti o non presentati)
             if (filtroPiantone === 'scaduti') {
-                const èScadutoNelPeriodo = (x.stato === 'SCADUTO' || (oggiTime > inizioTime && oggiTime <= fineTime)) && !x.orario_ingresso;
-                return èScadutoNelPeriodo;
+                return ['SCADUTO', 'MAI_ENTRATO'].includes(x.stato) && !x.orario_ingresso;
             }      
             
             // 🚘 3. SCHEDA ATTIVI
             if (filtroPiantone === 'attivi') {
-                // 🚀 MODIFICA: Se è in stato da verificare, deve sparire da questa scheda
                 if (f.daVerificare) return false;
+                if (['SCADUTO', 'MAI_ENTRATO'].includes(x.stato)) return false; // Taglia fuori i vecchi pass
                 if (x.orario_ingresso && !x.orario_uscita) return true; // È dentro ed è regolare
                 return (x.stato === 'PRENOTATO' && inizioTime === oggiTime && !x.orario_ingresso);
             }
@@ -1114,10 +1102,9 @@ async function aggiornaVeicoli() {
                     if (dataInizioData) dataInizioData.setHours(0,0,0,0);
                     const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
-                    // Priorità assoluta allo stato critico rispetto alla semplice presenza fisica
                     if (f.daVerificare) return 1; 
                     if (f.entrato || (item.stato === 'PRENOTATO' && inizioTime === oggiTime)) return 2; 
-                    if (f.scaduto) return 3;                
+                    if (['SCADUTO', 'MAI_ENTRATO'].includes(item.stato)) return 3;                
                     if (f.storico) return 4;                    
                     return 5;
                 };
@@ -1140,18 +1127,23 @@ async function aggiornaVeicoli() {
             return (a.npass || "").localeCompare(b.npass || "", undefined, { numeric: true, sensitivity: 'base' });
         });
 
-        if (valoreCercato !== "" && lista.length > 0) {
+        if (valoreCercato !== "") {
             let label = ""; let colore = "#334155"; let sfondo = "#f8fafc";
-            const veicoloTrovato = lista[0]; const f = getFlags(veicoloTrovato);
-            const dataInizioData = veicoloTrovato.data_inizio ? new Date(veicoloTrovato.data_inizio) : null;
-            if (dataInizioData) dataInizioData.setHours(0,0,0,0);
-            const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
             
-            // 🚀 MODIFICA: Spostato il controllo di verifica in cima per non farsi scavalcare da f.entrato
-            if (f.daVerificare) { label = "🚨 DA VERIFICARE (Trovato da Ricerca)"; colore = "#ea580c"; sfondo = "#ffedd5"; } 
-            else if (f.entrato || (veicoloTrovato.stato === 'PRENOTATO' && inizioTime === oggiTime)) { label = "📋 ATTIVO (Trovato da Ricerca)"; colore = "#2563eb"; sfondo = "#dbeafe"; } 
-            else if (f.scaduto) { label = "⏰ SCADUTO (Trovato da Ricerca)"; colore = "#dc2626"; sfondo = "#fee2e2"; } 
-            else if (f.storico) { label = "🕘 STORICO (Trovato da Ricerca)"; colore = "#475569"; sfondo = "#e2e8f0"; }
+            if (lista.length > 0) {
+                const veicoloTrovato = lista[0]; const f = getFlags(veicoloTrovato);
+                const dataInizioData = veicoloTrovato.data_inizio ? new Date(veicoloTrovato.data_inizio) : null;
+                if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+                const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
+                
+                if (f.daVerificare) { label = "🚨 DA VERIFICARE (Trovato da Ricerca)"; colore = "#ea580c"; sfondo = "#ffedd5"; } 
+                else if (f.entrato || (veicoloTrovato.stato === 'PRENOTATO' && inizioTime === oggiTime)) { label = "📋 ATTIVO (Trovato da Ricerca)"; colore = "#2563eb"; sfondo = "#dbeafe"; } 
+                else if (['SCADUTO', 'MAI_ENTRATO'].includes(veicoloTrovato.stato)) { label = `⏰ ${veicoloTrovato.stato} (Trovato da Ricerca)`; colore = "#dc2626"; sfondo = "#fee2e2"; } 
+                else if (f.storico) { label = "🕘 STORICO (Trovato da Ricerca)"; colore = "#475569"; sfondo = "#e2e8f0"; }
+            } else {
+                // Se cerchi qualcosa che non c'è, svuota il banner di stato ricerca
+                label = "🔍 NESSUN RISULTATO"; colore = "#64748b"; sfondo = "#f1f5f9";
+            }
             
             if (statoTabella) {
                 statoTabella.style.color = colore; statoTabella.style.background = sfondo;
@@ -1159,44 +1151,45 @@ async function aggiornaVeicoli() {
             }
         }
             
-       // --- INIEZIONE RIGHE IN TABELLA HTML ---
+        // --- INIEZIONE RIGHE IN TABELLA HTML ---
         document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
-        const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
-        const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
-        const dataIng = ing ? ing.toLocaleDateString('it-IT') : '--';
-        const oraIng = ing ? ing.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
-        const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '--';
-        const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
-        const evidenzia = x.npass === ultimoAggiornato; const f = getFlags(x);
+            const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
+            const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
+            const dataIng = ing ? ing.toLocaleDateString('it-IT') : '--';
+            const oraIng = ing ? ing.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
+            const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '--';
+            const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
+            const evidenzia = x.npass === ultimoAggiornato; const f = getFlags(x);
+            const isScadutoEsplicito = ['SCADUTO', 'MAI_ENTRATO'].includes(x.stato);
+            
+            const wPass = 'width: 16%;';
+            const wDataIng = 'width: 26%;';
+            const wOraIng = 'width: 15%;';
+            const wDataUsc = 'width: 28%;';
+            const wOraUsc = 'width: 15%;';
         
-        const wPass = 'width: 16%;';
-        const wDataIng = 'width: 26%;';
-        const wOraIng = 'width: 15%;';
-        const wDataUsc = 'width: 28%;';
-        const wOraUsc = 'width: 15%;';
-    
-        const baseStyle = 'padding: 8px 6px; text-align: left; vertical-align: middle; box-sizing: border-box;';
-    
-        return `<tr style="
-            border-bottom: 1px solid #f1f5f9;
-            ${f.scaduto ? 'background:#fee2e2; color:#991b1b;' : ''}
-            ${f.storico ? 'background:#f1f5f9;' : ''}
-            ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
-            ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
-        ">
-            <td style="${baseStyle} ${wPass}">
-                <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" 
-                    style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline; padding:0; margin:0; font-size:14px;">
-                    ${x.npass}
-                </button>
-            </td>
-            <td style="${baseStyle} ${wDataIng}">${f.scaduto ? 'NON ENTRATO' : dataIng}</td>
-            <td style="${baseStyle} ${wOraIng} font-weight:bold;">${f.scaduto ? '' : oraIng}</td>
-            <td style="${baseStyle} ${wDataUsc}">${dataUsc}</td>
-            <td style="${baseStyle} ${wOraUsc} font-weight:bold;">${oraUsc}</td>
-        </tr>`;
-    }).join('') || `<tr><td colspan="5" style="text-align:center; color:black; padding:16px;">Nessun veicolo presente</td></tr>`;
+            const baseStyle = 'padding: 8px 6px; text-align: left; vertical-align: middle; box-sizing: border-box;';
         
+            return `<tr style="
+                border-bottom: 1px solid #f1f5f9;
+                ${isScadutoEsplicito ? 'background:#fee2e2; color:#991b1b;' : ''}
+                ${f.storico ? 'background:#f1f5f9;' : ''}
+                ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
+                ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
+            ">
+                <td style="${baseStyle} ${wPass}">
+                    <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" 
+                        style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline; padding:0; margin:0; font-size:14px;">
+                        ${x.npass}
+                    </button>
+                </td>
+                <td style="${baseStyle} ${wDataIng}">${isScadutoEsplicito ? (x.stato === 'MAI_ENTRATO' ? 'MAI PRESENTATO' : 'NON ENTRATO') : dataIng}</td>
+                <td style="${baseStyle} ${wOraIng} font-weight:bold;">${isScadutoEsplicito ? '' : oraIng}</td>
+                <td style="${baseStyle} ${wDataUsc}">${dataUsc}</td>
+                <td style="${baseStyle} ${wOraUsc} font-weight:bold;">${oraUsc}</td>
+            </tr>`;
+        }).join('') || `<tr><td colspan="5" style="text-align:center; color:black; padding:16px;">Nessun veicolo presente</td></tr>`;
+            
         // Aggancio eventi pulsanti lista
         document.querySelectorAll('.btn-pass').forEach(btn => {
             btn.addEventListener('click', async () => {
