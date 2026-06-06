@@ -772,6 +772,70 @@ app.post('/api/piantone/non-presente', async (req, res) => {
     }
 });
 
+// ============================================================
+// 🚨 ENDPOINT LATO SERVER PER GESTIONE SANATORIA SCADUTI
+// ============================================================
+
+// 1. Endpoint per riattivare la prenotazione scaduta (DENTRO)
+app.post('/api/piantone/scaduto-riattiva', async (req, res) => {
+    const { id, npass, data_verifica } = req.body;
+
+    try {
+        // Qui esegui la query SQL per aggiornare lo stato sul DB PostgreSQL
+        // Ad esempio forzando lo stato a 'ENTRATO', salvando il timestamp e registrando l'azione
+        const query = `
+            UPDATE prenotazioni 
+            SET stato = 'ENTRATO', 
+                orario_ingresso = $1, 
+                note = CONCAT(note, ' - Verificato presente dal piantone: ', $2)
+            WHERE id = $3 AND stato = 'SCADUTO'
+            RETURNING *;
+        `;
+        
+        const result = await db.query(query, [data_verifica, npass, id]);
+
+        if (result.rowCount === 0) {
+            return res.status(400).json({ success: false, error: "Prenotazione non trovata o non in stato SCADUTO." });
+        }
+
+        // Risposta JSON corretta che JavaScript si aspetta dal client
+        return res.json({ success: true, prenotazione: result.rows[0] });
+
+    } catch (err) {
+        console.error("Errore server scaduto-riattiva:", err);
+        return res.status(500).json({ success: false, error: "Errore interno del server durante la riattivazione." });
+    }
+});
+
+// 2. Endpoint per archiviare la prenotazione scaduta prima del tempo (MAI ENTRATO)
+app.post('/api/piantone/scaduto-archivia', async (req, res) => {
+    const { id, npass } = req.body;
+
+    try {
+        // Aggiorna lo stato in 'ARCHIVIATO' o 'STORICO' per liberare i flussi
+        const query = `
+            UPDATE prenotazioni 
+            SET stato = 'USCITO', -- o lo stato che usi per l'archivio definitivo
+                note = CONCAT(note, ' - Archiviato come MAI ENTRATO dal piantone: ', $1)
+            WHERE id = $2 AND stato = 'SCADUTO'
+            RETURNING *;
+        `;
+        
+        const result = await db.query(query, [npass, id]);
+
+        if (result.rowCount === 0) {
+            return res.status(400).json({ success: false, error: "Prenotazione non trovata o non in stato SCADUTO." });
+        }
+
+        return res.json({ success: true });
+
+    } catch (err) {
+        console.error("Errore server scaduto-archivia:", err);
+        return res.status(500).json({ success: false, error: "Errore interno del server durante l'archiviazione." });
+    }
+});
+
+
 // avvio immediato job scadenze
 scadenzaPrenotazioni();
 // ogni 5 minuti
