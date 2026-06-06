@@ -1072,7 +1072,13 @@ async function aggiornaVeicoli() {
 
             // --- 1. SCHEDA DA VERIFICARE ---
             if (filtroPiantone === 'verificare') return f.daVerificare;
-                  
+            
+            // 🎯 2. SCHEDA SCADUTI 
+            if (filtroPiantone === 'scaduti') {
+                const èScadutoNelPeriodo = (x.stato === 'SCADUTO' || (oggiTime > inizioTime && oggiTime <= fineTime)) && !x.orario_ingresso;
+                return èScadutoNelPeriodo;
+            }      
+            
             // 🚘 3. SCHEDA ATTIVI
             if (filtroPiantone === 'attivi') {
                 // 🚀 MODIFICA: Se è in stato da verificare, deve sparire da questa scheda
@@ -1080,13 +1086,7 @@ async function aggiornaVeicoli() {
                 if (x.orario_ingresso && !x.orario_uscita) return true; // È dentro ed è regolare
                 return (x.stato === 'PRENOTATO' && inizioTime === oggiTime && !x.orario_ingresso);
             }
-
-            // 🎯 2. SCHEDA SCADUTI 
-            if (filtroPiantone === 'scaduti') {
-                const èScadutoNelPeriodo = (x.stato === 'SCADUTO' || (oggiTime > inizioTime && oggiTime <= fineTime)) && !x.orario_ingresso;
-                return èScadutoNelPeriodo;
-            }
-            
+           
             // 🕒 4. SCHEDA STORICO
             if (filtroPiantone === 'storico') {
                 return x.stato === 'USCITO';
