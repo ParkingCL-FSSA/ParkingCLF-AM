@@ -649,12 +649,14 @@ async function cercaPass(passManuale = null, idRecord = null) {
     
     // 🎯 FIX RESET TOTALE: Nascondiamo e svuotiamo i box prima di qualsiasi elaborazione
     const boxVerifica = document.getElementById('box-verifica');
+    const boxVerificaScaduti = document.getElementById('box-verifica-scaduti');
     const regE = document.getElementById('reg-e');
     const regU = document.getElementById('reg-u');
     
-    if (boxVerifica) {
-        boxVerifica.classList.add('hidden');
-        boxVerifica.innerHTML = ''; // Svuota il contenuto precedente per evitare sovrapposizioni
+    if (boxVerifica) boxVerifica.classList.add('hidden');
+    if (boxVerificaScaduti) {
+        boxVerificaScaduti.classList.add('hidden');
+        boxVerificaScaduti.innerHTML = ''; // Pulizia di sicurezza ad ogni nuova ricerca
     }
     if (regE) regE.innerHTML = '';
     if (regU) regU.innerHTML = '';
@@ -727,7 +729,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
             else if (currentPren.stato === 'ENTRATO') {
                 btnUscita.disabled = false;
             }
-            // DA VERIFICARE (Usa i vecchi pulsanti standard PRESENTE / NON PRESENTE)
+            // DA VERIFICARE (Usa il boxVerifica standard con i pulsanti piccoli dell'HTML)
             else if (currentPren.stato === 'DA_VERIFICARE') {
                 btnIngresso.style.display = 'inline-block';
                 btnIngresso.disabled = true;
@@ -737,47 +739,34 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 btnUscita.style.background = '#ea580c';
                 btnUscita.innerText = 'VERIFICA';
             
-                if (boxVerifica) {
-                    boxVerifica.style.display = 'flex'; // Forza il layout corretto
-                    boxVerifica.innerHTML = `
-                        <button id="btn-presente" onclick="azioneVerifica('si', ${currentPren.id})" type="button" style="width: auto; padding:6px 10px; font-size:12px; border:none; border-radius:8px; background:#16a34a; color:white; margin:0; font-weight:bold; cursor:pointer;">
-                            ✅ PRESENTE
-                        </button>
-                        <button id="btn-non-presente" onclick="azioneVerifica('no', ${currentPren.id})" type="button" style="width: auto; padding:6px 10px; font-size:12px; border:none; border-radius:8px; background:#dc2626; color:white; margin:0; font-weight:bold; cursor:pointer;">
-                            ❌ NON PRESENTE
-                        </button>
-                    `;
-                    boxVerifica.classList.remove('hidden');
-                }
+                if (boxVerifica) boxVerifica.classList.remove('hidden'); 
             }
-            // 🚀 NUOVO STATO: GESTIONE "MAI_ENTRATO" -> MOSTRA ARCHIVIATO SENZA PULSANTI
+            // 🎯 NUOVO STATO INTERCETTATO: MAI_ENTRATO -> Genera dinamicamente la veste ARCHIVIATO
             else if (currentPren.stato === 'MAI_ENTRATO') {
                 btnIngresso.style.display = 'none'; 
                 btnUscita.style.display = 'none'; 
 
-                if (boxVerifica) {
-                    boxVerifica.style.display = 'block'; // Block per contenere il div a tutta larghezza
-                    boxVerifica.innerHTML = `
-                        <div style="background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; border-radius: 12px; padding: 14px; text-align: center; box-sizing: border-box; width: 100%;">
-                            <span style="font-size: 20px;">📁</span>
-                            <h4 style="margin: 4px 0 2px 0; font-size: 15px; font-weight: bold; color: #334155;">Prenotazione Scaduta: ARCHIVIATO</h4>
+                if (boxVerificaScaduti) {
+                    boxVerificaScaduti.innerHTML = `
+                        <div style="background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; border-radius: 12px; padding: 16px; text-align: center; margin-top: 15px; box-sizing: border-box; width: 100%;">
+                            <span style="font-size: 22px;">📁</span>
+                            <h4 style="margin: 6px 0 4px 0; font-size: 15px; font-weight: bold; color: #334155;">Prenotazione Scaduta: ARCHIVIATO</h4>
                             <p style="margin: 0; font-size: 13px; color: #64748b;">L'auto non si è presentata nei termini ed è nello storico.</p>
                         </div>
                     `;
-                    boxVerifica.classList.remove('hidden');
+                    boxVerificaScaduti.classList.remove('hidden');
                 }
             }	
-            // 🚀 STRUMENTO VERIFICA PRENOTAZIONI SCADUTE (Rosso con pulsanti Grandi dello screenshot)
+            // 🚀 STRUMENTO SCADUTI STANDARD (Genera il Box Rosso con i pulsanti Grandi dello screenshot)
             else if (currentPren.stato === 'SCADUTO') {
                 
                 if (!currentPren.orario_ingresso) {
                     btnIngresso.style.display = 'none'; 
                     btnUscita.style.display = 'none'; 
                     
-                    if (boxVerifica) {
-                        boxVerifica.style.display = 'block';
-                        boxVerifica.innerHTML = `
-                            <div style="background: #fff5f5; border: 1px solid #feb2b2; border-radius: 12px; padding: 16px; text-align: center; box-sizing: border-box; width: 100%;">
+                    if (boxVerificaScaduti) {
+                        boxVerificaScaduti.innerHTML = `
+                            <div style="background: #fff5f5; border: 1px solid #feb2b2; border-radius: 12px; padding: 16px; text-align: center; margin-top: 15px; box-sizing: border-box; width: 100%;">
                                 <h4 style="margin: 0 0 8px 0; font-size: 15px; font-weight: bold; color: #9b2c2c;">⚠️ Verifica Prenotazione Scaduta</h4>
                                 <p style="margin: 0 0 12px 0; font-size: 13px; color: #9b2c2c;">L'auto è effettivamente presente nel parcheggio?</p>
                                 <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
@@ -790,7 +779,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                                 </div>
                             </div>
                         `;
-                        boxVerifica.classList.remove('hidden');
+                        boxVerificaScaduti.classList.remove('hidden');
                     }
                         
                 } else {
@@ -879,7 +868,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 }
             }
 
-            // LOGICA TABELLA SOTTOSTANTE
+            // LOGICA FILTRO INVERTITO SULLA TABELLA REALE
             if (data.storico && tabellaCorpo) {
                 let righeDaMostrare = [];
                 
