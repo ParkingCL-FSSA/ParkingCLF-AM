@@ -773,21 +773,22 @@ app.post('/api/piantone/non-presente', async (req, res) => {
 });
 
 // ============================================================
-// 📥 ROUTE 1: RIATTIVA PRENOTAZIONE SCADUTA (AUTO DENTRO) - FIX 500
+// 📥 ROUTE 1: RIATTIVA PRENOTAZIONE SCADUTA (AUTO DENTRO)
 // ============================================================
 app.post('/api/piantone/scaduto-riattiva', async (req, res) => {
-    const { id, npass, data_verifica } = req.body;
+    // 🎯 Recuperiamo anche 'auth' inviato dal client per verificare il ruolo del piantone
+    const { id, npass, data_verifica, auth } = req.body;
 
     if (!id || !npass) {
         return res.status(400).json({ success: false, error: "Dati mancanti." });
     }
 
-    if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
+    // 🎯 SICUREZZA: Controlliamo il ruolo di chi esegue l'azione (auth), non del pass auto (npass)
+    if (!await verificaRuolo(auth, ['piantone', 'admin'])) {
         return res.status(403).json({ error: "Accesso non autorizzato" });
     }
 
     try {
-        // 🎯 FIX: Usiamo 'note' (allineato al tuo DB) e forziamo il testo per evitare l'errore 500
         const query = `
             UPDATE prenotazioni 
             SET stato = 'ENTRATO', 
@@ -806,28 +807,28 @@ app.post('/api/piantone/scaduto-riattiva', async (req, res) => {
         res.json({ success: true, message: "Veicolo riattivato e segnato come dentro." });
 
     } catch (err) {
-        // Questo ti stamperà l'errore esatto nei log di Render se dovesse mancare altro
         console.error("💥 ERRORE CRITICO DB scaduto-riattiva:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
 // ============================================================
-// ❌ ROUTE 2: ARCHIVIA PRENOTAZIONE SCADUTA (MAI ENTRATO) - FIX 500
+// ❌ ROUTE 2: ARCHIVIA PRENOTAZIONE SCADUTA (MAI ENTRATO)
 // ============================================================
 app.post('/api/piantone/scaduto-archivia', async (req, res) => {
-    const { id, npass } = req.body;
+    // 🎯 Recuperiamo 'auth' anche qui
+    const { id, npass, auth } = req.body;
 
     if (!id || !npass) {
         return res.status(400).json({ success: false, error: "Dati mancanti." });
     }
 
-    if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
+    // 🎯 SICUREZZA: Verifica basata su chi esegue l'azione (auth)
+    if (!await verificaRuolo(auth, ['piantone', 'admin'])) {
         return res.status(403).json({ error: "Accesso non autorizzato" });
     }
 
     try {
-        // 🎯 FIX: Cambiato note_piantone in note
         const query = `
             UPDATE prenotazioni 
             SET stato = 'MAI_ENTRATO', 
