@@ -1638,12 +1638,12 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
                     id: currentPren.id, 
                     npass: userPass,
                     data_verifica: adesso.toISOString() // Passa il timestamp preciso al server
-                })
-                if (!res.ok) { // 🌟 Controllo di sicurezza
-                alert("Errore di comunicazione con il server (Stato " + res.status + ")");
-                return;
-                }
+                })     
             });
+            
+            if (!res.ok) { // 🌟 Controllo di sicurezza
+            alert("Errore di comunicazione con il server (Stato " + res.status + ")");
+            return; } 
             
             const data = await res.json();
             if (data.success) {
