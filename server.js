@@ -782,20 +782,22 @@ app.post('/api/piantone/scaduto-riattiva', async (req, res) => {
         return res.status(400).json({ success: false, error: "Dati mancanti." });
     }
 
+    if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
+        return res.status(403).json({ error: "Accesso non autorizzato" });
+    }
+
     try {
-        // Esegui la query per aggiornare lo stato sul tuo DB PostgreSQL
-        // Registriamo il timestamp attuale come orario d'ingresso e cambiamo lo stato in ENTRATO o ATTIVO
+        // 🎯 CORRETTO: Usiamo pool.query al posto di db.query
         const query = `
             UPDATE prenotazioni 
             SET stato = 'ENTRATO', 
                 orario_ingresso = $1, 
-                note_piantone = CONCAT(note_piantone, ' - Verificato presente in sosta il ', CURRENT_DATE)
+                note_piantone = CONCAT(COALESCE(note_piantone, ''), ' - Verificato presente in sosta il ', CURRENT_DATE)
             WHERE id = $2
             RETURNING *;
         `;
         
-        // Sostituisci 'db' o 'pool' con il tuo client di connessione PostgreSQL reale
-        const result = await db.query(query, [data_verifica || new Date(), id]);
+        const result = await pool.query(query, [data_verifica || new Date(), id]);
 
         if (result.rowCount === 0) {
             return res.status(404).json({ success: false, error: "Prenotazione non trovata." });
@@ -819,18 +821,22 @@ app.post('/api/piantone/scaduto-archivia', async (req, res) => {
         return res.status(400).json({ success: false, error: "Dati mancanti." });
     }
 
+    if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
+        return res.status(403).json({ error: "Accesso non autorizzato" });
+    }
+
     try {
-        // Portiamo la prenotazione scaduta nello stato finale di archivio (es: USCITO o ARCHIVIATO)
-        // senza valorizzare l'ingresso, liberando i posti per i calcoli delle disponibilità future
+        // 🎯 CORRETTO: Usiamo pool.query al posto di db.query 
+        // e COALESCE per evitare problemi se note_piantone è NULL
         const query = `
             UPDATE prenotazioni 
             SET stato = 'USCITO', 
-                note_piantone = CONCAT(note_piantone, ' - Archiviata: Veicolo MAI ENTRATO')
+                note_piantone = CONCAT(COALESCE(note_piantone, ''), ' - Archiviata: Veicolo MAI ENTRATO')
             WHERE id = $1
             RETURNING *;
         `;
 
-        const result = await db.query(query, [id]);
+        const result = await pool.query(query, [id]);
 
         if (result.rowCount === 0) {
             return res.status(404).json({ success: false, error: "Prenotazione non trovata." });
@@ -851,5 +857,5 @@ scadenzaPrenotazioni();
 setInterval(scadenzaPrenotazioni, 5 * 60 * 1000);
 
 app.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-    console.log(`Server avviato`);
+    console.log(`Server avviato ed in ascolto`);
 });
