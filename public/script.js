@@ -1576,14 +1576,26 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
     });
 
     document.getElementById('btn-reset-search')?.addEventListener('click', () => {
-        if (inputSearch) inputSearch.value = '';
-        currentPren = null;
-        filtroPiantone = 'attivi'; 
-        document.getElementById('panel-piantone')?.classList.add('hidden');
-        document.getElementById('box-verifica')?.classList.add('hidden'); 
-        if (typeof aggiornaGraficaBadge === 'function') aggiornaGraficaBadge();
-        aggiornaVeicoli();
-    });
+    if (inputSearch) inputSearch.value = '';
+    currentPren = null;
+    filtroPiantone = 'attivi'; 
+    
+    // 🎯 NASCONDI TUTTI I BOX DI VERIFICA (Sia Standard che Scaduti)
+    document.getElementById('panel-piantone')?.classList.add('hidden');
+    document.getElementById('box-verifica')?.classList.add('hidden'); 
+    document.getElementById('box-verifica-scaduti')?.classList.add('hidden'); // <-- FIX: Ora si nasconde!
+    
+    // 🧼 PULIZIA EXTRA: Svuota i vecchi testi dei timestamp e banner per sicurezza
+    const regE = document.getElementById('reg-e');
+    const regU = document.getElementById('reg-u');
+    const bannerCerca = document.getElementById('stato-tabella');
+    if (regE) regE.innerHTML = '';
+    if (regU) regU.innerHTML = '';
+    if (bannerCerca) bannerCerca.innerHTML = '';
+
+    if (typeof aggiornaGraficaBadge === 'function') aggiornaGraficaBadge();
+    aggiornaVeicoli();
+});
 
     document.getElementById('btn-presente')?.addEventListener('click', async () => {
         if (!currentPren) return;
