@@ -184,11 +184,11 @@ function aggiornaGraficaBadge() {
     statoTabella.classList.remove('badge-blink');
     statoTabella.classList.remove('badge-blink-2');
     
-    // 🎯 FIX SPAZIATURA: Forza display e margini per evitare che si appiccichi o sparisca la barra sotto
-    statoTabella.style.display = "block";
-    statoTabella.style.marginBottom = "15px"; 
-    statoTabella.style.marginTop = "15px"; 
-    statoTabella.style.padding = "10px";
+    // 🎯 FIX SPAZIATURA: Allineato al nuovo contenitore HTML centrato
+    statoTabella.style.display = "inline-block"; 
+    statoTabella.style.marginBottom = "0px"; 
+    statoTabella.style.marginTop = "0px"; 
+    statoTabella.style.padding = "8px 20px";
     statoTabella.style.borderRadius = "8px";
     statoTabella.style.borderWidth = "1px";
     statoTabella.style.borderStyle = "solid";
@@ -240,6 +240,7 @@ function aggiornaGraficaBadge() {
         // NESSUN BLINK QUI
     }
 }
+
 async function doLogin() {
     const card = document.querySelector('.card');
     if (card) {
