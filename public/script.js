@@ -769,17 +769,17 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     btnUscita.style.display = 'none'; 
                     
                     if (boxVerifica) {
-                        boxVerifica.style.display = 'block'; // Serve block per contenere il flex interno strutturato
+                        boxVerifica.style.display = 'block'; 
                         boxVerifica.innerHTML = `
                             <div style="background: #fff5f5; border: 1px solid #feb2b2; border-radius: 12px; padding: 16px; text-align: center; box-sizing: border-box; width: 100%;">
                                 <h4 style="margin: 0 0 8px 0; font-size: 15px; font-weight: bold; color: #9b2c2c;">⚠️ Verifica Prenotazione Scaduta</h4>
                                 <p style="margin: 0 0 12px 0; font-size: 13px; color: #9b2c2c;">L'auto è effettivamente presente nel parcheggio?</p>
                                 
                                 <div style="display: flex; flex-direction: row; flex-wrap: nowrap; gap: 10px; justify-content: center; width: 100%; box-sizing: border-box;">
-                                    <button id="btn-scaduto-si" type="button" style="flex: 1; background: #10b981; color: white; border: none; padding: 10px 4px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; min-width: 0; line-height: 1.3;">
+                                    <button id="btn-scaduto-dentro" type="button" style="flex: 1; background: #10b981; color: white; border: none; padding: 10px 4px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; min-width: 0; line-height: 1.3;">
                                         📩 SI - DENTRO<br><span style="font-size: 10px; font-weight: normal;">(Verificata Presenza)</span>
                                     </button>
-                                    <button id="btn-scaduto-no" type="button" style="flex: 1; background: #ef4444; color: white; border: none; padding: 10px 4px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; min-width: 0; line-height: 1.3;">
+                                    <button id="btn-scaduto-mai-entrato" type="button" style="flex: 1; background: #ef4444; color: white; border: none; padding: 10px 4px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; min-width: 0; line-height: 1.3;">
                                         ❌ NO - MAI ENTRATO<br><span style="font-size: 10px; font-weight: normal;">(Annulla pren.)</span>
                                     </button>
                                 </div>
@@ -787,13 +787,17 @@ async function cercaPass(passManuale = null, idRecord = null) {
                         `;
                         boxVerifica.classList.remove('hidden');
 
-                        // 🎯 Listener di sicurezza per superare la CSP
-                        const currentId = currentPren.id;
-                        document.getElementById('btn-scaduto-si')?.addEventListener('click', (e) => { e.preventDefault(); azioneVerifica('si', currentId); });
-                        document.getElementById('btn-scaduto-no')?.addEventListener('click', (e) => { e.preventDefault(); azioneVerifica('no', currentId); });
+                        document.getElementById('btn-scaduto-dentro')?.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        eseguiScadutoDentro();
+                        });
+                        
+                        document.getElementById('btn-scaduto-mai-entrato')?.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        eseguiScadutoMaiEntrato();
+                        });
                     }
                 } else {
-                    btnIngresso.disabled = true;
                     btnIngresso.style.display = 'none';
                     btnUscita.disabled = false;
                     btnUscita.style.display = 'inline-block';
@@ -1679,12 +1683,12 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
         }
     });
     
- // ============================================================
- // ⚙️ GESTIONE STRUMENTO DI VERIFICA AUTO SCADUTE
- // ============================================================
+// ============================================================
+// ⚙️ GESTIONE STRUMENTO DI VERIFICA AUTO SCADUTE (OTTIMIZZATO)
+// ============================================================
 
-// LISTENER PULSANTE: SI - DENTRO (RIATTIVA PRENOTAZIONE)
-document.getElementById('btn-scaduto-dentro')?.addEventListener('click', async () => {
+// AZIONE: SI - DENTRO (RIATTIVA PRENOTAZIONE)
+async function eseguiScadutoDentro() {
     if (!currentPren) return;
     
     if (!confirm(`Confermi che il veicolo ${currentPren.npass} è già presente nel parcheggio?`)) return;
@@ -1696,7 +1700,7 @@ document.getElementById('btn-scaduto-dentro')?.addEventListener('click', async (
             body: JSON.stringify({
                 id: currentPren.id,
                 npass: currentPren.npass,
-                auth: userPass, // 🎯 Passiamo la chiave piantone per superare il controllo ruoli
+                auth: userPass, 
                 data_verifica: new Date()
             })
         });
@@ -1710,26 +1714,20 @@ document.getElementById('btn-scaduto-dentro')?.addEventListener('click', async (
 
         if (data.success) {
             alert("Operazione completata con successo!");
-            
-            // 🎯 Determina la scheda attiva per non perdere il focus (fallback su 'scaduti')
             const schedaAttiva = typeof currentView !== 'undefined' ? currentView : (document.querySelector('.tab-link.active')?.dataset.view || 'scaduti');
-            
-            // Aggiorna la lista veicoli mantenendo la scheda corrente
             if (typeof caricaVeicoliDentro === 'function') {
                 await caricaVeicoliDentro(schedaAttiva);
             }
-            
-            // Ricarica e resetta i box del pannello per il pass corrente
             cercaPass(currentPren.npass);
         }
     } catch (err) {
         console.error(err);
         alert("Errore durante l'operazione: " + err.message);
     }
-});
+}
 
-// LISTENER PULSANTE: NO - MAI ENTRATO (ARCHIVIA PRENOTAZIONE)
-document.getElementById('btn-scaduto-mai-entrato')?.addEventListener('click', async () => {
+// AZIONE: NO - MAI ENTRATO (ARCHIVIA PRENOTAZIONE)
+async function eseguiScadutoMaiEntrato() {
     if (!currentPren) return;
 
     if (!confirm(`Vuoi archiviare la prenotazione ${currentPren.id} come MAI ENTRATO? Il posto verrà liberato.`)) return;
@@ -1741,7 +1739,7 @@ document.getElementById('btn-scaduto-mai-entrato')?.addEventListener('click', as
             body: JSON.stringify({
                 id: currentPren.id,
                 npass: currentPren.npass,
-                auth: userPass // 🎯 Passiamo la chiave piantone
+                auth: userPass 
             })
         });
 
@@ -1754,23 +1752,17 @@ document.getElementById('btn-scaduto-mai-entrato')?.addEventListener('click', as
 
         if (data.success) {
             alert("Operazione completata con successo!");
-            
-            // 🎯 Determina la scheda attiva per rimanere dove eravamo
             const schedaAttiva = typeof currentView !== 'undefined' ? currentView : (document.querySelector('.tab-link.active')?.dataset.view || 'scaduti');
-            
-            // Aggiorna la tabella principale
             if (typeof caricaVeicoliDentro === 'function') {
                 await caricaVeicoliDentro(schedaAttiva);
             }
-            
-            // Aggiorna lo stato del pannello di controllo
             cercaPass(currentPren.npass);
         }
     } catch (err) {
         console.error(err);
         alert("Errore durante l'archiviazione: " + err.message);
     }
-});
+}
     
     document.getElementById('btn-arrivi-oggi')?.addEventListener('click', mostraArriviOggi);
     document.getElementById('btn-ingresso')?.addEventListener('click', () => { mossa('E'); });
