@@ -1039,20 +1039,54 @@ async function aggiornaVeicoli() {
         // Matematica posti liberi
         const postiLiberi = 90 - countDentro; 
 
-        // --- INIEZIONE SCRITTE SBARRA ---
-        let stringaColorata = `
-            <span style="color:#16a34a; font-weight:bold;">Liberi: ${postiLiberi}</span> 
-            &nbsp;|&nbsp; 
-            <span style="color:#ea580c; font-weight:bold;">Dentro: ${countDentro}</span>
-        `;
-        if (countListaV1p > 0) {
-            stringaColorata += ` &nbsp;|&nbsp; <span style="color:#2563eb; font-weight:bold;">Lista: ${countListaV1p}</span>`;
+        // ================================================================
+        // 🎯 DISEGNO COMPLETO ED ELEGANTE DEI BADGE CONTATORI CON SBARRA
+        // ================================================================
+        const badgeContatori = document.getElementById('badge-contatori');
+        if (badgeContatori) {
+            // Forziamo lo stile per visualizzare correttamente la riga di separazione inferiore
+            badgeContatori.style.margin = "15px 0";
+            badgeContatori.style.paddingBottom = "14px";
+            badgeContatori.style.borderBottom = "1px solid #cbd5e1"; // Sbarra grigia visiva
+            badgeContatori.style.fontSize = "14px";
+            badgeContatori.style.textAlign = "center";
+            badgeContatori.style.width = "100%";
+            badgeContatori.style.boxSizing = "border-box";
+            badgeContatori.style.display = "block";
+
+            // Costruiamo la stringa con tutte le statistiche calcolate
+            let htmlContatori = `
+                <span style="display:inline-block; margin:4px 6px; font-weight:600; color:#1e293b;">🚗 Entrati: <span style="color:#ea580c;">${countDentro}</span></span> | 
+                <span style="display:inline-block; margin:4px 6px; font-weight:600; color:#1e293b;">📅 Prenotati Oggi: <span style="color:#2563eb;">${countPrenotatiOggi}</span></span> | 
+                <span style="display:inline-block; margin:4px 6px; font-weight:600; color:#1e293b;">🅿️ Liberi: <span style="color:#16a34a;">${postiLiberi}</span></span>
+            `;
+
+            if (countListaV1p > 0) {
+                htmlContatori += ` | <span style="display:inline-block; margin:4px 6px; font-weight:600; color:#2563eb;">🔹 Lista V1P: <strong>${countListaV1p}</strong></span>`;
+            }
+
+            // Se ci sono criticità da verificare critiche, aggiungiamo il banner intermittente sotto i numeri
+            if (countVerificare > 0) {
+                htmlContatori += `
+                    <div style="margin-top: 8px;">
+                        <span class="badge-blink" style="display:inline-block; background:#fff7ed; color:#c2410c; padding:4px 12px; border-radius:8px; border:1px solid #fed7aa; font-weight:bold; font-size:12px;">
+                            ⚠️ ATTENZIONE: Ci sono ${countVerificare} veicoli da verificare!
+                        </span>
+                    </div>
+                `;
+            }
+
+            badgeContatori.innerHTML = htmlContatori;
         }
 
+        // Manteniamo aggiornati anche i display testuali del vecchio template se presenti
         const displaySotto = document.getElementById('total-free-display');
         const cardSbarraAlto = document.getElementById('card-sbarra-alto') || document.getElementById('status-parcheggio');
+        let stringaColorata = `<span style="color:#16a34a; font-weight:bold;">Liberi: ${postiLiberi}</span> &nbsp;|&nbsp; <span style="color:#ea580c; font-weight:bold;">Dentro: ${countDentro}</span>`;
+        if (countListaV1p > 0) stringaColorata += ` &nbsp;|&nbsp; <span style="color:#2563eb; font-weight:bold;">Lista: ${countListaV1p}</span>`;
+        
         if (displaySotto) displaySotto.innerHTML = stringaColorata;
-        else if (cardSbarraAlto) cardSbarraAlto.innerHTML = stringaColorata;
+        if (cardSbarraAlto) cardSbarraAlto.innerHTML = stringaColorata;
 
         const stringaSbarraCentro = document.getElementById('testo-sbarra-centro');
         if (stringaSbarraCentro) {
@@ -1062,12 +1096,10 @@ async function aggiornaVeicoli() {
         }
 
         // 🚀 PROCESSO DI ARCHIVIAZIONE AUTOMATICA SUL SERVER (BACKGROUND) 🚀
-        // Se ci sono record scaduti oltre il termine, invia la richiesta all'endpoint
         if (passDaArchiviareSuDB.length > 0) {
             for (const item of passDaArchiviareSuDB) {
                 console.log(`🤖 Sistema: Archiviazione automatica DB per il pass scaduto ${item.npass} (ID: ${item.id})`);
                 try {
-                    // Esegue la fetch verso l'API inviando id e npass necessari
                     fetch('/api/piantone/scaduto-archivia', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1097,8 +1129,6 @@ async function aggiornaVeicoli() {
             if (dataFineData) dataFineData.setHours(0,0,0,0);
             const fineTime = dataFineData ? dataFineData.getTime() : 0;
 
-            // Anche se il DB restituisce ancora lo stato vecchio (prima che la fetch asincrona si completi),
-            // lo nascondiamo localmente simulando già l'avvenuta archiviazione
             const èScadutoOltreFine = (x.stato === 'SCADUTO' || x.stato === 'MAI_ENTRATO') && !x.orario_ingresso && fineTime && oggiTime > fineTime;
 
             if (filtroPiantone === 'verificare') return f.daVerificare;
@@ -1153,7 +1183,7 @@ async function aggiornaVeicoli() {
             return (a.npass || "").localeCompare(b.npass || "", undefined, { numeric: true, sensitivity: 'base' });
         });
 
-        // Banner per la ricerca testuale
+        // Banner per la ricerca testuale o ripristino badge di stato se non si cerca
         if (valeurCercato !== "") {
             let label = ""; let colore = "#334155"; let sfondo = "#f8fafc";
             if (lista.length > 0) {
@@ -1172,6 +1202,11 @@ async function aggiornaVeicoli() {
             if (statoTabella) {
                 statoTabella.style.color = colore; statoTabella.style.background = sfondo;
                 statoTabella.style.borderColor = colore; statoTabella.innerHTML = label;
+            }
+        } else {
+            // Se l'utente non sta effettuando una ricerca, richiama la sincronizzazione del badge (📋 ATTIVI, ⏰ SCADUTI...)
+            if (typeof aggiornaGraficaBadge === 'function') {
+                aggiornaGraficaBadge();
             }
         }
         
@@ -1780,7 +1815,6 @@ async function eseguiScadutoMaiEntrato() {
     document.getElementById('btn-filtro')?.addEventListener('click', toggleScaduti);
     document.getElementById('search-p')?.addEventListener('input', aggiornaVeicoli);
     document.getElementById('btn-logout-piantone')?.addEventListener('click', () => { location.reload(); });
-    
     document.getElementById('btn-ritardi')?.addEventListener('click', mostraRitardi);
     document.getElementById('btn-logout-admin')?.addEventListener('click', () => { location.reload(); });
 
