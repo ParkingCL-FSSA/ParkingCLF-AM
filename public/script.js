@@ -777,10 +777,10 @@ async function cercaPass(passManuale = null, idRecord = null) {
                                 
                                 <div style="display: flex; flex-direction: row; flex-wrap: nowrap; gap: 10px; justify-content: center; width: 100%; box-sizing: border-box;">
                                     <button id="btn-scaduto-dentro" type="button" style="flex: 1; background: #10b981; color: white; border: none; padding: 10px 4px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; min-width: 0; line-height: 1.3;">
-                                        📩 SI - DENTRO<br><span style="font-size: 10px; font-weight: normal;">(Verificata Presenza)</span>
+                                        📩 SI - DENTRO<br><span style="font-size: 11px; font-weight: normal;">(Verificata Presenza)</span>
                                     </button>
                                     <button id="btn-scaduto-mai-entrato" type="button" style="flex: 1; background: #ef4444; color: white; border: none; padding: 10px 4px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; min-width: 0; line-height: 1.3;">
-                                        ❌ NO - MAI ENTRATO<br><span style="font-size: 10px; font-weight: normal;">(Annulla pren.)</span>
+                                        ❌ NO - MAI ENTRATO<br><span style="font-size: 11px; font-weight: normal;">(Annulla Prenotazione)</span>
                                     </button>
                                 </div>
                             </div>
