@@ -757,7 +757,8 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     boxVerificaScaduti.classList.remove('hidden');
                 }
             }	
-            // 🚀 STRUMENTO SCADUTI STANDARD (Genera il Box Rosso con i pulsanti Grandi dello screenshot)
+                
+            // 🚀 STRUMENTO SCADUTI STANDARD (Riscritto senza "onclick" per superare la CSP)
             else if (currentPren.stato === 'SCADUTO') {
                 
                 if (!currentPren.orario_ingresso) {
@@ -765,21 +766,40 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     btnUscita.style.display = 'none'; 
                     
                     if (boxVerificaScaduti) {
+                        // 1. Iniettiamo l'HTML pulito, usando degli ID univoci al posto dell'onclick
                         boxVerificaScaduti.innerHTML = `
                             <div style="background: #fff5f5; border: 1px solid #feb2b2; border-radius: 12px; padding: 16px; text-align: center; margin-top: 15px; box-sizing: border-box; width: 100%;">
                                 <h4 style="margin: 0 0 8px 0; font-size: 15px; font-weight: bold; color: #9b2c2c;">⚠️ Verifica Prenotazione Scaduta</h4>
                                 <p style="margin: 0 0 12px 0; font-size: 13px; color: #9b2c2c;">L'auto è effettivamente presente nel parcheggio?</p>
-                                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                                    <button onclick="azioneVerifica('si', ${currentPren.id})" type="button" style="background: #10b981; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
+                                
+                                <div style="display: flex; flex-direction: row; flex-wrap: nowrap; gap: 10px; justify-content: center; width: 100%; box-sizing: border-box;">
+                                    
+                                    <button id="btn-scaduto-si" type="button" style="flex: 1; background: #10b981; color: white; border: none; padding: 10px 4px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; min-width: 0; line-height: 1.3;">
                                         📩 SI - DENTRO<br><span style="font-size: 10px; font-weight: normal;">(Verificata Presenza)</span>
                                     </button>
-                                    <button onclick="azioneVerifica('no', ${currentPren.id})" type="button" style="background: #ef4444; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
-                                        ❌ NO - MAI ENTRATO<br><span style="font-size: 10px; font-weight: normal;">(Annulla prenotazione)</span>
+                                    
+                                    <button id="btn-scaduto-no" type="button" style="flex: 1; background: #ef4444; color: white; border: none; padding: 10px 4px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; min-width: 0; line-height: 1.3;">
+                                        ❌ NO - MAI ENTRATO<br><span style="font-size: 10px; font-weight: normal;">(Annulla pren.)</span>
                                     </button>
+                                    
                                 </div>
                             </div>
                         `;
                         boxVerificaScaduti.classList.remove('hidden');
+            
+                        // 2. 🎯 CATTURIAMO I BOTTONI APPENA CREATI E AGGANCIAMO I LISTENER DA JAVASCRIPT
+                        // In questo modo la CSP è contenta e non blocca l'esecuzione!
+                        const currentId = currentPren.id; // Salviamo l'id corrente per la closure
+                        
+                        document.getElementById('btn-scaduto-si')?.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            azioneVerifica('si', currentId);
+                        });
+            
+                        document.getElementById('btn-scaduto-no')?.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            azioneVerifica('no', currentId);
+                        });
                     }
                         
                 } else {
