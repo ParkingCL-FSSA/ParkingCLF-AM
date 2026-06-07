@@ -203,9 +203,9 @@ function aggiornaGraficaBadge() {
         statoTabella.style.borderColor = "#ea580c";
         
         // Blink attivo solo per le criticità
-        if (totaleVerificare > 0) {
-            statoTabella.classList.add('badge-blink');
-        }
+       //  if (totaleVerificare > 0) {
+       //     statoTabella.classList.add('badge-blink');
+       //  }
     }
     else if (filtroPiantone === 'scaduti') {
         statoTabella.innerHTML = "⏰ SCADUTI";
@@ -214,9 +214,9 @@ function aggiornaGraficaBadge() {
         statoTabella.style.borderColor = "#dc2626";
         
         // Blink attivo solo per le criticità
-        if (totaleScaduti > 0) {
-            statoTabella.classList.add('badge-blink-2');
-        }
+        // if (totaleScaduti > 0) {
+        //    statoTabella.classList.add('badge-blink-2');
+        // }
     }
     else if (filtroPiantone === 'attivi') {
         statoTabella.innerHTML = "📋 ATTIVI";
