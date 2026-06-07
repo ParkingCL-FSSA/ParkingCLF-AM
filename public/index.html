@@ -119,12 +119,14 @@
     th, td { padding:12px; border-bottom:1px solid #eee; text-align:left; }
 
 @keyframes blink {
-    0% { opacity: 1.5; }
-    50% { opacity: 0.2; }
-    100% { opacity: 1; }
+    0%, 75% { opacity: 1; }      /* Resta completamente visibile per il 75% del tempo */
+    88% { opacity: 0.15; }       /* Svanisce quasi del tutto molto velocemente */
+    100% { opacity: 1; }         /* Ritorna immediatamente visibile */
 }
+
 .badge-blink {
-    animation: blink 1s infinite;
+    /* Portata a 2.5 secondi per dare tutto il tempo di leggere comodamente il testo */
+    animation: blink 2.5s infinite ease-in-out; 
 }
 .badge-blink-2 {
     animation: blink 1.5s infinite;
