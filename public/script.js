@@ -1068,10 +1068,10 @@ async function aggiornaVeicoli() {
         // ================================================================
         // 🎯 GESTIONE DINAMICA DEL BADGE SOTTO I PULSANTI (SOLO PER AVVISI CRITICI)
         // ================================================================
-        const badgeContatori = document.getElementById('badge-contatori');
+       const badgeContatori = document.getElementById('badge-contatori');
         if (badgeContatori) {
-            // Se ci sono veicoli da verificare, mostriamo il banner con lampeggio attivo
-            if (countVerificare > 0) {
+            // Verifichiamo se c'è almeno una delle due anomalie (dentro da verificare o scadenze non gestite)
+            if (countVerificare > 0 || totaleScaduti > 0) {
                 badgeContatori.style.margin = "10px 0";
                 badgeContatori.style.paddingBottom = "10px";
                 badgeContatori.style.borderBottom = "1px solid #cbd5e1"; 
@@ -1081,19 +1081,20 @@ async function aggiornaVeicoli() {
                 badgeContatori.innerHTML = `
                     <div style="margin-top: 4px;">
                         <span class="badge-blink" style="display:inline-block; background:#fff7ed; color:#c2410c; padding:5px 14px; border-radius:8px; border:1px solid #fed7aa; font-weight:bold; font-size:13px;">
-                            ⚠️ ATTENZIONE: Ci sono ${countVerificare} veicoli da verificare!
+                            ⚠️ ATTENZIONE: Ci sono ${countVerificare} Veicoli Dentro e ${totaleScaduti} Prenotazioni Scadute da Verificare!
                         </span>
                     </div>
                 `;
             } else {
-                // Se non ci sono criticità, svuotiamo il div e togliamo i margini per non lasciare spazio vuoto
+                // Se non ci sono criticità, svuotiamo il div e lo nascondiamo completamente
                 badgeContatori.innerHTML = "";
                 badgeContatori.style.margin = "0";
                 badgeContatori.style.padding = "0";
                 badgeContatori.style.border = "none";
+                badgeContatori.style.display = "none";
             }
         }
-
+        
         // 🚀 PROCESSO DI ARCHIVIAZIONE AUTOMATICA SUL SERVER (BACKGROUND) 🚀
         if (passDaArchiviareSuDB.length > 0) {
             for (const item of passDaArchiviareSuDB) {
