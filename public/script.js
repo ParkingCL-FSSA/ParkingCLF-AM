@@ -1081,7 +1081,7 @@ async function aggiornaVeicoli() {
                 badgeContatori.innerHTML = `
                     <div style="margin-top: 4px;">
                         <span class="badge-blink" style="display:inline-block; background:#fff7ed; color:#c2410c; padding:5px 14px; border-radius:8px; border:1px solid #fed7aa; font-weight:bold; font-size:13px;">
-                            ⚠️ ATTENZIONE: Ci sono ${countVerificare} Veicoli Dentro e ${totaleScaduti} Prenotazioni Scadute da Verificare!
+                            ⚠️ ATTENZIONE: Ci sono ${countVerificare} Veicoli Dentro e <br>${totaleScaduti} Prenotazioni Scadute da Verificare!
                         </span>
                     </div>
                 `;
