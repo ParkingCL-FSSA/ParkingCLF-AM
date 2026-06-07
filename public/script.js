@@ -788,13 +788,21 @@ async function cercaPass(passManuale = null, idRecord = null) {
                         boxVerifica.classList.remove('hidden');
 
                         document.getElementById('btn-scaduto-dentro')?.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        eseguiScadutoDentro();
+                            e.preventDefault();
+                            if (typeof window.eseguiScadutoDentro === 'function') {
+                                window.eseguiScadutoDentro();
+                            } else {
+                                eseguiScadutoDentro(); // Fallback
+                            }
                         });
                         
                         document.getElementById('btn-scaduto-mai-entrato')?.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        eseguiScadutoMaiEntrato();
+                            e.preventDefault();
+                            if (typeof window.eseguiScadutoMaiEntrato === 'function') {
+                                window.eseguiScadutoMaiEntrato();
+                            } else {
+                                eseguiScadutoMaiEntrato(); // Fallback
+                            }
                         });
                     }
                 } else {
@@ -1763,6 +1771,8 @@ async function eseguiScadutoMaiEntrato() {
         alert("Errore durante l'archiviazione: " + err.message);
     }
 }
+    window.eseguiScadutoDentro = eseguiScadutoDentro;
+    window.eseguiScadutoMaiEntrato = eseguiScadutoMaiEntrato;
     
     document.getElementById('btn-arrivi-oggi')?.addEventListener('click', mostraArriviOggi);
     document.getElementById('btn-ingresso')?.addEventListener('click', () => { mossa('E'); });
