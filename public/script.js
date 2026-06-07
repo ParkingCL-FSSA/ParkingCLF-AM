@@ -1602,15 +1602,23 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
         }
     });
 
-    document.getElementById('btn-reset-search')?.addEventListener('click', () => {
+ document.getElementById('btn-reset-search')?.addEventListener('click', () => {
+    // Recupero dell'input per evitare errori di riferimento se non definito globalmente
+    const inputSearch = document.getElementById('search-p');
     if (inputSearch) inputSearch.value = '';
+    
     currentPren = null;
     filtroPiantone = 'attivi'; 
     
     // 🎯 NASCONDI TUTTI I BOX DI VERIFICA (Sia Standard che Scaduti)
     document.getElementById('panel-piantone')?.classList.add('hidden');
     document.getElementById('box-verifica')?.classList.add('hidden'); 
-    document.getElementById('box-verifica-scaduti')?.classList.add('hidden'); // <-- FIX: Ora si nasconde!
+    
+    const boxScaduti = document.getElementById('box-verifica-scaduti');
+    if (boxScaduti) {
+        boxScaduti.classList.add('hidden');
+        boxScaduti.innerHTML = ''; // 🧼 PULIZIA CRUCIALE: Svuota l'HTML dinamico (Archiviato/Pulsanti Grandi)
+    }
     
     // 🧼 PULIZIA EXTRA: Svuota i vecchi testi dei timestamp e banner per sicurezza
     const regE = document.getElementById('reg-e');
@@ -1621,9 +1629,12 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
     if (bannerCerca) bannerCerca.innerHTML = '';
 
     if (typeof aggiornaGraficaBadge === 'function') aggiornaGraficaBadge();
-    aggiornaVeicoli();
+    
+    // Ripristina la tabella reale
+    if (typeof aggiornaVeicoli === 'function') {
+        aggiornaVeicoli();
+    }
 });
-
     document.getElementById('btn-presente')?.addEventListener('click', async () => {
         if (!currentPren) return;
         if (!confirm('Confermi che il veicolo è presente nel parcheggio?')) return;
