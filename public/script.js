@@ -647,16 +647,15 @@ async function eliminaPren(id) {
 async function cercaPass(passManuale = null, idRecord = null) {
     const input = document.getElementById('search-p');
     
-    // 🎯 FIX RESET TOTALE: Nascondiamo e svuotiamo i box prima di qualsiasi elaborazione
+    // 🎯 RESET INIZIALE: Usiamo solo il box reale presente nel tuo HTML
     const boxVerifica = document.getElementById('box-verifica');
-    const boxVerificaScaduti = document.getElementById('box-verifica-scaduti');
     const regE = document.getElementById('reg-e');
     const regU = document.getElementById('reg-u');
     
-    if (boxVerifica) boxVerifica.classList.add('hidden');
-    if (boxVerificaScaduti) {
-        boxVerificaScaduti.classList.add('hidden');
-        boxVerificaScaduti.innerHTML = ''; // Pulizia di sicurezza ad ogni nuova ricerca
+    if (boxVerifica) {
+        boxVerifica.classList.add('hidden');
+        boxVerifica.innerHTML = ''; // Svuota tutto il vecchio contenuto
+        boxVerifica.style.display = ''; // Resetta stili flex/block precedenti
     }
     if (regE) regE.innerHTML = '';
     if (regU) regU.innerHTML = '';
@@ -672,7 +671,6 @@ async function cercaPass(passManuale = null, idRecord = null) {
     }
 
     try {
-        // 🚀 SE ABBIAMO L'ID, LO MANDIAMO AL SERVER PER IDENTIFICARE IL RECORD UNIVOCO
         let url = `/api/piantone/cerca/${encodeURIComponent(p)}?auth=${userPass}`;
         if (idRecord) {
             url += `&id=${idRecord}`;
@@ -687,18 +685,14 @@ async function cercaPass(passManuale = null, idRecord = null) {
         // RESET UI PULSANTI STANDARD
         btnIngresso.style.display = 'inline-block';
         btnUscita.style.display = 'inline-block';
-
         btnIngresso.disabled = true;
         btnUscita.disabled = true;
-
         btnIngresso.innerText = 'ENTRATA';
         btnUscita.innerText = 'USCITA';
-
         btnIngresso.style.background = '';
         btnUscita.style.background = '';
 
         if (data.trovato) {
-
             currentPren = data.prenotazione;
             
             if (!currentPren) {
@@ -706,113 +700,108 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 return;
             }
             
-            // RESET PULSANTI
-            btnIngresso.disabled = true;
-            btnUscita.disabled = true;
-            
-            // 🚀 BLOCCO SICUREZZA: Controllo data futura (Lunga Sosta)
             const oggiStr = new Date().toISOString().split('T')[0];
             const dataInizioStr = currentPren.data_inizio.split('T')[0];
 
+            // 1. PRENOTAZIONE FUTURA
             if (oggiStr < dataInizioStr) {
                 btnIngresso.disabled = true;
                 btnIngresso.innerText = 'PRENOTAZIONE FUTURA';
                 btnIngresso.style.background = '#94a3b8'; 
-                
                 document.getElementById('reg-e').innerHTML = `<span style="color:#ef4444; font-weight:bold;">⚠️ Non è possibile registrare l'ingresso prima del ${fmtData(currentPren.data_inizio)}</span>`;
             }
-            // PRENOTATO (Se siamo nelle date corrette)
+            // 2. PRENOTATO
             else if (currentPren.stato === 'PRENOTATO') {
                 btnIngresso.disabled = false;
             }
-            // ENTRATO
+            // 3. ENTRATO
             else if (currentPren.stato === 'ENTRATO') {
                 btnUscita.disabled = false;
             }
-            // DA VERIFICARE (Usa il boxVerifica standard con i pulsanti piccoli dell'HTML)
+            // 4. DA VERIFICARE (Ripristinato con i pulsanti piccoli nativi dell'HTML, senza onclick)
             else if (currentPren.stato === 'DA_VERIFICARE') {
                 btnIngresso.style.display = 'inline-block';
                 btnIngresso.disabled = true;
-            
                 btnUscita.disabled = false;
                 btnUscita.style.display = 'inline-block';
                 btnUscita.style.background = '#ea580c';
                 btnUscita.innerText = 'VERIFICA';
             
-                if (boxVerifica) boxVerifica.classList.remove('hidden'); 
+                if (boxVerifica) {
+                    boxVerifica.style.display = 'flex'; // Layout orizzontale nativo per i tasti piccoli
+                    boxVerifica.innerHTML = `
+                        <button id="btn-verif-pres" type="button" style="width: auto; padding:6px 10px; font-size:12px; border:none; border-radius:8px; background:#16a34a; color:white; margin:0; font-weight:bold; cursor:pointer;">
+                            ✅ PRESENTE
+                        </button>
+                        <button id="btn-verif-nonpres" type="button" style="width: auto; padding:6px 10px; font-size:12px; border:none; border-radius:8px; background:#dc2626; color:white; margin:0; font-weight:bold; cursor:pointer;">
+                            ❌ NON PRESENTE
+                        </button>
+                    `;
+                    boxVerifica.classList.remove('hidden');
+
+                    // Eventi per superare la CSP
+                    const currentId = currentPren.id;
+                    document.getElementById('btn-verif-pres')?.addEventListener('click', (e) => { e.preventDefault(); azioneVerifica('si', currentId); });
+                    document.getElementById('btn-verif-nonpres')?.addEventListener('click', (e) => { e.preventDefault(); azioneVerifica('no', currentId); });
+                }
             }
-            // 🎯 NUOVO STATO INTERCETTATO: MAI_ENTRATO -> Genera dinamicamente la veste ARCHIVIATO
+            // 5. MAI ENTRATO (ARCHIVIATO)
             else if (currentPren.stato === 'MAI_ENTRATO') {
                 btnIngresso.style.display = 'none'; 
                 btnUscita.style.display = 'none'; 
 
-                if (boxVerificaScaduti) {
-                    boxVerificaScaduti.innerHTML = `
-                        <div style="background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; border-radius: 12px; padding: 16px; text-align: center; margin-top: 15px; box-sizing: border-box; width: 100%;">
+                if (boxVerifica) {
+                    boxVerifica.style.display = 'block'; // Occupa tutta la larghezza
+                    boxVerifica.innerHTML = `
+                        <div style="background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; border-radius: 12px; padding: 16px; text-align: center; box-sizing: border-box; width: 100%;">
                             <span style="font-size: 22px;">📁</span>
                             <h4 style="margin: 6px 0 4px 0; font-size: 15px; font-weight: bold; color: #334155;">Prenotazione Scaduta: ARCHIVIATO</h4>
                             <p style="margin: 0; font-size: 13px; color: #64748b;">L'auto non si è presentata nei termini ed è nello storico.</p>
                         </div>
                     `;
-                    boxVerificaScaduti.classList.remove('hidden');
+                    boxVerifica.classList.remove('hidden');
                 }
             }	
-                
-            // 🚀 STRUMENTO SCADUTI STANDARD (Riscritto senza "onclick" per superare la CSP)
+            // 6. SCADUTO (Verifica Sanatoria - Pulsanti Grandi Affiancati)
             else if (currentPren.stato === 'SCADUTO') {
-                
                 if (!currentPren.orario_ingresso) {
                     btnIngresso.style.display = 'none'; 
                     btnUscita.style.display = 'none'; 
                     
-                    if (boxVerificaScaduti) {
-                        // 1. Iniettiamo l'HTML pulito, usando degli ID univoci al posto dell'onclick
-                        boxVerificaScaduti.innerHTML = `
-                            <div style="background: #fff5f5; border: 1px solid #feb2b2; border-radius: 12px; padding: 16px; text-align: center; margin-top: 15px; box-sizing: border-box; width: 100%;">
+                    if (boxVerifica) {
+                        boxVerifica.style.display = 'block'; // Serve block per contenere il flex interno strutturato
+                        boxVerifica.innerHTML = `
+                            <div style="background: #fff5f5; border: 1px solid #feb2b2; border-radius: 12px; padding: 16px; text-align: center; box-sizing: border-box; width: 100%;">
                                 <h4 style="margin: 0 0 8px 0; font-size: 15px; font-weight: bold; color: #9b2c2c;">⚠️ Verifica Prenotazione Scaduta</h4>
                                 <p style="margin: 0 0 12px 0; font-size: 13px; color: #9b2c2c;">L'auto è effettivamente presente nel parcheggio?</p>
                                 
                                 <div style="display: flex; flex-direction: row; flex-wrap: nowrap; gap: 10px; justify-content: center; width: 100%; box-sizing: border-box;">
-                                    
                                     <button id="btn-scaduto-si" type="button" style="flex: 1; background: #10b981; color: white; border: none; padding: 10px 4px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; min-width: 0; line-height: 1.3;">
                                         📩 SI - DENTRO<br><span style="font-size: 10px; font-weight: normal;">(Verificata Presenza)</span>
                                     </button>
-                                    
                                     <button id="btn-scaduto-no" type="button" style="flex: 1; background: #ef4444; color: white; border: none; padding: 10px 4px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; min-width: 0; line-height: 1.3;">
                                         ❌ NO - MAI ENTRATO<br><span style="font-size: 10px; font-weight: normal;">(Annulla pren.)</span>
                                     </button>
-                                    
                                 </div>
                             </div>
                         `;
-                        boxVerificaScaduti.classList.remove('hidden');
-            
-                        // 2. 🎯 CATTURIAMO I BOTTONI APPENA CREATI E AGGANCIAMO I LISTENER DA JAVASCRIPT
-                        // In questo modo la CSP è contenta e non blocca l'esecuzione!
-                        const currentId = currentPren.id; // Salviamo l'id corrente per la closure
-                        
-                        document.getElementById('btn-scaduto-si')?.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            azioneVerifica('si', currentId);
-                        });
-            
-                        document.getElementById('btn-scaduto-no')?.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            azioneVerifica('no', currentId);
-                        });
+                        boxVerifica.classList.remove('hidden');
+
+                        // 🎯 Listener di sicurezza per superare la CSP
+                        const currentId = currentPren.id;
+                        document.getElementById('btn-scaduto-si')?.addEventListener('click', (e) => { e.preventDefault(); azioneVerifica('si', currentId); });
+                        document.getElementById('btn-scaduto-no')?.addEventListener('click', (e) => { e.preventDefault(); azioneVerifica('no', currentId); });
                     }
-                        
                 } else {
                     btnIngresso.disabled = true;
                     btnIngresso.style.display = 'none';
-                    
                     btnUscita.disabled = false;
                     btnUscita.style.display = 'inline-block';
                     btnUscita.style.background = '#ef4444';
                     btnUscita.innerText = 'USCITA (SCADUTO)';
                 }
             }
-            // USCITO
+            // 7. USCITO
             else if (currentPren.stato === 'USCITO') {
                 btnIngresso.disabled = true;
                 btnUscita.disabled = true;
@@ -820,10 +809,9 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 btnUscita.style.background = '#64748b';
             }
 
-            // UI PANNELLO (Mostra i dettagli del Pass)
+            // PANNELLO UI DETTAGLI
             document.getElementById('panel-piantone').classList.remove('hidden');
 
-            // STILE INTESTAZIONE
             document.getElementById('lab-pass').style.textAlign = 'center';
             document.getElementById('lab-pass').innerHTML = `
                 <div style="font-size: 18px; font-weight: bold; margin-bottom: 2px;">PASS: ${currentPren.npass}</div>
@@ -837,7 +825,6 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 </div>
             `;
         
-            // TIMBRI ORARI
             if (oggiStr >= dataInizioStr && currentPren.stato !== 'SCADUTO' && currentPren.stato !== 'MAI_ENTRATO') {
                 document.getElementById('reg-e').style.textAlign = 'center';
                 document.getElementById('reg-e').innerHTML = currentPren.orario_ingresso
@@ -856,7 +843,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     : "";
             }
 
-            // BANNER CERCA SUPERIORE
+            // BANNER CERCA SUPERIORE E TABELLA
             const bannerCerca = document.getElementById('stato-tabella'); 
             const tabellaCorpo = document.getElementById('lista-veicoli');
 
@@ -866,32 +853,22 @@ async function cercaPass(passManuale = null, idRecord = null) {
 
             if (bannerCerca) {
                 if (isArchiviatoCorrente) {
-                    bannerCerca.style.background = '#f1f5f9'; 
-                    bannerCerca.style.color = '#475569';
-                    bannerCerca.style.borderColor = '#cbd5e1';
+                    bannerCerca.style.background = '#f1f5f9'; bannerCerca.style.color = '#475569'; bannerCerca.style.borderColor = '#cbd5e1';
                     bannerCerca.innerHTML = `📁 ARCHIVIATO (Trovato da Ricerca)`;
                 } else if (isScadutoCorrente) {
-                    bannerCerca.style.background = '#ffeeef'; 
-                    bannerCerca.style.color = '#ef4444';
-                    bannerCerca.style.borderColor = '#fca5a5';
+                    bannerCerca.style.background = '#ffeeef'; bannerCerca.style.color = '#ef4444'; bannerCerca.style.borderColor = '#fca5a5';
                     bannerCerca.innerHTML = `⏰ SCADUTO (Trovato da Ricerca)`;
                 } else if (isDaVerificareCorrente) {
-                    bannerCerca.style.background = '#ffedd5'; 
-                    bannerCerca.style.color = '#ea580c';
-                    bannerCerca.style.borderColor = '#fdba74';
+                    bannerCerca.style.background = '#ffedd5'; bannerCerca.style.color = '#ea580c'; bannerCerca.style.borderColor = '#fdba74';
                     bannerCerca.innerHTML = `🚨 DA VERIFICARE (Trovato da Ricerca)`;
                 } else {
-                    bannerCerca.style.background = '#eff6ff'; 
-                    bannerCerca.style.color = '#3b82f6';
-                    bannerCerca.style.borderColor = '#93c5fd';
+                    bannerCerca.style.background = '#eff6ff'; bannerCerca.style.color = '#3b82f6'; bannerCerca.style.borderColor = '#93c5fd';
                     bannerCerca.innerHTML = `📋 ATTIVO (Trovato da Ricerca)`;
                 }
             }
 
-            // LOGICA FILTRO INVERTITO SULLA TABELLA REALE
             if (data.storico && tabellaCorpo) {
                 let righeDaMostrare = [];
-                
                 if (isScadutoCorrente || isArchiviatoCorrente) {
                     righeDaMostrare = data.storico.filter(x => ['PRENOTATO', 'ENTRATO', 'DA_VERIFICARE'].includes(x.stato));
                 } else if (isDaVerificareCorrente) {
@@ -900,11 +877,8 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     righeDaMostrare = data.storico.filter(x => ['SCADUTO', 'MAI_ENTRATO'].includes(x.stato));
                 }
                 
-                if (typeof renderTabella === "function") {
-                    renderTabella(righeDaMostrare);
-                } else if (typeof generaRigaTabella === "function") {
-                    tabellaCorpo.innerHTML = righeDaMostrare.map(x => generaRigaTabella(x)).join('');
-                }
+                if (typeof renderTabella === "function") { renderTabella(righeDaMostrare); } 
+                else if (typeof generaRigaTabella === "function") { tabellaCorpo.innerHTML = righeDaMostrare.map(x => generaRigaTabella(x)).join(''); }
             }
 
         } else {
@@ -1632,7 +1606,13 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
     
     // 🎯 NASCONDI TUTTI I BOX DI VERIFICA (Sia Standard che Scaduti)
     document.getElementById('panel-piantone')?.classList.add('hidden');
-    document.getElementById('box-verifica')?.classList.add('hidden'); 
+    
+    // 🎯 AGGIORNATO: Resetta anche il display inline oltre a nasconderlo
+    const boxVerifica = document.getElementById('box-verifica');
+    if (boxVerifica) {
+        boxVerifica.classList.add('hidden');
+        boxVerifica.style.display = ''; // Pulizia dello stile flex/block precedente
+    } 
     
     const boxScaduti = document.getElementById('box-verifica-scaduti');
     if (boxScaduti) {
