@@ -391,57 +391,58 @@ function buildCal() {
 
     const maxGiorniDaMostrare = 45;
     const oggi = new Date();
-    oggi.setHours(0, 0, 0, 0);
-
-    // Trasformiamo le stringhe di inizio e fine in millisecondi per confronti matematici sicuri
-    const timeInizio = dataInizio ? new Date(dataInizio).setHours(0,0,0,0) : null;
-    const timeFine = dataFine ? new Date(dataFine).setHours(0,0,0,0) : null;
-
+    
+    // Creiamo un array di appoggio con tutte le 45 date in formato stringa ISO 'YYYY-MM-DD'
+    // usando l'ora locale per evitare sfasamenti di fuso orario
+    const listaDateStringhe = [];
     for (let i = 0; i < maxGiorniDaMostrare; i++) {
         const d = new Date(oggi);
         d.setDate(oggi.getDate() + i);
-        d.setHours(0, 0, 0, 0);
+        
+        const anno = d.getFullYear();
+        const mese = String(d.getMonth() + 1).padStart(2, '0');
+        const giorno = String(d.getDate()).padStart(2, '0');
+        listaDateStringhe.push(`${anno}-${mese}-${giorno}`);
+    }
 
-        const isoStr = d.toISOString().split('T')[0];
-        const timeCorrente = d.getTime(); // Il timestamp numerico di questo quadratino
-
+    // Disegnamo la griglia basandoci sull'indice dell'array
+    listaDateStringhe.forEach((isoStr, indice) => {
         const div = document.createElement('div');
         div.className = 'day-slot'; 
-        div.textContent = d.getDate();
+        // Estraiamo solo il numero del giorno (le ultime due cifre della stringa)
+        div.textContent = parseInt(isoStr.split('-')[2], 10);
         div.setAttribute('data-date', isoStr);
+        div.setAttribute('data-index', indice);
+
+        // Recuperiamo gli indici di inizio e fine per colorare la griglia
+        const idxInizio = dataInizio ? listaDateStringhe.indexOf(dataInizio) : -1;
+        const idxFine = dataFine ? listaDateStringhe.indexOf(dataFine) : -1;
 
         // ==========================================
-        // 🎨 COLORAZIONE MATEMATICA INFALLIBILE
+        // 🎨 COLORAZIONE STATICA (A SELEZIONE FATTA)
         // ==========================================
-        if (timeInizio && !timeFine) {
-            // C'è solo il primo click
-            if (timeCorrente === timeInizio) {
-                div.classList.add('selected');
-            }
+        if (dataInizio && !dataFine) {
+            if (isoStr === dataInizio) div.classList.add('selected');
         } 
-        else if (timeInizio && timeFine) {
-            // Ci sono entrambi i click: coloriamo il blocco completo
-            if (timeCorrente === timeInizio || timeCorrente === timeFine) {
-                div.classList.add('selected'); // Estremi (Blu scuro)
-            } else if (timeCorrente > timeInizio && timeCorrente < timeFine) {
-                div.classList.add('in-range');  // Giorni intermedi (Azzurro)
+        else if (dataInizio && dataFine) {
+            if (indice === idxInizio || indice === idxFine) {
+                div.classList.add('selected'); // Estremi blu scuro
+            } else if (indice > idxInizio && indice < idxFine) {
+                div.classList.add('in-range');  // Giorni intermedi azzurri
             }
         }
 
         // ==========================================
-        // 🖱️ ANTEPRIMA AL PASSAGGIO DEL MOUSE (HOVER)
+        // 🖱️ ANTEPRIMA DINAMICA AL PASSAGGIO MOUSE
         // ==========================================
         div.addEventListener('mouseenter', () => {
-            // Se l'utente ha fatto il primo click ma non il secondo, mostra la striscia dinamica
-            if (timeInizio && !timeFine) {
+            if (dataInizio && !dataFine) {
                 const tuttiISlot = box.querySelectorAll('.day-slot');
                 tuttiISlot.forEach(slot => {
-                    const dataSlotStr = slot.getAttribute('data-date');
-                    const timeSlot = new Date(dataSlotStr).setHours(0,0,0,0);
-                    
-                    if (timeSlot > timeInizio && timeSlot <= timeCorrente) {
+                    const sIdx = parseInt(slot.getAttribute('data-index'), 10);
+                    if (sIdx > idxInizio && sIdx <= indice) {
                         slot.classList.add('in-range');
-                    } else if (timeSlot !== timeInizio) {
+                    } else if (sIdx !== idxInizio) {
                         slot.classList.remove('in-range');
                     }
                 });
@@ -449,33 +450,36 @@ function buildCal() {
         });
 
         // ==========================================
-        // 👆 LOGICA DI CLICK INTERVALLO CONSECUTIVO
+        // 👆 LOGICA DI CLICK FLUIDA E DIRETTA
         // ==========================================
         div.addEventListener('click', () => {
-            // Caso 1: Terzo click -> Resetta e diventa nuova data inizio
+            // Caso 1: Terzo click o reset -> diventa la nuova data d'inizio
             if (dataInizio && dataFine) {
                 dataInizio = isoStr;
                 dataFine = null;
             }
-            // Caso 2: Primo click in assoluto -> Imposta inizio
+            // Caso 2: Primo click -> imposta inizio
             else if (!dataInizio) {
                 dataInizio = isoStr;
             }
-            // Caso 3: Secondo click -> Imposta fine
+            // Caso 3: Secondo click -> imposta fine
             else if (dataInizio && !dataFine) {
-                if (isoStr < dataInizio) {
+                const clickIdx = indice;
+                
+                if (clickIdx < idxInizio) {
+                    // Se clicca un giorno precedente all'inizio, li inverte
                     dataFine = dataInizio;
                     dataInizio = isoStr;
                 } else {
                     dataFine = isoStr;
                 }
 
-                // --- CONTROLLO DEI LIMITI DEI PROFILI ---
-                const dataI = new Date(dataInizio);
-                const dataF = new Date(dataFine);
-                const millisecondi = dataF.getTime() - dataI.getTime();
-                const giorniSelezionati = Math.round(millisecondi / (1000 * 60 * 60 * 24)) + 1;
+                // --- CALCOLO MATEMATICO DEI GIORNI SELEZIONATI ---
+                const finalIdxInizio = listaDateStringhe.indexOf(dataInizio);
+                const finalIdxFine = listaDateStringhe.indexOf(dataFine);
+                const giorniSelezionati = (finalIdxFine - finalIdxInizio) + 1;
 
+                // --- CONTROLLO LIMITI DEI PROFILI ---
                 const selectProfilo = document.getElementById('select-profilo');
                 const profilo = selectProfilo ? selectProfilo.value : 'STD';
                 
@@ -498,30 +502,27 @@ function buildCal() {
                 if (!dataFine) {
                     selectedDays.push(dataInizio);
                 } else {
-                    let corrente = new Date(dataInizio);
-                    const fine = new Date(dataFine);
-                    while (corrente <= fine) {
-                        selectedDays.push(corrente.toISOString().split('T')[0]);
-                        corrente.setDate(corrente.getDate() + 1);
-                    }
+                    const startIdx = listaDateStringhe.indexOf(dataInizio);
+                    const endIdx = listaDateStringhe.indexOf(dataFine);
+                    // Prende tutte le date comprese tra i due indici
+                    selectedDays = listaDateStringhe.slice(startIdx, endIdx + 1);
                 }
             }
 
-            // Ridisegna immediatamente applicando i calcoli freschi
+            // Ridisegna subito applicando il cambio di stato visivo
             buildCal();
 
             if (typeof aggiornaRiepilogoGiorni === 'function') aggiornaRiepilogoGiorni();
         });
 
         box.appendChild(div);
-    }
+    });
 
-    // Quando il mouse esce dalla griglia, pulisce le classi di anteprima residue
+    // Pulisce le classi residue di anteprima all'uscita dal box
     box.addEventListener('mouseleave', () => {
         if (dataInizio && !dataFine) {
             box.querySelectorAll('.day-slot').forEach(slot => {
-                const dataSlotStr = slot.getAttribute('data-date');
-                if (dataSlotStr !== dataInizio) {
+                if (slot.getAttribute('data-date') !== dataInizio) {
                     slot.classList.remove('in-range');
                 }
             });
