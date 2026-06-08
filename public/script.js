@@ -418,19 +418,30 @@ function buildCal() {
         div.setAttribute('data-date', isoStr);
         div.setAttribute('data-index', indice);
 
+// ==========================================
+        // 🎨 APPLICAZIONE VISIVA DEI COLORI (INLINE INFALLIBILE)
         // ==========================================
-        // 🎨 APPLICAZIONE VISIVA DEI COLORI (FISSI)
-        // ==========================================
+        // Reset preventivo dello stile per evitare sovrapposizioni al re-rendering
+        div.style.background = "";
+        div.style.color = "";
+        div.style.borderRadius = "12px"; // Mantieni il raggio di default dei tuoi quadratini
+
         if (dataInizio && !dataFine) {
             // C'è solo il primo click effettuato
-            if (isoStr === dataInizio) div.classList.add('selected');
+            if (isoStr === dataInizio) {
+                div.classList.add('selected');
+            }
         } 
         else if (dataInizio && dataFine) {
             // Ci sono entrambi i click: coloriamo l'intervallo completo
             if (indice === idxInizio || indice === idxFine) {
-                div.classList.add('selected'); // Estremi (Blu scuro)
+                div.classList.add('selected'); // Estremi (Blu scuro dal tuo CSS)
             } else if (indice > idxInizio && indice < idxFine) {
-                div.classList.add('in-range');  // Giorni intermedi (Azzurro)
+                div.classList.add('in-range');  
+                // 🚀 FORZATURA DIRETTA: Dipingiamo i giorni intermedi di azzurro
+                div.style.background = "#60a5fa"; 
+                div.style.color = "#ffffff";
+                div.style.borderRadius = "0px"; // Li unisce visivamente in una striscia
             }
         }
 
@@ -438,7 +449,6 @@ function buildCal() {
         // 🖱️ EFFETTO HOVER (ANTEPRIMA SULLA STRISCIA)
         // ==========================================
         div.addEventListener('mouseenter', () => {
-            // Mostra l'anteprima solo se l'utente ha fatto il primo click ma non il secondo
             if (dataInizio && !dataFine) {
                 const tuttiISlot = box.querySelectorAll('.day-slot');
                 tuttiISlot.forEach(slot => {
@@ -446,13 +456,19 @@ function buildCal() {
                     
                     if (sIdx > idxInizio && sIdx <= indice) {
                         slot.classList.add('in-range');
+                        slot.style.background = "#60a5fa";
+                        slot.style.color = "#ffffff";
+                        slot.style.borderRadius = "0px";
                     } else if (sIdx !== idxInizio) {
                         slot.classList.remove('in-range');
+                        slot.style.background = "";
+                        slot.style.color = "";
+                        slot.style.borderRadius = "12px";
                     }
                 });
             }
         });
-
+        
         // ==========================================
         // 👆 GESTIONE DEI PULSANTI AL CLICK
         // ==========================================
