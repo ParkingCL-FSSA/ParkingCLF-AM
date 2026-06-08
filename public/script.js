@@ -409,13 +409,15 @@ function buildCal() {
         // 🎨 RIPRISTINO CLASSI GRAFICHE AL RE-RENDERING
         // ==========================================
         if (dataInizio && !dataFine) {
-            if (isoStr === dataInizio) div.classList.add('selected'); // Primo giorno blu scuro
+            // C'è solo il primo click: colora solo l'inizio
+            if (isoStr === dataInizio) div.classList.add('selected'); 
         } 
         else if (dataInizio && dataFine) {
+            // Ci sono ENTRAMBI i click: colora gli estremi E TUTTO IL PERIODO IN MEZZO
             if (isoStr === dataInizio || isoStr === dataFine) {
-                div.classList.add('selected'); // Estremi blu scuro
+                div.classList.add('selected'); // Primo e ultimo giorno (Blu scuro)
             } else if (isoStr > dataInizio && isoStr < dataFine) {
-                div.classList.add('in-range'); // Giorni intermedi azzurri (aggiungi classe nel CSS se vuoi stili diversi)
+                div.classList.add('in-range'); // Giorni intermedi (Azzurro fisso)
             }
         }
 
