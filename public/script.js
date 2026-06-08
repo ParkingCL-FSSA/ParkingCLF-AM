@@ -418,13 +418,12 @@ function buildCal() {
         div.setAttribute('data-date', isoStr);
         div.setAttribute('data-index', indice);
 
-// ==========================================
+        // ==========================================
         // 🎨 APPLICAZIONE VISIVA DEI COLORI (INLINE INFALLIBILE)
         // ==========================================
-        // Reset preventivo dello stile per evitare sovrapposizioni al re-rendering
         div.style.background = "";
         div.style.color = "";
-        div.style.borderRadius = "12px"; // Mantieni il raggio di default dei tuoi quadratini
+        div.style.borderRadius = "12px"; 
 
         if (dataInizio && !dataFine) {
             // C'è solo il primo click effettuato
@@ -438,10 +437,9 @@ function buildCal() {
                 div.classList.add('selected'); // Estremi (Blu scuro dal tuo CSS)
             } else if (indice > idxInizio && indice < idxFine) {
                 div.classList.add('in-range');  
-                // 🚀 FORZATURA DIRETTA: Dipingiamo i giorni intermedi di azzurro
                 div.style.background = "#60a5fa"; 
                 div.style.color = "#ffffff";
-                div.style.borderRadius = "0px"; // Li unisce visivamente in una striscia
+                div.style.borderRadius = "0px"; 
             }
         }
 
@@ -492,7 +490,7 @@ function buildCal() {
                     dataFine = isoStr;
                 }
 
-                // --- CONTROLLO DEI LIMITI DEI PROFILI SULL'INTERVALLO ---
+                // 🎯 CORREZIONE BUG 1: Ricalcoliamo al volo gli indici definitivi post-inversione
                 const finalIdxInizio = listaDateStringhe.indexOf(dataInizio);
                 const finalIdxFine = listaDateStringhe.indexOf(dataFine);
                 const giorniSelezionati = (finalIdxFine - finalIdxInizio) + 1;
@@ -506,7 +504,6 @@ function buildCal() {
 
                 if (giorniSelezionati > limiteSelezionabili) {
                     alert(`⚠️ Profilo ${profilo}: Il periodo scelto è di ${giorniSelezionati} gg. Puoi selezionare al massimo un blocco di ${limiteSelezionabili} gg.!`);
-                    // Reset cautelativo per evitare blocchi grafici
                     dataInizio = null;
                     dataFine = null;
                     buildCal();
@@ -524,7 +521,6 @@ function buildCal() {
                 } else {
                     const startIdx = listaDateStringhe.indexOf(dataInizio);
                     const endIdx = listaDateStringhe.indexOf(dataFine);
-                    // Catturiamo tutte le stringhe comprese tra gli indici scelti
                     selectedDays = listaDateStringhe.slice(startIdx, endIdx + 1);
                 }
             }
@@ -539,8 +535,9 @@ function buildCal() {
         box.appendChild(div);
     });
 
-   // Pulisce lo stile di anteprima quando il mouse esce dal perimetro del calendario
-    box.addEventListener('mouseleave', () => {
+    // 🎯 CORREZIONE BUG 2: Rimosso il listener 'mouseleave' ricorsivo dall'interno.
+    // Usiamo una delegazione pulita che pulisce solo se il mouse esce davvero dal box principale.
+    box.onmouseleave = () => {
         if (dataInizio && !dataFine) {
             box.querySelectorAll('.day-slot').forEach(slot => {
                 if (slot.getAttribute('data-date') !== dataInizio) {
@@ -551,7 +548,8 @@ function buildCal() {
                 }
             });
         }
-    });
+    };
+}
 
 let loadingPrenotazione = false;
 
