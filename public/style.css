@@ -45,6 +45,12 @@ h1::before { content: "🅿️ "; } /* Simbolo Parcheggio */
     transform: scale(1.05);
 }
 
+.day-slot.in-range {
+    background-color: #60a5fa !important; 
+    color: white !important;
+    border-radius: 0px !important;
+}
+
 button { 
     width: 100%; 
     padding: 15px; 
