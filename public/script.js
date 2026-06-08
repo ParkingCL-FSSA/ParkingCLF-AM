@@ -392,7 +392,7 @@ function buildCal() {
     const maxGiorniDaMostrare = 45;
     const oggi = new Date();
 
-    // 1. Generiamo le 45 date utili come stringhe standard 'YYYY-MM-DD' senza fusi orari di mezzo
+    // 1. Generiamo le 45 date utili come stringhe standard 'YYYY-MM-DD'
     const listaDateStringhe = [];
     for (let i = 0; i < maxGiorniDaMostrare; i++) {
         const d = new Date(oggi);
@@ -404,7 +404,7 @@ function buildCal() {
         listaDateStringhe.push(`${yyyy}-${mm}-${dd}`);
     }
 
-    // 2. Troviamo la posizione (indice) delle date selezionate nell'array per i confronti grafici
+    // 2. Troviamo la posizione (indice) delle date selezionate
     const idxInizio = dataInizio ? listaDateStringhe.indexOf(dataInizio) : -1;
     const idxFine = dataFine ? listaDateStringhe.indexOf(dataFine) : -1;
 
@@ -419,32 +419,35 @@ function buildCal() {
         div.setAttribute('data-index', indice);
 
         // ==========================================
-        // 🎨 APPLICAZIONE VISIVA DEI COLORI (INLINE INFALLIBILE)
+        // 🎨 APPLICAZIONE VISIVA DEI COLORI (STILE AGGIORNATO)
         // ==========================================
+        
+        // Reset preventivo dello stile inline al re-rendering
         div.style.background = "";
         div.style.color = "";
-        div.style.borderRadius = "12px"; 
+        div.style.borderColor = "";
 
         if (dataInizio && !dataFine) {
-            // C'è solo il primo click effettuato
-            if (isoStr === dataInizio) {
-                div.classList.add('selected');
-            }
+            // C'è solo il primo click: resta scuro dal CSS (.selected)
+            if (isoStr === dataInizio) div.classList.add('selected');
         } 
         else if (dataInizio && dataFine) {
             // Ci sono entrambi i click: coloriamo l'intervallo completo
             if (indice === idxInizio || indice === idxFine) {
-                div.classList.add('selected'); // Estremi (Blu scuro dal tuo CSS)
+                // Primo e ultimo giorno: usano il blu scuro (.selected dal tuo CSS)
+                div.classList.add('selected'); 
             } else if (indice > idxInizio && indice < idxFine) {
+                // Giorni intermedi (in-range): applichiamo azzurro CHIARO
                 div.classList.add('in-range');  
-                div.style.background = "#60a5fa"; 
-                div.style.color = "#ffffff";
-                div.style.borderRadius = "0px"; 
+                // 🚀 FORZATURA DIRETTA: Dipingiamo i giorni intermedi di azzurro tenue
+                div.style.background = "#dbeafe"; // Un azzurro molto chiaro e delicato (come il badge ATTIVI)
+                div.style.color = "#1e3a8a";      /* Testo blu scuro per leggibilità */
+                div.style.borderColor = "#bfdbfe"; /* Bordo azzurro coordinato */
             }
         }
 
         // ==========================================
-        // 🖱️ EFFETTO HOVER (ANTEPRIMA SULLA STRISCIA)
+        // 🖱️ EFFETTO HOVER (ANTEPRIMA SULLA STRISCIA CHIARA)
         // ==========================================
         div.addEventListener('mouseenter', () => {
             if (dataInizio && !dataFine) {
@@ -454,19 +457,20 @@ function buildCal() {
                     
                     if (sIdx > idxInizio && sIdx <= indice) {
                         slot.classList.add('in-range');
-                        slot.style.background = "#60a5fa";
-                        slot.style.color = "#ffffff";
-                        slot.style.borderRadius = "0px";
+                        // Applica lo stesso stile chiaro dell'ante-prima
+                        slot.style.background = "#dbeafe"; 
+                        slot.style.color = "#1e3a8a";
+                        slot.style.borderColor = "#bfdbfe";
                     } else if (sIdx !== idxInizio) {
                         slot.classList.remove('in-range');
                         slot.style.background = "";
                         slot.style.color = "";
-                        slot.style.borderRadius = "12px";
+                        slot.style.borderColor = "";
                     }
                 });
             }
         });
-        
+
         // ==========================================
         // 👆 GESTIONE DEI PULSANTI AL CLICK
         // ==========================================
@@ -483,14 +487,13 @@ function buildCal() {
             // Caso C: Secondo click -> Chiude l'intervallo
             else if (dataInizio && !dataFine) {
                 if (indice < idxInizio) {
-                    // Se l'utente clicca una data precedente all'inizio, le inverte al volo
                     dataFine = dataInizio;
                     dataInizio = isoStr;
                 } else {
                     dataFine = isoStr;
                 }
 
-                // 🎯 CORREZIONE BUG 1: Ricalcoliamo al volo gli indici definitivi post-inversione
+                // --- CONTROLLO DEI LIMITI DEI PROFILI ---
                 const finalIdxInizio = listaDateStringhe.indexOf(dataInizio);
                 const finalIdxFine = listaDateStringhe.indexOf(dataFine);
                 const giorniSelezionati = (finalIdxFine - finalIdxInizio) + 1;
@@ -511,9 +514,7 @@ function buildCal() {
                 }
             }
 
-            // =========================================================
-            // 🔄 ALLINEAMENTO ARRAY GLOBALE DI TRASMISSIONE (selectedDays)
-            // =========================================================
+            // --- SINCRONIZZAZIONE CON L'ARRAY GLOBALE selectedDays ---
             selectedDays = [];
             if (dataInizio) {
                 if (!dataFine) {
@@ -525,30 +526,28 @@ function buildCal() {
                 }
             }
 
-            // Forza il re-rendering immediato per aggiornare le classi CSS dei quadratini
+            // Ridisegna immediatamente applicando i calcoli freschi
             buildCal();
 
-            // Aggiorna il testo riassuntivo sottostante
             if (typeof aggiornaRiepilogoGiorni === 'function') aggiornaRiepilogoGiorni();
         });
 
         box.appendChild(div);
     });
 
-    // 🎯 CORREZIONE BUG 2: Rimosso il listener 'mouseleave' ricorsivo dall'interno.
-    // Usiamo una delegazione pulita che pulisce solo se il mouse esce davvero dal box principale.
-    box.onmouseleave = () => {
+    // Pulisce le classi residue di anteprima all'uscita dal box
+    box.addEventListener('mouseleave', () => {
         if (dataInizio && !dataFine) {
             box.querySelectorAll('.day-slot').forEach(slot => {
                 if (slot.getAttribute('data-date') !== dataInizio) {
                     slot.classList.remove('in-range');
                     slot.style.background = "";
                     slot.style.color = "";
-                    slot.style.borderRadius = "12px";
+                    slot.style.borderColor = "";
                 }
             });
         }
-    };
+    });
 }
 
 let loadingPrenotazione = false;
