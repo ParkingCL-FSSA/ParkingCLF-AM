@@ -539,17 +539,19 @@ function buildCal() {
         box.appendChild(div);
     });
 
-    // Pulisce le classi residue di anteprima quando il mouse esce dal perimetro del calendario
+   // Pulisce lo stile di anteprima quando il mouse esce dal perimetro del calendario
     box.addEventListener('mouseleave', () => {
         if (dataInizio && !dataFine) {
             box.querySelectorAll('.day-slot').forEach(slot => {
                 if (slot.getAttribute('data-date') !== dataInizio) {
                     slot.classList.remove('in-range');
+                    slot.style.background = "";
+                    slot.style.color = "";
+                    slot.style.borderRadius = "12px";
                 }
             });
         }
     });
-}
 
 let loadingPrenotazione = false;
 
