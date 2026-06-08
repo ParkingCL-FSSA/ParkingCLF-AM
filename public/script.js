@@ -1,7 +1,7 @@
 let userPass = ""; let selectedDays = []; 
 let deferredPrompt; let currentPren = null;
 let filtroPiantone = 'verificare'; let totaleScaduti = 0;
-let ultimoAggiornato = null;let totaleVerificare = 0;
+let ultimoAggiornato = null; let totaleVerificare = 0;
 let dataInizio = null; let dataFine = null;  
 
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -391,55 +391,59 @@ function buildCal() {
 
     const maxGiorniDaMostrare = 45;
     const oggi = new Date();
-    
-    // Creiamo un array di appoggio con tutte le 45 date in formato stringa ISO 'YYYY-MM-DD'
-    // usando l'ora locale per evitare sfasamenti di fuso orario
+
+    // 1. Generiamo le 45 date utili come stringhe standard 'YYYY-MM-DD' senza fusi orari di mezzo
     const listaDateStringhe = [];
     for (let i = 0; i < maxGiorniDaMostrare; i++) {
         const d = new Date(oggi);
         d.setDate(oggi.getDate() + i);
         
-        const anno = d.getFullYear();
-        const mese = String(d.getMonth() + 1).padStart(2, '0');
-        const giorno = String(d.getDate()).padStart(2, '0');
-        listaDateStringhe.push(`${anno}-${mese}-${giorno}`);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        listaDateStringhe.push(`${yyyy}-${mm}-${dd}`);
     }
 
-    // Disegnamo la griglia basandoci sull'indice dell'array
+    // 2. Troviamo la posizione (indice) delle date selezionate nell'array per i confronti grafici
+    const idxInizio = dataInizio ? listaDateStringhe.indexOf(dataInizio) : -1;
+    const idxFine = dataFine ? listaDateStringhe.indexOf(dataFine) : -1;
+
+    // 3. Creiamo i quadratini nell'HTML
     listaDateStringhe.forEach((isoStr, indice) => {
         const div = document.createElement('div');
         div.className = 'day-slot'; 
-        // Estraiamo solo il numero del giorno (le ultime due cifre della stringa)
+        
+        // Mostra solo il numero del giorno (es: "08")
         div.textContent = parseInt(isoStr.split('-')[2], 10);
         div.setAttribute('data-date', isoStr);
         div.setAttribute('data-index', indice);
 
-        // Recuperiamo gli indici di inizio e fine per colorare la griglia
-        const idxInizio = dataInizio ? listaDateStringhe.indexOf(dataInizio) : -1;
-        const idxFine = dataFine ? listaDateStringhe.indexOf(dataFine) : -1;
-
         // ==========================================
-        // 🎨 COLORAZIONE STATICA (A SELEZIONE FATTA)
+        // 🎨 APPLICAZIONE VISIVA DEI COLORI (FISSI)
         // ==========================================
         if (dataInizio && !dataFine) {
+            // C'è solo il primo click effettuato
             if (isoStr === dataInizio) div.classList.add('selected');
         } 
         else if (dataInizio && dataFine) {
+            // Ci sono entrambi i click: coloriamo l'intervallo completo
             if (indice === idxInizio || indice === idxFine) {
-                div.classList.add('selected'); // Estremi blu scuro
+                div.classList.add('selected'); // Estremi (Blu scuro)
             } else if (indice > idxInizio && indice < idxFine) {
-                div.classList.add('in-range');  // Giorni intermedi azzurri
+                div.classList.add('in-range');  // Giorni intermedi (Azzurro)
             }
         }
 
         // ==========================================
-        // 🖱️ ANTEPRIMA DINAMICA AL PASSAGGIO MOUSE
+        // 🖱️ EFFETTO HOVER (ANTEPRIMA SULLA STRISCIA)
         // ==========================================
         div.addEventListener('mouseenter', () => {
+            // Mostra l'anteprima solo se l'utente ha fatto il primo click ma non il secondo
             if (dataInizio && !dataFine) {
                 const tuttiISlot = box.querySelectorAll('.day-slot');
                 tuttiISlot.forEach(slot => {
                     const sIdx = parseInt(slot.getAttribute('data-index'), 10);
+                    
                     if (sIdx > idxInizio && sIdx <= indice) {
                         slot.classList.add('in-range');
                     } else if (sIdx !== idxInizio) {
@@ -450,36 +454,33 @@ function buildCal() {
         });
 
         // ==========================================
-        // 👆 LOGICA DI CLICK FLUIDA E DIRETTA
+        // 👆 GESTIONE DEI PULSANTI AL CLICK
         // ==========================================
         div.addEventListener('click', () => {
-            // Caso 1: Terzo click o reset -> diventa la nuova data d'inizio
+            // Caso A: Terzo click -> Resetta e imposta questo come nuovo inizio
             if (dataInizio && dataFine) {
                 dataInizio = isoStr;
                 dataFine = null;
             }
-            // Caso 2: Primo click -> imposta inizio
+            // Caso B: Primo click in assoluto -> Imposta data inizio
             else if (!dataInizio) {
                 dataInizio = isoStr;
             }
-            // Caso 3: Secondo click -> imposta fine
+            // Caso C: Secondo click -> Chiude l'intervallo
             else if (dataInizio && !dataFine) {
-                const clickIdx = indice;
-                
-                if (clickIdx < idxInizio) {
-                    // Se clicca un giorno precedente all'inizio, li inverte
+                if (indice < idxInizio) {
+                    // Se l'utente clicca una data precedente all'inizio, le inverte al volo
                     dataFine = dataInizio;
                     dataInizio = isoStr;
                 } else {
                     dataFine = isoStr;
                 }
 
-                // --- CALCOLO MATEMATICO DEI GIORNI SELEZIONATI ---
+                // --- CONTROLLO DEI LIMITI DEI PROFILI SULL'INTERVALLO ---
                 const finalIdxInizio = listaDateStringhe.indexOf(dataInizio);
                 const finalIdxFine = listaDateStringhe.indexOf(dataFine);
                 const giorniSelezionati = (finalIdxFine - finalIdxInizio) + 1;
 
-                // --- CONTROLLO LIMITI DEI PROFILI ---
                 const selectProfilo = document.getElementById('select-profilo');
                 const profilo = selectProfilo ? selectProfilo.value : 'STD';
                 
@@ -489,6 +490,7 @@ function buildCal() {
 
                 if (giorniSelezionati > limiteSelezionabili) {
                     alert(`⚠️ Profilo ${profilo}: Il periodo scelto è di ${giorniSelezionati} gg. Puoi selezionare al massimo un blocco di ${limiteSelezionabili} gg.!`);
+                    // Reset cautelativo per evitare blocchi grafici
                     dataInizio = null;
                     dataFine = null;
                     buildCal();
@@ -496,7 +498,9 @@ function buildCal() {
                 }
             }
 
-            // --- SINCRONIZZAZIONE CON L'ARRAY GLOBALE DEI GIORNI ---
+            // =========================================================
+            // 🔄 ALLINEAMENTO ARRAY GLOBALE DI TRASMISSIONE (selectedDays)
+            // =========================================================
             selectedDays = [];
             if (dataInizio) {
                 if (!dataFine) {
@@ -504,21 +508,22 @@ function buildCal() {
                 } else {
                     const startIdx = listaDateStringhe.indexOf(dataInizio);
                     const endIdx = listaDateStringhe.indexOf(dataFine);
-                    // Prende tutte le date comprese tra i due indici
+                    // Catturiamo tutte le stringhe comprese tra gli indici scelti
                     selectedDays = listaDateStringhe.slice(startIdx, endIdx + 1);
                 }
             }
 
-            // Ridisegna subito applicando il cambio di stato visivo
+            // Forza il re-rendering immediato per aggiornare le classi CSS dei quadratini
             buildCal();
 
+            // Aggiorna il testo riassuntivo sottostante
             if (typeof aggiornaRiepilogoGiorni === 'function') aggiornaRiepilogoGiorni();
         });
 
         box.appendChild(div);
     });
 
-    // Pulisce le classi residue di anteprima all'uscita dal box
+    // Pulisce le classi residue di anteprima quando il mouse esce dal perimetro del calendario
     box.addEventListener('mouseleave', () => {
         if (dataInizio && !dataFine) {
             box.querySelectorAll('.day-slot').forEach(slot => {
