@@ -2,9 +2,7 @@ let userPass = ""; let selectedDays = [];
 let deferredPrompt; let currentPren = null;
 let filtroPiantone = 'verificare'; let totaleScaduti = 0;
 let ultimoAggiornato = null;let totaleVerificare = 0;
-// attivi = dentro (default)
-// scaduti = solo scaduti
-// tutti = tutto
+let dataInizio = null; let dataFine = null;  
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -167,7 +165,6 @@ function toggleScaduti() {
             filtroPiantone = 'attivi';
         }
     }
-
     // 🎨 Aggiorna subito il testo e il colore del badge in base al nuovo filtro
     aggiornaGraficaBadge();
 
@@ -392,9 +389,9 @@ function buildCal() {
     if (!box) return;
     box.innerHTML = '';
 
-    // Mostriamo SEMPRE l'intera griglia panoramica fissa di 45 giorni consecutivi
     const maxGiorniDaMostrare = 45;
     const oggi = new Date();
+    oggi.setHours(0, 0, 0, 0);
 
     // Genera tutti i quadratini consecutivi per i prossimi 45 giorni
     for (let i = 0; i < maxGiorniDaMostrare; i++) {
@@ -404,47 +401,132 @@ function buildCal() {
         const isoStr = d.toISOString().split('T')[0];
 
         const div = document.createElement('div');
-        div.className = 'day-slot'; // <--- Assicurati che usi questa classe coordinata con il CSS sopra
+        div.className = 'day-slot'; 
         div.textContent = d.getDate();
         div.setAttribute('data-date', isoStr);
 
-        // Se il giorno è già stato selezionato, mantiene la classe attiva
-        if (selectedDays.includes(isoStr)) {
-            div.classList.add('selected');
+        // ==========================================
+        // 🎨 RIPRISTINO CLASSI GRAFICHE AL RE-RENDERING
+        // ==========================================
+        if (dataInizio && !dataFine) {
+            if (isoStr === dataInizio) div.classList.add('selected'); // Primo giorno blu scuro
+        } 
+        else if (dataInizio && dataFine) {
+            if (isoStr === dataInizio || isoStr === dataFine) {
+                div.classList.add('selected'); // Estremi blu scuro
+            } else if (isoStr > dataInizio && isoStr < dataFine) {
+                div.classList.add('in-range'); // Giorni intermedi azzurri (aggiungi classe nel CSS se vuoi stili diversi)
+            }
         }
 
+        // ==========================================
+        // 🖱️ EFFETTO HOVER DINAMICO (ANTEPRIMA INTERVALLO)
+        // ==========================================
+        div.addEventListener('mouseenter', () => {
+            // Se l'utente ha fatto il primo click ma non il secondo, mostra l'anteprima di cosa sta per selezionare
+            if (dataInizio && !dataFine) {
+                const tuttiISlot = box.querySelectorAll('.day-slot');
+                tuttiISlot.forEach(slot => {
+                    const dataSlot = slot.getAttribute('data-date');
+                    // Colora i quadratini tra la data d'inizio e dove si trova il mouse
+                    if (dataSlot > dataInizio && dataSlot <= isoStr) {
+                        slot.classList.add('in-range');
+                    } else if (dataSlot !== dataInizio) {
+                        slot.classList.remove('in-range');
+                    }
+                });
+            }
+        });
+
+        // ==========================================
+        // 👆 GESTIONE CLICK (LOGICA DI INTERVALLO CONSECUTIVO)
+        // ==========================================
         div.addEventListener('click', () => {
-            if (div.classList.contains('selected')) {
-                // Deselezione del giorno cliccato
-                div.classList.remove('selected');
-                selectedDays = selectedDays.filter(x => x !== isoStr);
-            } else {
-                // CONTROLLO DINAMICO DEL PROFILO E DEI NUOVI LIMITI PERSONALIZZATI
+            // Caso 1: Terzo click o reset -> Azzera e prendi questa come nuova data inizio
+            if (dataInizio && dataFine) {
+                dataInizio = isoStr;
+                dataFine = null;
+            }
+            // Caso 2: Primo click in assoluto -> Imposta data inizio
+            else if (!dataInizio) {
+                dataInizio = isoStr;
+            }
+            // Caso 3: Secondo click -> Imposta data fine
+            else if (dataInizio && !dataFine) {
+                if (isoStr < dataInizio) {
+                    // Se clicca un giorno precedente, invertiamo l'ordine in sicurezza
+                    dataFine = dataInizio;
+                    dataInizio = isoStr;
+                } else if (isoStr === dataInizio) {
+                    // Se riclicca lo stesso giorno esatto, lo interpretiamo come prenotazione di 1 singolo giorno
+                    dataFine = isoStr;
+                } else {
+                    dataFine = isoStr;
+                }
+
+                // --- VERIFICA DEI LIMITI DEI PROFILI SULL'INTERVALLO SCELTO ---
+                const dataI = new Date(dataInizio);
+                const dataF = new Date(dataFine);
+                // Calcolo matematico dei giorni effettivi inclusi (estremi compresi)
+                const millisecondi = dataF.getTime() - dataI.getTime();
+                const giorniSelezionati = Math.round(millisecondi / (1000 * 60 * 60 * 24)) + 1;
+
+                // Recupero profilo per controllo tetto massimo
                 const selectProfilo = document.getElementById('select-profilo');
                 const profilo = selectProfilo ? selectProfilo.value : 'STD';
                 
-                // Imposta il tetto massimo specifico richiesto
-                let limiteSelezionabili = 15; // Default Standard
-                if (profilo === 'MIS') {
-                    limiteSelezionabili = 45;
-                } else if (profilo === 'TRN') {
-                    limiteSelezionabili = 30;
-                }
+                let limiteSelezionabili = 15;
+                if (profilo === 'MIS') limiteSelezionabili = 45;
+                else if (profilo === 'TRN') limiteSelezionabili = 30;
 
-                if (selectedDays.length >= limiteSelezionabili) {
-                    alert(`⚠️ Profilo ${profilo}: Puoi selezionare al massimo ${limiteSelezionabili} gg.!`);
+                if (giorniSelezionati > limiteSelezionabili) {
+                    alert(`⚠️ Profilo ${profilo}: Il periodo scelto è di ${giorniSelezionati} gg. Puoi selezionare al massimo un blocco di ${limiteSelezionabili} gg.!`);
+                    // Reset cautelativo della selezione per non bloccare l'interfaccia
+                    dataInizio = null;
+                    dataFine = null;
+                    buildCal(); // Ridisegna pulito
                     return;
                 }
-                
-                // Attiva visivamente il quadratino e inseriscilo nell'array
-                div.classList.add('selected');
-                selectedDays.push(isoStr);
             }
+
+            // =========================================================
+            // 🔄 SINCRONIZZAZIONE CON L'ARRAY GLOBALE selectedDays
+            // =========================================================
+            // Svuotiamo il vecchio array e lo ripopoliamo con tutte le date consecutive del periodo scelto
+            selectedDays = [];
+            if (dataInizio) {
+                if (!dataFine) {
+                    selectedDays.push(dataInizio);
+                } else {
+                    let corrente = new Date(dataInizio);
+                    const fine = new Date(dataFine);
+                    while (corrente <= fine) {
+                        selectedDays.push(corrente.toISOString().split('T')[0]);
+                        corrente.setDate(corrente.getDate() + 1);
+                    }
+                }
+            }
+
+            // Ridisegna la grafica per aggiornare i colori fissi dei quadratini
+            buildCal();
+
+            // Aggiorna la stringa di riepilogo in basso ("Dal... Al... Totale giorni: X")
             if (typeof aggiornaRiepilogoGiorni === 'function') aggiornaRiepilogoGiorni();
         });
 
         box.appendChild(div);
     }
+
+    // Se il mouse esce completamente dal box del calendario, puliamo le classi di anteprima rimaste appese
+    box.addEventListener('mouseleave', () => {
+        if (dataInizio && !dataFine) {
+            box.querySelectorAll('.day-slot').forEach(slot => {
+                if (slot.getAttribute('data-date') !== dataInizio) {
+                    slot.classList.remove('in-range');
+                }
+            });
+        }
+    });
 }
 
 let loadingPrenotazione = false;
