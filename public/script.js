@@ -600,8 +600,18 @@ async function inviaPren() {
 
         if (res.ok) {
             selectedDays.sort();
+            
+            // Calcola il totale dei giorni effettivi compresi nell'intervallo (estremi inclusi)
+            const dataInizio = new Date(selectedDays[0]);
+            const dataFine = new Date(selectedDays[selectedDays.length - 1]);
+            const diffInMillisecondi = dataFine - dataInizio;
+            const totaleGiorni = Math.round(diffInMillisecondi / (1000 * 60 * 60 * 24)) + 1;
+
             document.getElementById('summary-details').innerHTML =
-                `<b>Pass:</b> ${userPass}<br><b>Dal:</b> ${fmtData(selectedDays[0])}<br><b>Al:</b> ${fmtData(selectedDays[selectedDays.length - 1])}`;
+                `<b>Pass:</b> ${userPass}<br>` +
+                `<b>Dal:</b> ${fmtData(selectedDays[0])}<br>` +
+                `<b>Al:</b> ${fmtData(selectedDays[selectedDays.length - 1])}<br>` +
+                `<b>Totale giorni:</b> ${totaleGiorni}`;
             
             // Spegne il caricamento prima di passare alla vista di successo
             if (modalLoading) modalLoading.style.display = 'none';
