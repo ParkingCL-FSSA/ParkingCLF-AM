@@ -607,10 +607,10 @@ async function inviaPren() {
             })
         });
 
-        if (res.ok) {
+    if (res.ok) {
             selectedDays.sort();
             
-            // Calcola il totale dei giorni effettivi compresi nell'intervallo (estremi inclusi)
+            // Calcola il totale dei giorni effettivi
             const dataInizio = new Date(selectedDays[0]);
             const dataFine = new Date(selectedDays[selectedDays.length - 1]);
             const diffInMillisecondi = dataFine - dataInizio;
@@ -622,22 +622,24 @@ async function inviaPren() {
                 `<b>Al:</b> ${fmtData(selectedDays[selectedDays.length - 1])}<br>` +
                 `<b>Totale giorni:</b> ${totaleGiorni}`;
             
-            // Spegne il caricamento prima di passare alla vista di successo
             if (modalLoading) modalLoading.style.display = 'none';
             
             show('view-success');
+            resetSelezione(); // Chiama il reset QUI (Pulisce solo se è andata a buon fine)
             
             setTimeout(() => {
                 mostraMie();
             }, 5000);
+
         } else {
-            // Gestisci gli errori di validazione provenienti dal server PostgreSQL/Node
+            // Gestisci gli errori di validazione provenienti dal server
             const err = await res.json();
             
             if (modalLoading) modalLoading.style.display = 'none';
-            resetSelezione();
+            // NOTA: Rimossa la chiamata a resetSelezione() da qui!
             alert(err.error || "Errore durante la prenotazione.");
-        }
+        }  
+    
     } catch (error) {
         console.error("Errore di rete nell'invio:", error);
         if (modalLoading) modalLoading.style.display = 'none';
