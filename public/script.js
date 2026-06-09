@@ -358,14 +358,16 @@ async function doLogin() {
         else {
             show('view-user');
             
-            // 🔒 BLOCCO GUEST: Controllo se l'utente loggato è l'ospite VIP
+            // 🔒 BLOCCO GUEST BASATO SUL RUOLO DEL DATABASE
             const selectProfilo = document.getElementById('select-profilo');
             if (selectProfilo) {
-                if (userPass === 'guest') {
+                // Controlliamo se il server ha risposto che l'utente ha il ruolo 'guest'
+                if (data.ruolo === 'guest') {
                     selectProfilo.value = 'STD';       // Forza su Standard (15 giorni)
-                    selectProfilo.disabled = true;     // Blocca e grigie il menu
+                    selectProfilo.disabled = true;     // Blocca e ingrigisce il menu
+                    console.log("Accesso Ospite rilevato tramite Ruolo: Profilo bloccato.");
                 } else {
-                    selectProfilo.disabled = false;    // Sblocca per utenti normali
+                    selectProfilo.disabled = false;    // Sblocca per utenti normali (STD, MIS, TRN)
                 }
             }
 
@@ -376,7 +378,7 @@ async function doLogin() {
                 console.log(e); 
             }
         }
-
+        
     } catch (err) {
         console.error("ERRORE LOGIN:", err);
         alert("Errore login");
