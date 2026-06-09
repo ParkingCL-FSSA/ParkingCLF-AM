@@ -100,17 +100,26 @@ function fmtData(isoStr) {
     const p = isoStr.toString().split('T')[0].split('-');
     return `${p[2]}/${p[1]}/${p[0]}`;
 }
+
 function formattaDataIT(data) {
     return fmtData(data);
 }
-function resetSelezione() {
 
+function resetSelezione() {
+    // 1. Svuota l'array dei dati
     selectedDays = [];
 
-    document
-        .querySelectorAll('.day-slot.selected')
-        .forEach(el => el.classList.remove('selected'));
+    // 2. Seleziona TUTTI gli slot dei giorni (senza filtrarli prima)
+    document.querySelectorAll('.day-slot').forEach(el => {
+        el.classList.remove('selected'); // Rimuove il blu scuro dei clic
+        el.classList.remove('range');    // Rimuove l'azzurro dell'intervallo intermedio
+        
+        // Se per caso la classe dei giorni in mezzo non si chiama 'range' ma 'in-range', 
+        // ti basta aggiungere anche questa riga per sicurezza:
+        el.classList.remove('in-range');
+    });
 }
+
 function show(id) {
 
     document
