@@ -109,14 +109,21 @@ function resetSelezione() {
     // 1. Svuota l'array dei dati
     selectedDays = [];
 
-    // 2. Seleziona TUTTI gli slot dei giorni (senza filtrarli prima)
+    // 2. Seleziona tutti gli slot dei giorni
     document.querySelectorAll('.day-slot').forEach(el => {
-        el.classList.remove('selected'); // Rimuove il blu scuro dei clic
-        el.classList.remove('range');    // Rimuove l'azzurro dell'intervallo intermedio
+        // Rimuove il blu scuro dei clic
+        el.classList.remove('selected'); 
         
-        // Se per caso la classe dei giorni in mezzo non si chiama 'range' ma 'in-range', 
-        // ti basta aggiungere anche questa riga per sicurezza:
+        // Sgancia TUTTE le possibili varianti di classe per la striscia azzurra
+        el.classList.remove('range');
         el.classList.remove('in-range');
+        el.classList.remove('between');
+        el.classList.remove('selected-range');
+        el.classList.remove('active-range');
+        
+        // SE ANCORA NON FUNZIONA: Forza l'azzeramento dello stile inline 
+        // nel caso in cui i quadratini vengano colorati direttamente da script
+        el.style.backgroundColor = '';
     });
 }
 
