@@ -357,7 +357,24 @@ async function doLogin() {
         }
         else {
             show('view-user');
-            try { buildCal(); aggiornaTestoFinestra(); } catch(e){ console.log(e); }
+            
+            // 🔒 BLOCCO GUEST: Controllo se l'utente loggato è l'ospite VIP
+            const selectProfilo = document.getElementById('select-profilo');
+            if (selectProfilo) {
+                if (userPass === 'guest') {
+                    selectProfilo.value = 'STD';       // Forza su Standard (15 giorni)
+                    selectProfilo.disabled = true;     // Blocca e grigie il menu
+                } else {
+                    selectProfilo.disabled = false;    // Sblocca per utenti normali
+                }
+            }
+
+            try { 
+                buildCal(); 
+                aggiornaTestoFinestra(); 
+            } catch(e){ 
+                console.log(e); 
+            }
         }
 
     } catch (err) {
