@@ -1238,7 +1238,7 @@ async function aggiornaVeicoli() {
         const stringaSbarraCentro = document.getElementById('testo-sbarra-centro');
         if (stringaSbarraCentro) {
             let testoCentro = `🚧 CONTROLLO SBARRA | 🚗 Dentro: ${countDentro} | 📅 Prenotati Oggi: ${countPrenotatiOggi} | 🅿️ Liberi: ${postiLiberi}`;
-            if (countListaV1p > 0) testoCentro += ` | 🔹 Lista V1P: ${countListaV1p}`;
+            if (countListaV1p > 0) testoCentro += ` | 🔹 Lista Esterni: ${countListaV1p}`;
             stringaSbarraCentro.innerHTML = testoCentro;
         }
 
