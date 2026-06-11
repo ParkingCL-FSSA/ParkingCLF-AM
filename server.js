@@ -544,15 +544,16 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
     }
 });
 
-// --- PIANTONE AZIONE ---
-// ==========================================
-// ROTTA 1: AZIONE STANDARD SBARRA
-// ==========================================
+// --- PIANTONE AZIONE UNIFICATO ---
 app.post('/api/piantone/azione', async (req, res) => {
     const { id, azione, npass } = req.body;
 
-    if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
-        return res.status(403).json({ error: "Accesso non autorizzato" });
+    // Se l'azione è non-presente, saltiamo il controllo di ruolo stringente se serve, 
+    // oppure lo verifichiamo (consigliato).
+    if (azione !== 'non-presente') {
+        if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
+            return res.status(403).json({ error: "Accesso non autorizzato" });
+        }
     }
 
     if (!id || !azione) return res.status(400).json({ error: "Dati mancanti" });
@@ -567,17 +568,20 @@ app.post('/api/piantone/azione', async (req, res) => {
 
         const pren = prenRes.rows[0];
 
-        if (azione === 'uscita' && !pren.orario_ingresso) {
-            return res.status(400).json({ success: false, error: "Auto mai entrata" });
-        }
-        if (azione === 'ingresso' && pren.orario_ingresso) {
-            return res.status(400).json({ success: false, error: "Ingresso già registrato" });
-        }
-        if (azione === 'uscita' && pren.orario_uscita) {
-            return res.status(400).json({ success: false, error: "Uscita già registrata" });
+        // --- CASO 1: L'AUTO NON È PRESENTATO (FORZA STATO USCITO) ---
+        if (azione === 'non-presente') {
+            await pool.query(
+                `UPDATE prenotazioni SET stato = 'USCITO', orario_uscita = $1 WHERE id = $2`, 
+                [ora, id]
+            );
+            return res.json({ success: true });
         }
 
+        // --- CASO 2: INGRESSO STANDARD SBARRA ---
         if (azione === 'ingresso') {
+            if (pren.orario_ingresso) {
+                return res.status(400).json({ success: false, error: "Ingresso già registrato" });
+            }
             await pool.query(
                 `UPDATE prenotazioni SET stato = 'ENTRATO', orario_ingresso = $1 WHERE id = $2`,
                 [ora, id]
@@ -585,7 +589,15 @@ app.post('/api/piantone/azione', async (req, res) => {
             return res.json({ success: true });
         }
 
+        // --- CASO 3: USCITA STANDARD SBARRA ---
         if (azione === 'uscita') {
+            if (!pren.orario_ingresso) {
+                return res.status(400).json({ success: false, error: "Auto mai entrata" });
+            }
+            if (pren.orario_uscita) {
+                return res.status(400).json({ success: false, error: "Uscita già registrata" });
+            }
+            
             await pool.query(
                 `UPDATE prenotazioni 
                  SET stato = CASE WHEN stato = 'DA_VERIFICARE' THEN 'SCADUTO' ELSE 'USCITO' END, 
@@ -599,35 +611,12 @@ app.post('/api/piantone/azione', async (req, res) => {
         return res.status(400).json({ success: false, error: "Azione non valida" });
 
     } catch (err) {
-        console.error("Errore piantone:", err);
+        console.error("Errore piantone unificato:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// ==========================================
-// ROTTA 2: SEGNALA NON PRESENTE (FORZA IN 'USCITO')
-// ==========================================
-app.post('/api/piantone/non-presente', async (req, res) => {
-    const { id } = req.body;
-    
-    if (!id) return res.status(400).json({ error: "ID mancante" });
-
-    try {
-        const oraUscita = new Date();
-        // Aggiorniamo forzatamente lo stato a 'USCITO' e timbriamo l'ora 
-        // così il posto si libera e lo storico è coerente
-        await pool.query(
-            `UPDATE prenotazioni SET stato = 'USCITO', orario_uscita = $1 WHERE id = $2`, 
-            [oraUscita, id]
-        );
-        res.json({ success: true });
-    } catch (err) {
-        console.error("Errore non-presente:", err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// --- 7B. PIANTONE LIBERI (CON ESCLUSIONE V1P E CONTEGGIO LISTA) ---
+// PIANTONE LIBERI (CON ESCLUSIONE V1P E CONTEGGIO LISTA) ---
 app.get('/api/piantone/liberi', async (req, res) => {
     try {
         // Estraiamo tutti i veicoli attualmente dentro (orario_uscita IS NULL)
@@ -664,7 +653,7 @@ app.get('/api/piantone/liberi', async (req, res) => {
     }
 });
 
-// --- 8. ADMIN CRUSCOTTO OTTIMIZZATO ---
+// ADMIN CRUSCOTTO OTTIMIZZATO ---
 app.get('/api/admin/cruscotto', async (req, res) => {
     const npass = req.query.npass;
     if (!await verificaRuolo(npass, 'admin')) {
