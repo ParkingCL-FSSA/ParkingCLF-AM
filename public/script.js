@@ -913,15 +913,15 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     // --- CLICK SU PRESENTE ---
                     document.getElementById('btn-presente')?.addEventListener('click', async (ev) => { 
                         ev.preventDefault(); 
-                        if (!confirm('Confermi la sanatoria? Il veicolo verrà registrato come USCITO con nota Post (U).')) return;
-                        await eseguiSanatoriaUscita(currentId);
+                        if (!confirm('Confermi la presenza del veicolo? Verrà registrato come Entrato.')) return;
+                        await gestisciVerificaPiantone('/api/piantone/verificato-dentro', currentId);
                     });
 
                     // --- CLICK SU NON PRESENTE ---
                     document.getElementById('btn-non-presente')?.addEventListener('click', async (ev) => { 
                         ev.preventDefault(); 
-                        if (!confirm('Confermi la sanatoria? Il veicolo verrà registrato come USCITO con nota Post (U).')) return;
-                        await eseguiSanatoriaUscita(currentId);
+                        if (!confirm('Confermi che il veicolo sia uscito? Verrà registrato come USCITO "con ritardo"')) return;
+                        await gestisciVerificaPiantone('/api/piantone/post-uscito', currentId);
                     });
                 }
             }
@@ -1043,10 +1043,9 @@ async function cercaPass(passManuale = null, idRecord = null) {
     }
 }
 
-// Funzione centralizzata per agganciare la nuova API di sanatoria note Post (U)
-async function eseguiSanatoriaUscita(idPrenotazione) {
+async function gestisciVerificaPiantone(endpoint, idPrenotazione) {
     try {
-        const response = await fetch('/api/piantone/verificati-usciti', {
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -1057,7 +1056,7 @@ async function eseguiSanatoriaUscita(idPrenotazione) {
         
         const resData = await response.json();
         if (resData.success) {
-            alert('Operazione completata. Stato allineato e nota Post (U) inserita.');
+            alert('Operazione completata con successo. Database allineato.');
             if (typeof aggiornaVeicoli === 'function') await aggiornaVeicoli();
             resetSchermataPiantone();
         } else {
