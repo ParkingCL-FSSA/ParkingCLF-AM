@@ -787,6 +787,48 @@ async function scadenzaPrenotazioni() {
     }
 }
 
+// --- API SPECIFICA PER SANATORIA AUTO IN RITARDO ---
+app.post('/api/piantone/verificati-usciti', async (req, res) => {
+    const { id, npass } = req.body;
+
+    // Controllo sicurezza ruolo
+    if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
+        return res.status(403).json({ error: "Accesso non autorizzato." });
+    }
+
+    if (!id) return res.status(400).json({ error: "ID prenotazione mancante" });
+
+    try {
+        // Query che imposta lo stato a USCITO, inserisce l'orario di uscita attuale
+        // e calcola i giorni di ritardo reali tra oggi (NOW) e la data_fine del DB
+        const query = `
+            UPDATE prenotazioni 
+            SET stato = 'USCITO', 
+                orario_uscita = NOW(), 
+                note = CONCAT(
+                    COALESCE(note, ''), 
+                    ' - Uscito con ritardo di ', 
+                    GREATEST(0, EXTRACT(DAY FROM NOW() - data_fine::timestamp)), 
+                    ' gg'
+                )
+            WHERE id = $1
+            RETURNING *;
+        `;
+
+        const risultato = await pool.query(query, [id]);
+
+        if (risultato.rows.length === 0) {
+            return res.status(404).json({ success: false, error: "Prenotazione non trovata" });
+        }
+
+        return res.json({ success: true, prenotazione: risultato.rows[0] });
+
+    } catch (err) {
+        console.error("Errore in verificati-usciti:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // ============================================================
 // 📥 ROUTE 1: RIATTIVA PRENOTAZIONE SCADUTA (AUTO DENTRO)
 // ============================================================
