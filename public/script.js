@@ -1830,19 +1830,17 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
     }
 });
 
-    // PULSANTE PRESENTE
-document.getElementById('btn-presente')?.addEventListener('click', async () => {
-    if (!currentPren) return;
-    if (!confirm('Confermi che il veicolo è presente nel parcheggio?')) return;
+// Pulsante PRESENTE (Verificato)
+    document.getElementById('btn-presente')?.addEventListener('click', async () => {
+        if (!currentPren) return;
+        if (!confirm('Confermi che il veicolo è presente nel parcheggio?')) return;
 
-    try {
         const res = await fetch('/api/piantone/azione', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: currentPren.id, azione: 'uscita', npass: userPass })
         });
         const data = await res.json();
-        
         if (data.success) {
             alert('Veicolo verificato');
             await aggiornaVeicoli();
@@ -1854,43 +1852,31 @@ document.getElementById('btn-presente')?.addEventListener('click', async () => {
                 btnUscita.innerText = 'VERIFICATO';
                 btnUscita.style.background = '#64748b';
             }
-        } else {
-            alert('Errore: ' + (data.error || 'Operazione fallita'));
         }
-    } catch (err) {
-        alert('Errore di connessione col server');
-    }
-});
+    });
 
-// PULSANTE NON PRESENTE (Forza stato USCITO)
-document.getElementById('btn-non-presente')?.addEventListener('click', async () => {
-    if (!currentPren) return;
-    
-    // Testo aggiornato per chiarezza
-    if (!confirm('Confermi che il veicolo NON è presente? Verrà segnato come USCITO e il posto liberato.')) return;
+    // Pulsante NON PRESENTE (Forza stato USCITO)
+    document.getElementById('btn-non-presente')?.addEventListener('click', async () => {
+        if (!currentPren) return;
+        if (!confirm('Confermi che il veicolo NON è presente nel parcheggio?')) return;
 
-    try {
-        const res = await fetch('/api/piantone/non-presente', {
+        const res = await fetch('/api/piantone/azione', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: currentPren.id })
+            body: JSON.stringify({ id: currentPren.id, azione: 'non-presente', npass: userPass })
         });
         const data = await res.json();
-        
         if (data.success) {
-            alert('Veicolo segnato come USCITO con successo.');
+            alert('Veicolo segnato come NON presente (USCITO)');
             await aggiornaVeicoli();
             document.getElementById('box-verifica')?.classList.add('hidden');
             document.getElementById('panel-piantone')?.classList.add('hidden');
             currentPren = null;
             if (typeof inputSearch !== 'undefined' && inputSearch) inputSearch.value = '';
         } else {
-            alert('Errore: ' + (data.error || 'Operazione fallita'));
+            alert('Errore dal server: ' + (data.error || 'Impossibile aggiornare'));
         }
-    } catch (err) {
-        alert('Errore di connessione col server');
-    }
-});
+    });
     
 // ============================================================
 // ⚙️ GESTIONE STRUMENTO DI VERIFICA AUTO SCADUTE (OTTIMIZZATO)
