@@ -1829,16 +1829,20 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
         aggiornaVeicoli();
     }
 });
-    document.getElementById('btn-presente')?.addEventListener('click', async () => {
-        if (!currentPren) return;
-        if (!confirm('Confermi che il veicolo è presente nel parcheggio?')) return;
 
+    // PULSANTE PRESENTE
+document.getElementById('btn-presente')?.addEventListener('click', async () => {
+    if (!currentPren) return;
+    if (!confirm('Confermi che il veicolo è presente nel parcheggio?')) return;
+
+    try {
         const res = await fetch('/api/piantone/azione', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: currentPren.id, azione: 'uscita', npass: userPass })
         });
         const data = await res.json();
+        
         if (data.success) {
             alert('Veicolo verificato');
             await aggiornaVeicoli();
@@ -1850,35 +1854,43 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
                 btnUscita.innerText = 'VERIFICATO';
                 btnUscita.style.background = '#64748b';
             }
+        } else {
+            alert('Errore: ' + (data.error || 'Operazione fallita'));
         }
-    });
+    } catch (err) {
+        alert('Errore di connessione col server');
+    }
+});
 
-    // ============================================================
-    // 🎯 COLLEGAMENTO CORRETTO PULSANTI DI VERIFICA (APP MOBILE)
-    // ============================================================
+// PULSANTE NON PRESENTE (Forza stato USCITO)
+document.getElementById('btn-non-presente')?.addEventListener('click', async () => {
+    if (!currentPren) return;
+    
+    // Testo aggiornato per chiarezza
+    if (!confirm('Confermi che il veicolo NON è presente? Verrà segnato come USCITO e il posto liberato.')) return;
 
-    // Pulsante "PRESENTE" (Chiama la funzione ottimizzata eseguiScadutoDentro)
-    document.getElementById('btn-presente')?.addEventListener('click', async () => {
-        if (!currentPren) return;
-        // Esegue direttamente la funzione ottimizzata che hai sotto
-        await eseguiScadutoDentro(); 
+    try {
+        const res = await fetch('/api/piantone/non-presente', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: currentPren.id })
+        });
+        const data = await res.json();
         
-        // Nasconde il box di verifica dopo il successo
-        document.getElementById('box-verifica')?.classList.add('hidden');
-    });
-
-    // Pulsante "NON PRESENTE" (Chiama la funzione ottimizzata eseguiScadutoMaiEntrato)
-    document.getElementById('btn-non-presente')?.addEventListener('click', async () => {
-        if (!currentPren) return;
-        // Esegue la funzione ottimizzata che punta a /api/piantone/scaduto-archivia
-        await eseguiScadutoMaiEntrato();
-        
-        // Pulisce l'interfaccia e resetta lo stato dei pannelli
-        document.getElementById('box-verifica')?.classList.add('hidden');
-        document.getElementById('panel-piantone')?.classList.add('hidden');
-        currentPren = null;
-        if (inputSearch) inputSearch.value = '';
-    });
+        if (data.success) {
+            alert('Veicolo segnato come USCITO con successo.');
+            await aggiornaVeicoli();
+            document.getElementById('box-verifica')?.classList.add('hidden');
+            document.getElementById('panel-piantone')?.classList.add('hidden');
+            currentPren = null;
+            if (typeof inputSearch !== 'undefined' && inputSearch) inputSearch.value = '';
+        } else {
+            alert('Errore: ' + (data.error || 'Operazione fallita'));
+        }
+    } catch (err) {
+        alert('Errore di connessione col server');
+    }
+});
     
 // ============================================================
 // ⚙️ GESTIONE STRUMENTO DI VERIFICA AUTO SCADUTE (OTTIMIZZATO)
