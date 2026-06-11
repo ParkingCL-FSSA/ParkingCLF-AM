@@ -1830,12 +1830,12 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
     }
 });
 
-    // ==========================================
+// ==========================================
     // PULSANTE PRESENTE (Conferma e manda Uscita)
     // ==========================================
     document.getElementById('btn-presente')?.addEventListener('click', async () => {
         if (!currentPren) return;
-        if (!confirm('Confermi che il veicolo è presente nel parcheggio e sta uscendo?')) return;
+        if (!confirm('Confermi che il veicolo è PRESENTE nel parcheggio? Registro l\'uscita standard.')) return;
 
         try {
             const res = await fetch('/api/piantone/azione', {
@@ -1847,16 +1847,11 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
             
             if (data.success) {
                 if (typeof beepUscita !== 'undefined') beepUscita.play();
-                alert('Veicolo verificato in sosta. Registrata l\'uscita.');
+                alert('Veicolo verificato. Stato aggiornato con successo.');
                 
-                // Aggiorna la tabella sotto
+                // Rinfresca i dati e chiude i blocchi dell'interfaccia
                 await aggiornaVeicoli();
-                
-                // Reset totale del pannello piantone (Interfaccia Pulita)
-                document.getElementById('box-verifica')?.classList.add('hidden');
-                document.getElementById('panel-piantone')?.classList.add('hidden');
-                document.getElementById('search-p').value = ''; // Svuota la barra di ricerca reale
-                currentPren = null;
+                eseguiResetInterfaccia();
             } else {
                 alert('Errore dal server: ' + (data.error || 'Impossibile aggiornare'));
             }
@@ -1882,16 +1877,11 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
             const data = await res.json();
             
             if (data.success) {
-                alert('Veicolo rimosso dall\'elenco (Segnato come USCITO)');
+                alert('Veicolo rimosso dall\'elenco operanti (Segnato come USCITO)');
                 
-                // Aggiorna la tabella sotto
+                // Rinfresca i dati e chiude i blocchi dell'interfaccia
                 await aggiornaVeicoli();
-                
-                // Reset totale del pannello piantone
-                document.getElementById('box-verifica')?.classList.add('hidden');
-                document.getElementById('panel-piantone')?.classList.add('hidden');
-                document.getElementById('search-p').value = ''; // Svuota la barra di ricerca reale
-                currentPren = null;
+                eseguiResetInterfaccia();
             } else {
                 alert('Errore dal server: ' + (data.error || 'Impossibile aggiornare'));
             }
@@ -1900,6 +1890,17 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
             alert('Errore di rete durante l\'aggiornamento');
         }
     });
+
+    // Funzione di utilità per pulire lo schermo ed evitare stati ibridi
+    function eseguiResetInterfaccia() {
+        document.getElementById('box-verifica')?.classList.add('hidden');
+        document.getElementById('panel-piantone')?.classList.add('hidden');
+        
+        const cercaInput = document.getElementById('search-p');
+        if (cercaInput) cercaInput.value = '';
+        
+        currentPren = null;
+    }
     
 // ============================================================
 // ⚙️ GESTIONE STRUMENTO DI VERIFICA AUTO SCADUTE (OTTIMIZZATO)
