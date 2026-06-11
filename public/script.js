@@ -902,8 +902,8 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 btnUscita.disabled = true; 
                 btnUscita.style.display = 'inline-block';
                 btnUscita.style.background = '#ea580c'; 
-                btnUscita.style.fotSize = '12px';
-                btnUscita.innerText = 'DA VERIFICARE'; 
+                btnUscita.style.fotSize = '14px';
+                btnUscita.innerText = 'VERIFICARE'; 
             
                 if (boxVerifica) {
                     boxVerifica.style.display = 'flex';
@@ -998,12 +998,12 @@ async function cercaPass(passManuale = null, idRecord = null) {
         
             if (oggiStr >= dataInizioStr && currentPren.stato !== 'SCADUTO' && currentPren.stato !== 'MAI_ENTRATO') {
                 if (regE) regE.innerHTML = currentPren.orario_ingresso
-                    ? `<div style="font-size: 14px; font-weight: bold; color: #1e293b; margin-top: 4px; text-align:center;">Entrata Registrata il ${new Date(currentPren.orario_ingresso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</div>`
+                    ? `<div style="font-size: 14px; font-weight: bold; color: #1e293b; margin-top: 4px; text-align:center;">(E) Registrata il ${new Date(currentPren.orario_ingresso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</div>`
                     : `<div style="font-size: 13px; color: #64748b; text-align:center;">Nessun ingresso registrato</div>`;
             }
             if (currentPren.stato !== 'SCADUTO' && currentPren.stato !== 'MAI_ENTRATO') {
                 if (regU) regU.innerHTML = currentPren.orario_uscita
-                    ? `<div style="font-size: 14px; font-weight: bold; color: #1e293b; margin-top: 4px; text-align:center;">Uscita Registrata il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</div>`
+                    ? `<div style="font-size: 14px; font-weight: bold; color: #1e293b; margin-top: 4px; text-align:center;">(U) Registrata il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</div>`
                     : "";
             }
 
