@@ -818,12 +818,12 @@ async function cercaPass(passManuale = null, idRecord = null) {
     // PULIZIA INIZIALE AD OGNI RICERCA (Nascondiamo tutto all'inizio)
     if (boxVerifica) {
         boxVerifica.classList.add('hidden');
-        boxVerifica.style.display = ''; // Resetta lo stile flex
+        boxVerifica.style.display = 'none'; // Resetta lo stile iniziale
         boxVerifica.innerHTML = `
-            <button id="btn-presente" type="button" style="width: auto; padding:6px 10px; font-size:12px; border:none; border-radius:8px; background:#16a34a; color:white; margin:0; font-weight:bold;">
+            <button id="btn-presente" type="button" style="flex: 1; padding: 12px 10px; font-size: 14px; border: none; border-radius: 8px; background: #16a34a; color: white; margin: 0; font-weight: bold; cursor: pointer; text-align: center;">
                 ✅ PRESENTE
             </button>
-            <button id="btn-non-presente" type="button" style="width: auto; padding:6px 10px; font-size:12px; border:none; border-radius:8px; background:#dc2626; color:white; margin:0; font-weight:bold;">
+            <button id="btn-non-presente" type="button" style="flex: 1; padding: 12px 10px; font-size: 14px; border: none; border-radius: 8px; background: #dc2626; color: white; margin: 0; font-weight: bold; cursor: pointer; text-align: center;">
                 ❌ NON PRESENTE
             </button>
         `;
@@ -895,40 +895,46 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 btnUscita.disabled = false;
             }
             
-            // 🎯 STATO: DA VERIFICARE (Ottimizzato)
+            // 🎯 STATO: DA VERIFICARE (Risolto l'inghippo dei bottoni)
             else if (currentPren.stato === 'DA_VERIFICARE') {
-                btnIngresso.style.display = 'inline-block';
-                btnIngresso.disabled = true; // Bloccato, l'auto deve prima uscire o essere verificata
+                // 1. Nascondiamo il tasto verde ENTRATA perché l'auto è già dentro da giorni
+                btnIngresso.style.display = 'none'; 
                 
-                btnUscita.disabled = false;
+                // 2. Trasformiamo il tastone principale in un indicatore visivo "DA VERIFICARE" arancione
+                btnUscita.disabled = true; // Diventa solo indicatore di stato statico
                 btnUscita.style.display = 'inline-block';
-                btnUscita.style.background = '#ea580c'; // Colore Arancione
-                btnUscita.innerText = 'VERIFICA'; // Il tastone grande
+                btnUscita.style.background = '#ea580c'; 
+                btnUscita.innerText = 'STATO: DA VERIFICARE'; 
             
-                // Rimuoviamo l'ascolto precedente sul tastone per evitare duplicati
-                const nuovoBtnUscita = btnUscita.cloneNode(true);
-                btnUscita.parentNode.replaceChild(nuovoBtnUscita, btnUscita);
-                
-                // Quando si clicca sul tastone grande "VERIFICA"
-                nuovoBtnUscita.addEventListener('click', (e) => {
-                    e.preventDefault();
+                // 3. Mostriamo immediatamente i due pulsanti sotto per l'azione diretta
+                if (boxVerifica) {
+                    boxVerifica.style.display = 'flex';
+                    boxVerifica.style.gap = '10px';
+                    boxVerifica.style.marginTop = '15px';
+                    boxVerifica.classList.remove('hidden');
                     
-                    if (boxVerifica) {
-                        // Mostriamo i due pulsantini sotto solo adesso!
-                        boxVerifica.style.display = 'flex';
-                        boxVerifica.classList.remove('hidden');
-                        
-                        // Agganciamo i listener CSP sui pulsantini piccoli appena comparsi
-                        document.getElementById('btn-presente')?.addEventListener('click', (ev) => { 
-                            ev.preventDefault(); 
-                            if (typeof window.azioneVerifica === 'function') window.azioneVerifica('si', currentId);
-                        });
-                        document.getElementById('btn-non-presente')?.addEventListener('click', (ev) => { 
-                            ev.preventDefault(); 
-                            if (typeof window.azioneVerifica === 'function') window.azioneVerifica('no', currentId);
-                        });
-                    }
-                });
+                    // 4. Agganciamo i listener corretti per l'azione di sanatoria
+                    document.getElementById('btn-presente')?.addEventListener('click', (ev) => { 
+                        ev.preventDefault(); 
+                        if (typeof window.azioneVerifica === 'function') {
+                            window.azioneVerifica('si', currentId);
+                        } else {
+                            // Fallback se l'evento globale non è registrato
+                            document.getElementById('btn-presente').disabled = true;
+                            mossa('U'); 
+                        }
+                    });
+
+                    document.getElementById('btn-non-presente')?.addEventListener('click', (ev) => { 
+                        ev.preventDefault(); 
+                        if (typeof window.azioneVerifica === 'function') {
+                            window.azioneVerifica('no', currentId);
+                        } else {
+                            // Fallback per attivare il pulsante non presente
+                            alert('Funzione di allineamento forzato...');
+                        }
+                    });
+                }
             }
             
             // MAI ENTRATO (ARCHIVIATO)
@@ -946,7 +952,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     `;
                     boxVerificaScaduti.classList.remove('hidden');
                 }
-            }	
+            }   
             // SCADUTO (Verifica Sanatoria - Pulsanti Grandi)
             else if (currentPren.stato === 'SCADUTO') {
                 if (!currentPren.orario_ingresso) {
