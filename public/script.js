@@ -867,7 +867,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
 
         if (data.trovato) {
             currentPren = data.prenotazione;
-            if (!currentPren) return alert("Prenotazione non trovata");
+            if (!currentPren) return alert("Prenotazione non trouvata");
             
             const oggiStr = new Date().toISOString().split('T')[0];
             const dataInizioStr = currentPren.data_inizio.split('T')[0];
@@ -895,43 +895,66 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 btnUscita.disabled = false;
             }
             
-            // 🎯 STATO: DA VERIFICARE (Risolto l'inghippo dei bottoni)
+            // 🎯 STATO: DA VERIFICARE (Invio diretto dei dati al server senza intermediari)
             else if (currentPren.stato === 'DA_VERIFICARE') {
-                // 1. Nascondiamo il tasto verde ENTRATA perché l'auto è già dentro da giorni
                 btnIngresso.style.display = 'none'; 
                 
-                // 2. Trasformiamo il tastone principale in un indicatore visivo "DA VERIFICARE" arancione
-                btnUscita.disabled = true; // Diventa solo indicatore di stato statico
+                btnUscita.disabled = true; 
                 btnUscita.style.display = 'inline-block';
                 btnUscita.style.background = '#ea580c'; 
                 btnUscita.innerText = 'STATO: DA VERIFICARE'; 
             
-                // 3. Mostriamo immediatamente i due pulsanti sotto per l'azione diretta
                 if (boxVerifica) {
                     boxVerifica.style.display = 'flex';
                     boxVerifica.style.gap = '10px';
                     boxVerifica.style.marginTop = '15px';
                     boxVerifica.classList.remove('hidden');
                     
-                    // 4. Agganciamo i listener corretti per l'azione di sanatoria
-                    document.getElementById('btn-presente')?.addEventListener('click', (ev) => { 
+                    // --- CLICK SU PRESENTE ---
+                    document.getElementById('btn-presente')?.addEventListener('click', async (ev) => { 
                         ev.preventDefault(); 
-                        if (typeof window.azioneVerifica === 'function') {
-                            window.azioneVerifica('si', currentId);
-                        } else {
-                            // Fallback se l'evento globale non è registrato
-                            document.getElementById('btn-presente').disabled = true;
-                            mossa('U'); 
+                        if (!confirm('Confermi che il veicolo è PRESENTE? Verrà registrata l\'uscita.')) return;
+                        
+                        try {
+                            const response = await fetch('/api/piantone/azione', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ id: currentId, azione: 'uscita', npass: userPass })
+                            });
+                            const resData = await response.json();
+                            if (resData.success) {
+                                alert('Operazione completata con successo.');
+                                if (typeof aggiornaVeicoli === 'function') await aggiornaVeicoli();
+                                resetSchermataPiantone();
+                            } else {
+                                alert('Errore: ' + (resData.error || 'Impossibile aggiornare'));
+                            }
+                        } catch (e) {
+                            alert('Errore di connessione con il server');
                         }
                     });
 
-                    document.getElementById('btn-non-presente')?.addEventListener('click', (ev) => { 
+                    // --- CLICK SU NON PRESENTE ---
+                    document.getElementById('btn-non-presente')?.addEventListener('click', async (ev) => { 
                         ev.preventDefault(); 
-                        if (typeof window.azioneVerifica === 'function') {
-                            window.azioneVerifica('no', currentId);
-                        } else {
-                            // Fallback per attivare il pulsante non presente
-                            alert('Funzione di allineamento forzato...');
+                        if (!confirm('Confermi che il veicolo NON è presente? Verrà forzata l\'uscita.')) return;
+                        
+                        try {
+                            const response = await fetch('/api/piantone/azione', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ id: currentId, azione: 'non-presente', npass: userPass })
+                            });
+                            const resData = await response.json();
+                            if (resData.success) {
+                                alert('Veicolo allineato come NON PRESENTE (Uscito).');
+                                if (typeof aggiornaVeicoli === 'function') await aggiornaVeicoli();
+                                resetSchermataPiantone();
+                            } else {
+                                alert('Errore: ' + (resData.error || 'Impossibile aggiornare'));
+                            }
+                        } catch (e) {
+                            alert('Errore di connessione con il server');
                         }
                     });
                 }
@@ -953,7 +976,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     boxVerificaScaduti.classList.remove('hidden');
                 }
             }   
-            // SCADUTO (Verifica Sanatoria - Pulsanti Grandi)
+            // SCADUTO (Verifica Sanatoria)
             else if (currentPren.stato === 'SCADUTO') {
                 if (!currentPren.orario_ingresso) {
                     btnIngresso.style.display = 'none'; 
@@ -1019,7 +1042,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
 
             // GESTIONE BANNER STATO TABELLA SOTTOSTANTE
             const bannerCerca = document.getElementById('stato-tabella'); 
-            const tabellaCorpo = document.getElementById('lista-veicoli');
+            const tabularCorpo = document.getElementById('lista-veicoli');
             if (bannerCerca) {
                 if (currentPren.stato === 'MAI_ENTRATO') {
                     bannerCerca.style.background = '#f1f5f9'; bannerCerca.style.color = '#475569'; bannerCerca.style.borderColor = '#cbd5e1'; bannerCerca.innerHTML = `📁 ARCHIVIATO (Trovato da Ricerca)`;
@@ -1032,7 +1055,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 }
             }
 
-            if (data.storico && tabellaCorpo) {
+            if (data.storico && tabularCorpo) {
                 let righeDaMostrare = [];
                 if (currentPren.stato === 'SCADUTO' || currentPren.stato === 'MAI_ENTRATO') {
                     righeDaMostrare = data.storico.filter(x => ['PRENOTATO', 'ENTRATO', 'DA_VERIFICARE'].includes(x.stato));
@@ -1042,7 +1065,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     righeDaMostrare = data.storico.filter(x => ['SCADUTO', 'MAI_ENTRATO'].includes(x.stato));
                 }
                 if (typeof renderTabella === "function") renderTabella(righeDaMostrare);
-                else if (typeof generaRigaTabella === "function") tabellaCorpo.innerHTML = righeDaMostrare.map(x => generaRigaTabella(x)).join('');
+                else if (typeof generaRigaTabella === "function") tabularCorpo.innerHTML = righeDaMostrare.map(x => generaRigaTabella(x)).join('');
             }
         } else {
             alert("Nessuna prenotazione trovata per questo PASS.");
@@ -1052,6 +1075,15 @@ async function cercaPass(passManuale = null, idRecord = null) {
         console.error("ERRORE CERCA PASS:", err);
         alert("Errore ricerca PASS");
     }
+}
+
+// Funzione helper per ripulire i pannelli dopo il successo dell'operazione
+function resetSchermataPiantone() {
+    document.getElementById('box-verifica')?.classList.add('hidden');
+    document.getElementById('panel-piantone')?.classList.add('hidden');
+    const inp = document.getElementById('search-p');
+    if (inp) inp.value = '';
+    currentPren = null;
 }
 
 function getFlags(x) {
