@@ -902,7 +902,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 btnUscita.disabled = true; 
                 btnUscita.style.display = 'inline-block';
                 btnUscita.style.background = '#ea580c'; 
-                btnUscita.style.fontSize = '14px';
+                //btnUscita.style.fontSize = '18px';
                 btnUscita.innerText = 'VERIFICARE'; 
             
                 if (boxVerifica) {
