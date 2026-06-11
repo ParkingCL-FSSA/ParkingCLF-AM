@@ -1853,24 +1853,31 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
         }
     });
 
+    // ============================================================
+    // 🎯 COLLEGAMENTO CORRETTO PULSANTI DI VERIFICA (APP MOBILE)
+    // ============================================================
+
+    // Pulsante "PRESENTE" (Chiama la funzione ottimizzata eseguiScadutoDentro)
+    document.getElementById('btn-presente')?.addEventListener('click', async () => {
+        if (!currentPren) return;
+        // Esegue direttamente la funzione ottimizzata che hai sotto
+        await eseguiScadutoDentro(); 
+        
+        // Nasconde il box di verifica dopo il successo
+        document.getElementById('box-verifica')?.classList.add('hidden');
+    });
+
+    // Pulsante "NON PRESENTE" (Chiama la funzione ottimizzata eseguiScadutoMaiEntrato)
     document.getElementById('btn-non-presente')?.addEventListener('click', async () => {
         if (!currentPren) return;
-        if (!confirm('Confermi che il veicolo NON è presente nel parcheggio?')) return;
-
-        const res = await fetch('/api/piantone/non-presente', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: currentPren.id })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert('Veicolo segnato come NON presente');
-            await aggiornaVeicoli();
-            document.getElementById('box-verifica')?.classList.add('hidden');
-            document.getElementById('panel-piantone')?.classList.add('hidden');
-            currentPren = null;
-            if (inputSearch) inputSearch.value = '';
-        }
+        // Esegue la funzione ottimizzata che punta a /api/piantone/scaduto-archivia
+        await eseguiScadutoMaiEntrato();
+        
+        // Pulisce l'interfaccia e resetta lo stato dei pannelli
+        document.getElementById('box-verifica')?.classList.add('hidden');
+        document.getElementById('panel-piantone')?.classList.add('hidden');
+        currentPren = null;
+        if (inputSearch) inputSearch.value = '';
     });
     
 // ============================================================
