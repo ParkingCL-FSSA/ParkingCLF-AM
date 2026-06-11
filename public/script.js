@@ -910,22 +910,6 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     boxVerifica.style.marginTop = '15px';
                     boxVerifica.classList.remove('hidden');
                     
-                    // 🗓️ CALCOLO DEI GIORNI DI RITARDO
-                    // Resetta le ore a mezzanotte per evitare calcoli errati legati ai fusi orari/minuti
-                    const dataFinePrevista = new Date(currentPren.data_fine);
-                    dataFinePrevista.setHours(0,0,0,0);
-                    
-                    const dataUscitaEffettiva = new Date();
-                    dataUscitaEffettiva.setHours(0,0,0,0);
-                    
-                    // Differenza in millisecondi convertiti in giorni
-                    const diffTime = dataUscitaEffettiva - dataFinePrevista;
-                    const diffDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
-                    
-                    // Costruisce la stringa delle note ereditando quelle passate se già presenti
-                    let notaRitardo = ` - Uscito con ritardo di ${diffDays} gg`;
-                    let noteAggiornate = currentPren.note ? currentPren.note + notaRitardo : notaRitardo.trim();
-
                    // --- CLICK SU PRESENTE (Chiamata alla nuova API dedicata) ---
                     document.getElementById('btn-presente')?.addEventListener('click', async (ev) => { 
                         ev.preventDefault(); 
