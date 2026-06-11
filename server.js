@@ -787,23 +787,54 @@ async function scadenzaPrenotazioni() {
     }
 }
 
-// --- API SPECIFICA PER SANATORIA AUTO (REGISTRAZIONE USCITA POSTUMA) ---
-app.post('/api/piantone/verificati-usciti', async (req, res) => {
+// --- 1. ENDPOINT PER PULSANTE: PRESENTE (VERIFICATO ANCORA DENTRO) ---
+app.post('/api/piantone/verificato-dentro', async (req, res) => {
     const { id, npass } = req.body;
 
-    // Controllo sicurezza ruolo
     if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
         return res.status(403).json({ error: "Accesso non autorizzato." });
     }
-
     if (!id) return res.status(400).json({ error: "ID prenotazione mancante" });
 
     try {
-        // Query che imposta lo stato a USCITO e inserisce la nota esatta: - Post (U) - Verificato il GG/MM/AAAA HH:MM
+        // Mantiene lo stato (o lo adegua) e aggiunge la nota specifica con data e ora
         const query = `
             UPDATE prenotazioni 
-            SET stato = 'USCITO', 
-                orario_uscita = NOW(), 
+            SET note = CONCAT(
+                    COALESCE(note, ''), 
+                    ' - Verificato ancora dentro, il ', 
+                    TO_CHAR(NOW(), 'DD/MM/YYYY'), 
+                    ' ore ', 
+                    TO_CHAR(NOW(), 'HH24:MI')
+                )
+            WHERE id = $1
+            RETURNING *;
+        `;
+        const risultato = await pool.query(query, [id]);
+        if (risultato.rows.length === 0) return res.status(404).json({ success: false, error: "Prenotazione non trovata" });
+
+        return res.json({ success: true });
+    } catch (err) {
+        console.error("Errore verificato-dentro:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// --- 2. ENDPOINT PER PULSANTE: NON PRESENTE (REGISTRA USCITA POSTUMA) ---
+app.post('/api/piantone/post-uscito', async (req, res) => {
+    const { id, npass } = req.body;
+
+    if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
+        return res.status(403).json({ error: "Accesso non autorizzato." });
+    }
+    if (!id) return res.status(400).json({ error: "ID prenotazione mancante" });
+
+    try {
+        // Forza lo stato a USCITO, imposta l'orario di uscita e aggiunge la nota Post (U)
+        const query = `
+            UPDATE prenotazioni 
+            SET stato = 'USCITO',
+                orario_uscita = NOW(),
                 note = CONCAT(
                     COALESCE(note, ''), 
                     ' - Post (U) - Verificato il ', 
@@ -812,17 +843,12 @@ app.post('/api/piantone/verificati-usciti', async (req, res) => {
             WHERE id = $1
             RETURNING *;
         `;
-
         const risultato = await pool.query(query, [id]);
+        if (risultato.rows.length === 0) return res.status(404).json({ success: false, error: "Prenotazione non trovata" });
 
-        if (risultato.rows.length === 0) {
-            return res.status(404).json({ success: false, error: "Prenotazione non trovata" });
-        }
-
-        return res.json({ success: true, prenotazione: risultato.rows[0] });
-
+        return res.json({ success: true });
     } catch (err) {
-        console.error("Errore in verificati-usciti:", err);
+        console.error("Errore post-uscito:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
