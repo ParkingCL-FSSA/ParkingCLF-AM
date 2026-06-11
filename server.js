@@ -557,13 +557,14 @@ app.post('/api/piantone/azione', async (req, res) => {
                 return res.status(400).json({ success: false, error: "Uscita già registrata" });
             }
             
-            // Se sono state passate delle note nuove (come il ritardo), usiamo quelle, 
-            // altrimenti manteniamo quelle vecchie intatte nel DB.
+            // Prende la nota inviata dal client (es: "- Uscito con ritardo di 2 gg")
+            // Se non c'è, mantiene le note precedenti.
             const noteFinali = note || pren.note;
             
+            // Forza lo stato a 'USCITO' in ogni caso, registrando l'orario e le note di ritardo
             await pool.query(
                 `UPDATE prenotazioni 
-                 SET stato = CASE WHEN stato = 'DA_VERIFICARE' THEN 'SCADUTO' ELSE 'USCITO' END, 
+                 SET stato = 'USCITO', 
                      orario_uscita = $1,
                      note = $2
                  WHERE id = $3`,
@@ -579,6 +580,7 @@ app.post('/api/piantone/azione', async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 });
+
 // PIANTONE LIBERI (CON ESCLUSIONE V1P E CONTEGGIO LISTA) ---
 app.get('/api/piantone/liberi', async (req, res) => {
     try {
