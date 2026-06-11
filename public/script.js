@@ -1224,7 +1224,7 @@ async function aggiornaVeicoli() {
         `;
 
         if (countListaV1p > 0) {
-            stringaContatoriNuova += ` | <span style="display:inline-block; margin:0 3px; font-weight:600; color:#2563eb;">🔹 Lista V1P: <span style="font-weight:bold;">${countListaV1p}</span></span>`;
+            stringaContatoriNuova += ` | <span style="display:inline-block; margin:0 3px; font-weight:600; color:#2563eb;">🔹 Lista Esterni: <span style="font-weight:bold;">${countListaV1p}</span></span>`;
         }
 
         // Iniettiamo la nuova riga formattata al posto dei vecchi contatori "Liberi | Dentro"
