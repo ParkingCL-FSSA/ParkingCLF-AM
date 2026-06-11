@@ -49,49 +49,6 @@ function clean(input) {
         .substring(0, 5);
 }
 
-// ⏰ JOB SCADENZA
-async function scadenzaPrenotazioni() {
-    try {
-        const result = await pool.query(`
-            UPDATE prenotazioni
-            SET stato = CASE
-                -- Il periodo prenotato è COMPLETAMENTE SUPERATO e l'auto non è mai entrata.
-                -- Diventa ARCHIVIATO e sparisce dalle liste operative del piantone.
-                WHEN stato IN ('PRENOTATO', 'SCADUTO')
-                     AND data_fine < CURRENT_DATE
-                     AND orario_ingresso IS NULL
-                THEN 'ARCHIVIATO'
-
-                -- Il periodo è superato, l'auto risulta ENTRATA ma non è mai stata registrata l'uscita.
-                -- Diventa DA_VERIFICARE (va nei ritardi effettivi del piantone/admin).
-                WHEN stato = 'ENTRATO'
-                     AND data_fine < CURRENT_DATE
-                     AND orario_uscita IS NULL
-                THEN 'DA_VERIFICARE'
-
-                ELSE stato
-            END
-            WHERE
-                (
-                    stato IN ('PRENOTATO', 'SCADUTO')
-                    AND data_fine < CURRENT_DATE
-                )
-                OR
-                (
-                    stato = 'ENTRATO'
-                    AND data_fine < CURRENT_DATE
-                    AND orario_uscita IS NULL
-                )
-        `);
-
-        if (result.rowCount > 0) {
-            console.log(`[SCADENZA] ${result.rowCount} prenotazioni aggiornate nei record storici`);
-        }
-    } catch (err) {
-        console.error('[SCADENZA] Errore:', err.message);
-    }
-}
-
 async function verificaRuolo(npass, ruoloRichiesto) {
     if (!npass) return false;
     const result = await pool.query(
@@ -776,6 +733,49 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
   }
 });
 
+// ⏰ JOB SCADENZA
+async function scadenzaPrenotazioni() {
+    try {
+        const result = await pool.query(`
+            UPDATE prenotazioni
+            SET stato = CASE
+                -- Il periodo prenotato è COMPLETAMENTE SUPERATO e l'auto non è mai entrata.
+                -- Diventa ARCHIVIATO e sparisce dalle liste operative del piantone.
+                WHEN stato IN ('PRENOTATO', 'SCADUTO')
+                     AND data_fine < CURRENT_DATE
+                     AND orario_ingresso IS NULL
+                THEN 'ARCHIVIATO'
+
+                -- Il periodo è superato, l'auto risulta ENTRATA ma non è mai stata registrata l'uscita.
+                -- Diventa DA_VERIFICARE (va nei ritardi effettivi del piantone/admin).
+                WHEN stato = 'ENTRATO'
+                     AND data_fine < CURRENT_DATE
+                     AND orario_uscita IS NULL
+                THEN 'DA_VERIFICARE'
+
+                ELSE stato
+            END
+            WHERE
+                (
+                    stato IN ('PRENOTATO', 'SCADUTO')
+                    AND data_fine < CURRENT_DATE
+                )
+                OR
+                (
+                    stato = 'ENTRATO'
+                    AND data_fine < CURRENT_DATE
+                    AND orario_uscita IS NULL
+                )
+        `);
+
+        if (result.rowCount > 0) {
+            console.log(`[SCADENZA] ${result.rowCount} prenotazioni aggiornate nei record storici`);
+        }
+    } catch (err) {
+        console.error('[SCADENZA] Errore:', err.message);
+    }
+}
+
 // ============================================================
 // 📥 ROUTE 1: RIATTIVA PRENOTAZIONE SCADUTA (AUTO DENTRO)
 // ============================================================
@@ -797,7 +797,7 @@ app.post('/api/piantone/scaduto-riattiva', async (req, res) => {
             UPDATE prenotazioni 
             SET stato = 'ENTRATO', 
                 orario_ingresso = $1, 
-                note = CONCAT(COALESCE(note, ''), ' - Verificato il ', TO_CHAR(NOW(), 'DD/MM/YYYY HH24:MI'))
+                note = CONCAT(COALESCE(note, ''), ' - POST(I) - Verificato il ', TO_CHAR(NOW(), 'DD/MM/YYYY HH24:MI'))
             WHERE id = $2
             RETURNING *;
         `;
