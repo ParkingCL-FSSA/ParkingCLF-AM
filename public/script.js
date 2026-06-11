@@ -1830,51 +1830,74 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
     }
 });
 
-// Pulsante PRESENTE (Verificato)
+// ==========================================
+    // PULSANTE PRESENTE (Conferma e manda Uscita)
+    // ==========================================
     document.getElementById('btn-presente')?.addEventListener('click', async () => {
         if (!currentPren) return;
-        if (!confirm('Confermi che il veicolo è presente nel parcheggio?')) return;
+        if (!confirm('Confermi che il veicolo è presente nel parcheggio e sta uscendo?')) return;
 
-        const res = await fetch('/api/piantone/azione', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: currentPren.id, azione: 'uscita', npass: userPass })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert('Veicolo verificato');
-            await aggiornaVeicoli();
-            document.getElementById('box-verifica')?.classList.add('hidden');
-            const btnUscita = document.getElementById('btn-uscita');
-            if (btnUscita) {
-                btnUscita.style.display = 'inline-block';
-                btnUscita.disabled = true;
-                btnUscita.innerText = 'VERIFICATO';
-                btnUscita.style.background = '#64748b';
+        try {
+            const res = await fetch('/api/piantone/azione', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: currentPren.id, azione: 'uscita', npass: userPass })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                if (typeof beepUscita !== 'undefined') beepUscita.play();
+                alert('Veicolo verificato in sosta. Registrata l\'uscita.');
+                
+                // Aggiorna la tabella sotto
+                await aggiornaVeicoli();
+                
+                // Reset totale del pannello piantone (Interfaccia Pulita)
+                document.getElementById('box-verifica')?.classList.add('hidden');
+                document.getElementById('panel-piantone')?.classList.add('hidden');
+                document.getElementById('search-p').value = ''; // Svuota la barra di ricerca reale
+                currentPren = null;
+            } else {
+                alert('Errore dal server: ' + (data.error || 'Impossibile aggiornare'));
             }
+        } catch (err) {
+            console.error(err);
+            alert('Errore di rete durante la verifica');
         }
     });
 
-    // Pulsante NON PRESENTE (Forza stato USCITO)
+    // ==========================================
+    // PULSANTE NON PRESENTE (Forza stato USCITO)
+    // ==========================================
     document.getElementById('btn-non-presente')?.addEventListener('click', async () => {
         if (!currentPren) return;
         if (!confirm('Confermi che il veicolo NON è presente nel parcheggio?')) return;
 
-        const res = await fetch('/api/piantone/azione', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: currentPren.id, azione: 'non-presente', npass: userPass })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert('Veicolo segnato come NON presente (USCITO)');
-            await aggiornaVeicoli();
-            document.getElementById('box-verifica')?.classList.add('hidden');
-            document.getElementById('panel-piantone')?.classList.add('hidden');
-            currentPren = null;
-            if (typeof inputSearch !== 'undefined' && inputSearch) inputSearch.value = '';
-        } else {
-            alert('Errore dal server: ' + (data.error || 'Impossibile aggiornare'));
+        try {
+            const res = await fetch('/api/piantone/azione', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: currentPren.id, azione: 'non-presente', npass: userPass })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                alert('Veicolo rimosso dall\'elenco (Segnato come USCITO)');
+                
+                // Aggiorna la tabella sotto
+                await aggiornaVeicoli();
+                
+                // Reset totale del pannello piantone
+                document.getElementById('box-verifica')?.classList.add('hidden');
+                document.getElementById('panel-piantone')?.classList.add('hidden');
+                document.getElementById('search-p').value = ''; // Svuota la barra di ricerca reale
+                currentPren = null;
+            } else {
+                alert('Errore dal server: ' + (data.error || 'Impossibile aggiornare'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Errore di rete durante l\'aggiornamento');
         }
     });
     
