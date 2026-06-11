@@ -787,7 +787,7 @@ async function scadenzaPrenotazioni() {
     }
 }
 
-// --- API SPECIFICA PER SANATORIA AUTO IN RITARDO ---
+// --- API SPECIFICA PER SANATORIA AUTO (REGISTRAZIONE USCITA POSTUMA) ---
 app.post('/api/piantone/verificati-usciti', async (req, res) => {
     const { id, npass } = req.body;
 
@@ -799,17 +799,15 @@ app.post('/api/piantone/verificati-usciti', async (req, res) => {
     if (!id) return res.status(400).json({ error: "ID prenotazione mancante" });
 
     try {
-        // Query che imposta lo stato a USCITO, inserisce l'orario di uscita attuale
-        // e calcola i giorni di ritardo reali tra oggi (NOW) e la data_fine del DB
+        // Query che imposta lo stato a USCITO e inserisce la nota esatta: - Post (U) - Verificato il GG/MM/AAAA HH:MM
         const query = `
             UPDATE prenotazioni 
             SET stato = 'USCITO', 
                 orario_uscita = NOW(), 
                 note = CONCAT(
                     COALESCE(note, ''), 
-                    ' - Uscito con ritardo di ', 
-                    GREATEST(0, EXTRACT(DAY FROM NOW() - data_fine::timestamp)), 
-                    ' gg'
+                    ' - Post (U) - Verificato il ', 
+                    TO_CHAR(NOW(), 'DD/MM/YYYY HH24:MI')
                 )
             WHERE id = $1
             RETURNING *;
