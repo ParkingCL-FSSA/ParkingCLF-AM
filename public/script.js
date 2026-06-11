@@ -926,25 +926,24 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     let notaRitardo = ` - Uscito con ritardo di ${diffDays} gg`;
                     let noteAggiornate = currentPren.note ? currentPren.note + notaRitardo : notaRitardo.trim();
 
-                    // --- CLICK SU PRESENTE ---
+                   // --- CLICK SU PRESENTE (Chiamata alla nuova API dedicata) ---
                     document.getElementById('btn-presente')?.addEventListener('click', async (ev) => { 
                         ev.preventDefault(); 
-                        if (!confirm(`Confermi la presenza del veicolo? Verranno salvate le note: "${notaRitardo.trim()}"`)) return;
+                        if (!confirm('Confermi che il veicolo è PRESENTE? Verrà registrata l\'uscita con il calcolo dei giorni di ritardo nelle note.')) return;
                         
                         try {
-                            const response = await fetch('/api/piantone/azione', {
+                            const response = await fetch('/api/piantone/verificati-usciti', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ 
                                     id: currentId, 
-                                    azione: 'uscita', 
-                                    npass: userPass,
-                                    note: noteAggiornate // Invio della nota calcolata
+                                    npass: userPass 
                                 })
                             });
+                            
                             const resData = await response.json();
                             if (resData.success) {
-                                alert('Operazione completata con successo.');
+                                alert('Operazione completata con successo. Stato allineato.');
                                 if (typeof aggiornaVeicoli === 'function') await aggiornaVeicoli();
                                 resetSchermataPiantone();
                             } else {
