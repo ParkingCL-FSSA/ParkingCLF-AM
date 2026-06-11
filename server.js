@@ -545,6 +545,9 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
 });
 
 // --- PIANTONE AZIONE ---
+// ==========================================
+// ROTTA 1: AZIONE STANDARD SBARRA
+// ==========================================
 app.post('/api/piantone/azione', async (req, res) => {
     const { id, azione, npass } = req.body;
 
@@ -598,6 +601,29 @@ app.post('/api/piantone/azione', async (req, res) => {
     } catch (err) {
         console.error("Errore piantone:", err);
         res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ==========================================
+// ROTTA 2: SEGNALA NON PRESENTE (FORZA IN 'USCITO')
+// ==========================================
+app.post('/api/piantone/non-presente', async (req, res) => {
+    const { id } = req.body;
+    
+    if (!id) return res.status(400).json({ error: "ID mancante" });
+
+    try {
+        const oraUscita = new Date();
+        // Aggiorniamo forzatamente lo stato a 'USCITO' e timbriamo l'ora 
+        // così il posto si libera e lo storico è coerente
+        await pool.query(
+            `UPDATE prenotazioni SET stato = 'USCITO', orario_uscita = $1 WHERE id = $2`, 
+            [oraUscita, id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Errore non-presente:", err);
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -762,16 +788,6 @@ app.get('/api/piantone/arrivi-oggi', async (req, res) => {
     console.error("Errore endpoint arrivi-oggi:", e);
     res.status(500).json({ error: 'Errore server' });
   }
-});
-
-app.post('/api/piantone/non-presente', async (req, res) => {
-    const { id } = req.body;
-    try {
-        await pool.query(`UPDATE prenotazioni SET stato = 'USCITO' WHERE id = $1`, [id]);
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
 });
 
 // ============================================================
