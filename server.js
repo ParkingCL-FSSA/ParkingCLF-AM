@@ -544,16 +544,13 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
     }
 });
 
-// --- PIANTONE AZIONE UNIFICATO ---
+// --- PIANTONE AZIONE UNIFICATO (CORRETTO) ---
 app.post('/api/piantone/azione', async (req, res) => {
     const { id, azione, npass } = req.body;
 
-    // Se l'azione è non-presente, saltiamo il controllo di ruolo stringente se serve, 
-    // oppure lo verifichiamo (consigliato).
-    if (azione !== 'non-presente') {
-        if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
-            return res.status(403).json({ error: "Accesso non autorizzato" });
-        }
+    // 1. CONTROLLO DI SICUREZZA STATICO PER QUALSIASI AZIONE DEL PIANTONE
+    if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
+        return res.status(403).json({ error: "Accesso non autorizzato. Ruolo non valido." });
     }
 
     if (!id || !azione) return res.status(400).json({ error: "Dati mancanti" });
