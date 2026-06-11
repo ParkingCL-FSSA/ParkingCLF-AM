@@ -501,9 +501,10 @@ app.get('/api/piantone/cerca/:npass', async (req, res) => {
     }
 });
 
-// --- PIANTONE AZIONE UNIFICATO (CORRETTO) ---
+// --- PIANTONE AZIONE UNIFICATO (CORRETTO CON GESTIONE NOTE) ---
 app.post('/api/piantone/azione', async (req, res) => {
-    const { id, azione, npass } = req.body;
+    // 🎯 ESTRAGGO ANCHE IL CAMPO NOTE INVIATO DAL CLIENT
+    const { id, azione, npass, note } = req.body;
 
     // 1. CONTROLLO DI SICUREZZA STATICO PER QUALSIASI AZIONE DEL PIANTONE
     if (!await verificaRuolo(npass, ['piantone', 'admin'])) {
@@ -522,11 +523,15 @@ app.post('/api/piantone/azione', async (req, res) => {
 
         const pren = prenRes.rows[0];
 
-        // --- CASO 1: L'AUTO NON È PRESENTATO (FORZA STATO USCITO) ---
+        // --- CASO 1: L'AUTO NON È PRESENTATA (FORZA STATO USCITO) ---
         if (azione === 'non-presente') {
             await pool.query(
-                `UPDATE prenotazioni SET stato = 'USCITO', orario_uscita = $1 WHERE id = $2`, 
-                [ora, id]
+                `UPDATE prenotazioni 
+                 SET stato = 'USCITO', 
+                     orario_uscita = $1,
+                     note = $2 
+                 WHERE id = $3`, 
+                [ora, note || pren.note, id]
             );
             return res.json({ success: true });
         }
@@ -543,7 +548,7 @@ app.post('/api/piantone/azione', async (req, res) => {
             return res.json({ success: true });
         }
 
-        // --- CASO 3: USCITA STANDARD SBARRA ---
+        // --- CASO 3: USCITA STANDARD O SANATORIA RITARDO DA_VERIFICARE ---
         if (azione === 'uscita') {
             if (!pren.orario_ingresso) {
                 return res.status(400).json({ success: false, error: "Auto mai entrata" });
@@ -552,12 +557,17 @@ app.post('/api/piantone/azione', async (req, res) => {
                 return res.status(400).json({ success: false, error: "Uscita già registrata" });
             }
             
+            // Se sono state passate delle note nuove (come il ritardo), usiamo quelle, 
+            // altrimenti manteniamo quelle vecchie intatte nel DB.
+            const noteFinali = note || pren.note;
+            
             await pool.query(
                 `UPDATE prenotazioni 
                  SET stato = CASE WHEN stato = 'DA_VERIFICARE' THEN 'SCADUTO' ELSE 'USCITO' END, 
-                     orario_uscita = $1 
-                 WHERE id = $2`,
-                [ora, id]
+                     orario_uscita = $1,
+                     note = $2
+                 WHERE id = $3`,
+                [ora, noteFinali, id]
             );
             return res.json({ success: true });
         }
@@ -569,7 +579,6 @@ app.post('/api/piantone/azione', async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 });
-
 // PIANTONE LIBERI (CON ESCLUSIONE V1P E CONTEGGIO LISTA) ---
 app.get('/api/piantone/liberi', async (req, res) => {
     try {
