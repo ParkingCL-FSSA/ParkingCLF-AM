@@ -1830,7 +1830,7 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
     }
 });
 
-// ==========================================
+    // ==========================================
     // PULSANTE PRESENTE (Conferma e manda Uscita)
     // ==========================================
     document.getElementById('btn-presente')?.addEventListener('click', async () => {
