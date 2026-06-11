@@ -895,7 +895,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 btnUscita.disabled = false;
             }
             
-            // 🎯 STATO: DA VERIFICARE (Calcolo dinamico dei giorni di ritardo)
+// 🎯 STATO: DA VERIFICARE
             else if (currentPren.stato === 'DA_VERIFICARE') {
                 btnIngresso.style.display = 'none'; 
                 
@@ -910,65 +910,22 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     boxVerifica.style.marginTop = '15px';
                     boxVerifica.classList.remove('hidden');
                     
-                   // --- CLICK SU PRESENTE (Chiamata alla nuova API dedicata) ---
+                    // --- CLICK SU PRESENTE ---
                     document.getElementById('btn-presente')?.addEventListener('click', async (ev) => { 
                         ev.preventDefault(); 
-                        if (!confirm('Confermi che il veicolo è PRESENTE? Verrà registrata l\'uscita con il calcolo dei giorni di ritardo nelle note.')) return;
-                        
-                        try {
-                            const response = await fetch('/api/piantone/verificati-usciti', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    id: currentId, 
-                                    npass: userPass 
-                                })
-                            });
-                            
-                            const resData = await response.json();
-                            if (resData.success) {
-                                alert('Operazione completata con successo. Stato allineato.');
-                                if (typeof aggiornaVeicoli === 'function') await aggiornaVeicoli();
-                                resetSchermataPiantone();
-                            } else {
-                                alert('Errore: ' + (resData.error || 'Impossibile aggiornare'));
-                            }
-                        } catch (e) {
-                            alert('Errore di connessione con il server');
-                        }
+                        if (!confirm('Confermi la sanatoria? Il veicolo verrà registrato come USCITO con nota Post (U).')) return;
+                        await eseguiSanatoriaUscita(currentId);
                     });
 
                     // --- CLICK SU NON PRESENTE ---
                     document.getElementById('btn-non-presente')?.addEventListener('click', async (ev) => { 
                         ev.preventDefault(); 
-                        if (!confirm('Confermi che il veicolo NON è presente? Imosterò lo stato su USCITO.')) return;
-                        
-                        try {
-                            const response = await fetch('/api/piantone/azione', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    id: currentId, 
-                                    azione: 'non-presente', 
-                                    npass: userPass,
-                                    note: currentPren.note ? currentPren.note + " - Forzata uscita (Non Presente)" : "Forzata uscita (Non Presente)"
-                                })
-                            });
-                            const resData = await response.json();
-                            if (resData.success) {
-                                alert('Veicolo allineato come NON PRESENTE (Uscito).');
-                                if (typeof aggiornaVeicoli === 'function') await aggiornaVeicoli();
-                                resetSchermataPiantone();
-                            } else {
-                                alert('Errore: ' + (resData.error || 'Impossibile aggiornare'));
-                            }
-                        } catch (e) {
-                            alert('Errore di connessione con il server');
-                        }
+                        if (!confirm('Confermi la sanatoria? Il veicolo verrà registrato come USCITO con nota Post (U).')) return;
+                        await eseguiSanatoriaUscita(currentId);
                     });
                 }
             }
-            
+                
             // MAI ENTRATO (ARCHIVIATO)
             else if (currentPren.stato === 'MAI_ENTRATO') {
                 btnIngresso.style.display = 'none'; 
@@ -1083,6 +1040,31 @@ async function cercaPass(passManuale = null, idRecord = null) {
     } catch (err) {
         console.error("ERRORE CERCA PASS:", err);
         alert("Errore ricerca PASS");
+    }
+}
+
+// Funzione centralizzata per agganciare la nuova API di sanatoria note Post (U)
+async function eseguiSanatoriaUscita(idPrenotazione) {
+    try {
+        const response = await fetch('/api/piantone/verificati-usciti', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                id: idPrenotazione, 
+                npass: userPass 
+            })
+        });
+        
+        const resData = await response.json();
+        if (resData.success) {
+            alert('Operazione completata. Stato allineato e nota Post (U) inserita.');
+            if (typeof aggiornaVeicoli === 'function') await aggiornaVeicoli();
+            resetSchermataPiantone();
+        } else {
+            alert('Errore: ' + (resData.error || 'Impossibile aggiornare'));
+        }
+    } catch (e) {
+        alert('Errore di connessione con il server');
     }
 }
 
