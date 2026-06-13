@@ -108,18 +108,33 @@ app.post('/api/valida-pass', async (req, res) => {
     }
 });
 
-// --- 2. PRENOTAZIONE CON CONTROLLO QUOTE ENTE CORRETTO ---
+// --- 2. PRENOTAZIONE CON CONTROLLO QUOTE ENTE CORRETTO (AGGIORNATO) ---
 app.post('/api/prenota', async (req, res) => {
-    const { npass, giorni, email } = req.body;
+    // 🎯 Estraggo anche il 'profilo' inviato dal frontend (se manca, di default è 'STD')
+    const { npass, giorni, email, profilo } = req.body;
+    const prof = profilo || 'STD';
     
     if (!npass || !email) return res.status(400).json({ error: "Inserisci la tua email" });
+    if (!Array.isArray(giorni) || giorni.length === 0) return res.status(400).json({ error: "Giorni non validi" });
+    
     if (giorni.length === 1) {
         return res.status(400).json({ 
             error: "Per il parcheggio 【Lunga Sosta】 il minimo di giorni prenotabili sono 2" 
         });
     }
-    if (!Array.isArray(giorni) || giorni.length === 0) return res.status(400).json({ error: "Giorni non validi" });
-    if (giorni.length > 15) return res.status(400).json({ error: "Limite 15 giorni superato" });
+
+    // 🔄 IMPOSTAZIONE DINAMICA DEI LIMITI IN BASE AL PROFILO
+    let limiteMassimo = 15;
+    if (prof === 'MIS') {
+        limiteMassimo = 45;
+    } else if (prof === 'TRN') {
+        limiteMassimo = 30;
+    }
+
+    // Primo blocco dinamico
+    if (giorni.length > limiteMassimo) {
+        return res.status(400).json({ error: `⚠️ Profilo ${prof}: Limite ${limiteMassimo} giorni superato` });
+    }
 
     try {
         const sorted = [...giorni].sort();
@@ -148,7 +163,7 @@ app.post('/api/prenota', async (req, res) => {
             });
         }
 
-        // CHECK 2: massimo 15 giorni cumulativi in 45 giorni
+        // CHECK 2: Massimo X giorni cumulativi nella finestra mobile di 45 giorni
         const inizioNuova = new Date(dataInizio);
         const fineNuova = new Date(dataFine);
         
@@ -190,9 +205,10 @@ app.post('/api/prenota', async (req, res) => {
             d.setDate(d.getDate() + 1);
         }
         
-        if (giorniOccupati.size > 15) {
+        // Controllo cumulativo dinamico basato sul profilo
+        if (giorniOccupati.size > limiteMassimo) {
             return res.status(400).json({
-                error: `Limite superato: massimo 15 giorni prenotabili in qualunque finestra di 45 giorni consecutivi.`
+                error: `⚠️ Profilo ${prof}: Limite superato! Massimo ${limiteMassimo} giorni prenotabili in qualunque finestra di 45 giorni consecutivi.`
             });
         }
 
