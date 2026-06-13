@@ -620,6 +620,10 @@ async function inviaPren() {
     const modalLoading = document.getElementById('modal-loading');
     const email = document.getElementById('u-email').value.trim().toLowerCase();
 
+    // 🎯 RECUPERO IL PROFILO SELEZIONATO DALL'UTENTE (STD, MIS, TRN)
+    const selectProfilo = document.getElementById('select-profilo');
+    const profilo = selectProfilo ? selectProfilo.value : 'STD';
+
     try {
         const res = await fetch('/api/prenota', {
             method: 'POST',
@@ -629,11 +633,12 @@ async function inviaPren() {
             body: JSON.stringify({
                 npass: userPass,
                 giorni: selectedDays,
-                email: email
+                email: email,
+                profilo: profilo // 🚀 FONDAMENTALE: Adesso il backend sa quale limite applicare!
             })
         });
 
-    if (res.ok) {
+        if (res.ok) {
             selectedDays.sort();
             
             // Calcola il totale dei giorni effettivi
@@ -677,6 +682,7 @@ async function inviaPren() {
         if (modalLoading) modalLoading.style.display = 'none';
     }
 }
+
 
 async function mostraMie() {
 
