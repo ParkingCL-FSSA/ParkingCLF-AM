@@ -392,7 +392,7 @@ app.post('/api/user/salva-nota', async (req, res) => {
     }
 });
 
-// --- 5. VEICOLI DENTRO (CORRETTO E FILTRATO) ---
+// PIANTONI --- VEICOLI DENTRO (CORRETTO E FILTRATO) ---
 app.get('/api/veicoli-dentro', async (req, res) => {
     const npass = req.query.npass;
 
@@ -631,78 +631,6 @@ app.get('/api/piantone/liberi', async (req, res) => {
     } catch (err) {
         console.error("💥 ERRORE CONTEGGIO LIBERI:", err);
         res.status(500).json({ error: "Errore interno" });
-    }
-});
-
-// ADMIN CRUSCOTTO OTTIMIZZATO ---
-app.get('/api/admin/cruscotto', async (req, res) => {
-    const npass = req.query.npass;
-    if (!await verificaRuolo(npass, 'admin')) {
-        return res.status(403).json({ error: "Accesso non autorizzato" });
-    }
-    try {
-        const query = `
-            WITH giorni AS (
-                SELECT generate_series(CURRENT_DATE, CURRENT_DATE + interval '44 days', '1 day')::date AS giorno
-            ),
-            enti_posti AS (
-                SELECT ente, posti FROM assegnazioni
-            ),
-            prenotazioni_attive AS (
-                SELECT p.npass, p.data_inizio, p.data_fine, r.ente
-                FROM prenotazioni p
-                JOIN registro_pass r ON UPPER(p.npass) = UPPER(r.npass)
-                WHERE p.stato IN ('PRENOTATO', 'ENTRATO')
-            )
-            SELECT g.giorno, ep.ente, ep.posti, COUNT(DISTINCT pa.npass) as occupati
-            FROM giorni g
-            CROSS JOIN enti_posti ep
-            LEFT JOIN prenotazioni_attive pa 
-                ON pa.ente = ep.ente AND g.giorno BETWEEN pa.data_inizio AND pa.data_fine
-            GROUP BY g.giorno, ep.ente, ep.posti
-            ORDER BY g.giorno, ep.ente;
-        `;
-
-        const result = await pool.query(query);
-        const grouped = {};
-        
-        result.rows.forEach(row => {
-            const giorno = row.giorno.toISOString().split('T')[0];
-            if (!grouped[giorno]) {
-                grouped[giorno] = { data: giorno, enti: {}, totaleOccupati: 0 };
-            }
-            const occupati = parseInt(row.occupati);
-            const totale = parseInt(row.posti);
-            grouped[giorno].enti[row.ente] = {
-                occupati: occupati,
-                totale: totale,
-                liberi: totale - occupati
-            };
-            grouped[giorno].totaleOccupati += occupati;
-        });
-
-        const output = Object.values(grouped).map(day => ({
-            ...day,
-            totaleLiberi: 90 - day.totaleOccupati
-        }));
-
-        res.json(output);
-    } catch (err) {
-        console.error('[CRUSCOTTO]', err);
-        res.status(500).json({ error: err.message });
-    }
-});
-    
-app.get('/api/admin/ritardi', async (req, res) => {
-    try {
-        const r = await pool.query(`
-            SELECT npass, data_fine, orario_uscita, (CURRENT_DATE - data_fine) as giorni_ritardo
-            FROM prenotazioni
-            WHERE stato = 'ENTRATO' AND CURRENT_DATE > data_fine
-        `);
-        res.json(r.rows);
-    } catch (e) {
-        res.status(500).json({ error: e.message });
     }
 });
 
@@ -945,6 +873,78 @@ app.post('/api/piantone/scaduto-archivia', async (req, res) => {
     } catch (err) {
         console.error("💥 ERRORE CRITICO DB scaduto-archivia:", err.message);
         res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ADMIN CRUSCOTTO OTTIMIZZATO ---
+app.get('/api/admin/cruscotto', async (req, res) => {
+    const npass = req.query.npass;
+    if (!await verificaRuolo(npass, 'admin')) {
+        return res.status(403).json({ error: "Accesso non autorizzato" });
+    }
+    try {
+        const query = `
+            WITH giorni AS (
+                SELECT generate_series(CURRENT_DATE, CURRENT_DATE + interval '44 days', '1 day')::date AS giorno
+            ),
+            enti_posti AS (
+                SELECT ente, posti FROM assegnazioni
+            ),
+            prenotazioni_attive AS (
+                SELECT p.npass, p.data_inizio, p.data_fine, r.ente
+                FROM prenotazioni p
+                JOIN registro_pass r ON UPPER(p.npass) = UPPER(r.npass)
+                WHERE p.stato IN ('PRENOTATO', 'ENTRATO')
+            )
+            SELECT g.giorno, ep.ente, ep.posti, COUNT(DISTINCT pa.npass) as occupati
+            FROM giorni g
+            CROSS JOIN enti_posti ep
+            LEFT JOIN prenotazioni_attive pa 
+                ON pa.ente = ep.ente AND g.giorno BETWEEN pa.data_inizio AND pa.data_fine
+            GROUP BY g.giorno, ep.ente, ep.posti
+            ORDER BY g.giorno, ep.ente;
+        `;
+
+        const result = await pool.query(query);
+        const grouped = {};
+        
+        result.rows.forEach(row => {
+            const giorno = row.giorno.toISOString().split('T')[0];
+            if (!grouped[giorno]) {
+                grouped[giorno] = { data: giorno, enti: {}, totaleOccupati: 0 };
+            }
+            const occupati = parseInt(row.occupati);
+            const totale = parseInt(row.posti);
+            grouped[giorno].enti[row.ente] = {
+                occupati: occupati,
+                totale: totale,
+                liberi: totale - occupati
+            };
+            grouped[giorno].totaleOccupati += occupati;
+        });
+
+        const output = Object.values(grouped).map(day => ({
+            ...day,
+            totaleLiberi: 90 - day.totaleOccupati
+        }));
+
+        res.json(output);
+    } catch (err) {
+        console.error('[CRUSCOTTO]', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+    
+app.get('/api/admin/ritardi', async (req, res) => {
+    try {
+        const r = await pool.query(`
+            SELECT npass, data_fine, orario_uscita, (CURRENT_DATE - data_fine) as giorni_ritardo
+            FROM prenotazioni
+            WHERE stato = 'ENTRATO' AND CURRENT_DATE > data_fine
+        `);
+        res.json(r.rows);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
     }
 });
 
