@@ -890,7 +890,7 @@ app.post('/api/piantone/scaduto-riattiva', async (req, res) => {
             UPDATE prenotazioni 
             SET stato = 'ENTRATO', 
                 orario_ingresso = $1, 
-                note = CONCAT(COALESCE(note, ''), ' - POST(I) - Verificato il ', TO_CHAR(NOW(), 'DD/MM/YYYY HH24:MI'))
+                note = CONCAT(COALESCE(note, ''), ' - Post (I) - Verificato il ', TO_CHAR(NOW(), 'DD/MM/YYYY HH24:MI'))
             WHERE id = $2
             RETURNING *;
         `;
