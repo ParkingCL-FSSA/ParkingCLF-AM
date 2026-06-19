@@ -746,7 +746,7 @@ app.post('/api/piantone/verificato-dentro', async (req, res) => {
             UPDATE prenotazioni 
             SET note = CONCAT(
                     COALESCE(note, ''), 
-                    ' - Verificato ancora dentro, il ', 
+                    ' - Verificato (Non Uscito) il ', 
                     TO_CHAR(NOW(), 'DD/MM/YYYY'), 
                     ' ore ', 
                     TO_CHAR(NOW(), 'HH24:MI')
@@ -774,14 +774,14 @@ app.post('/api/piantone/post-uscito', async (req, res) => {
     if (!id) return res.status(400).json({ error: "ID prenotazione mancante" });
 
     try {
-        // Forza lo stato a USCITO, imposta l'orario di uscita e aggiunge la nota Post (U)
+        // Forza lo stato a USCITO, imposta l'orario di uscita e aggiunge la nota Post (F)
         const query = `
             UPDATE prenotazioni 
             SET stato = 'USCITO',
                 orario_uscita = NOW(),
                 note = CONCAT(
                     COALESCE(note, ''), 
-                    ' - Post (U) - Verificato il ', 
+                    ' - Verificato Post (Fine) il ', 
                     TO_CHAR(NOW(), 'DD/MM/YYYY HH24:MI')
                 )
             WHERE id = $1
@@ -792,7 +792,7 @@ app.post('/api/piantone/post-uscito', async (req, res) => {
 
         return res.json({ success: true });
     } catch (err) {
-        console.error("Errore post-uscito:", err);
+        console.error("Errore post-fine:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -818,7 +818,7 @@ app.post('/api/piantone/scaduto-riattiva', async (req, res) => {
             UPDATE prenotazioni 
             SET stato = 'ENTRATO', 
                 orario_ingresso = $1, 
-                note = CONCAT(COALESCE(note, ''), ' - Post (I) - Verificato il ', TO_CHAR(NOW(), 'DD/MM/YYYY HH24:MI'))
+                note = CONCAT(COALESCE(note, ''), ' - Verificato Post (Inizio) il 'TO_CHAR(NOW(), 'DD/MM/YYYY HH24:MI'))
             WHERE id = $2
             RETURNING *;
         `;
