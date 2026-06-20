@@ -814,11 +814,12 @@ app.post('/api/piantone/scaduto-riattiva', async (req, res) => {
     }
 
     try {
+        // 🌟 CORRETTA LA SINTASSI CONCAT (aggiunta la virgola prima di TO_CHAR)
         const query = `
             UPDATE prenotazioni 
             SET stato = 'ENTRATO', 
                 orario_ingresso = $1, 
-                note = CONCAT(COALESCE(note, ''), ' - Verificato Post (Inizio) il 'TO_CHAR(NOW(), 'DD/MM/YYYY HH24:MI'))
+                note = CONCAT(COALESCE(note, ''), ' - Verificato Post (Inizio) il ', TO_CHAR(NOW(), 'DD/MM/YYYY HH24:MI'))
             WHERE id = $2
             RETURNING *;
         `;
