@@ -1313,12 +1313,15 @@ async function aggiornaVeicoli() {
             }
         }
 
-        // --- FILTRAGGIO LOCALE DELLA LISTA CORRENTE ---
+      // --- FILTRAGGIO LOCALE DELLA LISTA CORRENTE ---
         const valeurCercato = inputSearch?.value?.trim()?.toUpperCase() || "";
         const statoTabella = document.getElementById('stato-tabella');
 
         const lista = dati.filter(x => {
-            if (valeurCercato !== "") return x.npass?.toUpperCase() === valeurCercato;
+            // 🎯 CORREZIONE: Se c'è una ricerca testuale per PASS, isola il pass ed ESCI SUBITO dal filtro, ignorando i tab sotto!
+            if (valeurCercato !== "") {
+                return x.npass?.toUpperCase() === valeurCercato;
+            }
             
             const f = getFlags(x);
             const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
