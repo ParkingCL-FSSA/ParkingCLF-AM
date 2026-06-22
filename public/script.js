@@ -1942,11 +1942,16 @@ async function eseguiScadutoMaiEntrato() {
 
 
 // ============================================================
-// ✅ INTERCETTAZIONE LOGICA DI ACCESSO (ENTRA)
+// ✅ INTERCETTAZIONE LOGICA DI ACCESSO (ENTRA) - CON DIAGNOSTICA
 // ============================================================
 document.getElementById('btn-login')?.addEventListener('click', () => {
-    const inputLogin = document.getElementById('in-npass');
+    // Proviamo a cercare sia 'in-npass' che gli altri ID usati nei tuoi screenshot per sicurezza
+    const inputLogin = document.getElementById('in-npass') || document.getElementById('input-codice-identificativo') || document.querySelector('input[type="text"]');
     const codiceInserito = inputLogin ? inputLogin.value.trim().toUpperCase() : "";
+
+    console.log("🔍 [DIAGNOSTICA] Hai cliccato su ENTRA.");
+    console.log("🔍 [DIAGNOSTICA] Elemento input trovato:", inputLogin);
+    console.log("🔍 [DIAGNOSTICA] Valore letto dall'input:", codiceInserito);
 
     if (codiceInserito === "") {
         alert("⚠️ Inserisci un codice identificativo per accedere!");
@@ -1955,18 +1960,24 @@ document.getElementById('btn-login')?.addEventListener('click', () => {
 
     // Salva il codice nella variabile globale per le chiamate API
     userPass = codiceInserito; 
-    console.log("🔓 Accesso eseguito con userPass:", userPass);
+    console.log("🔓 [DIAGNOSTICA] userPass impostato a:", userPass);
 
     // Svuota l'input di ricerca per evitare filtri residui
     const inputSearch = document.getElementById('search-p') || document.getElementById('search-codice');
     if (inputSearch) inputSearch.value = "";
 
     // Pulisce visivamente l'interfaccia nascondendo schede orfane
-    if (typeof resetPannello === 'function') resetPannello();
+    if (typeof resetPannello === 'function') {
+        console.log("🧹 [DIAGNOSTICA] Eseguo resetPannello()");
+        resetPannello();
+    }
 
     // Forza il caricamento immediato e pulito di tutta la lista veicoli
     if (typeof aggiornaVeicoli === 'function') {
+        console.log("🚀 [DIAGNOSTICA] Lancio aggiornaVeicoli()...");
         aggiornaVeicoli();
+    } else {
+        console.error("💥 [ERRORE CRITICO] La funzione aggiornaVeicoli() non esiste o non è visibile qui!");
     }
 });
 
