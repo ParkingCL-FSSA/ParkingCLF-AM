@@ -824,22 +824,31 @@ async function cercaPass(passManuale = null, idRecord = null) {
 
     const regE = document.getElementById('reg-e');
     const regU = document.getElementById('reg-u');
+    const panelPiantone = document.getElementById('panel-piantone');
     
-    // 🧹 PULIZIA INIZIALE AD OGNI RICERCA
+    // 🧹 1. PULIZIA TOTALE AD OGNI NUOVA RICERCA (O RESET)
     if (boxAnomalia) {
         boxAnomalia.classList.add('hidden');
         boxAnomalia.style.display = 'none';
+        // Ripristiniamo la visibilità standard dei bottoni interni per evitare che rimangano nascosti da stati precedenti
+        if (btnAzioneVerde) btnAzioneVerde.style.display = 'block';
+        if (btnAzioneRosso) btnAzioneRosso.style.display = 'block';
     }
     if (regE) regE.innerHTML = '';
     if (regU) regU.innerHTML = '';
 
     if (!input) return;
 
-    const p = (passManuale || input.value).trim().toUpperCase();
+    const p = (passManuale !== null ? passManuale : input.value).trim().toUpperCase();
     input.value = p;
     
+    // Se premiamo reset o cerchiamo il vuoto, nascondiamo il pannello dei dettagli e usciamo
     if (!p) {
-        document.getElementById('panel-piantone')?.classList.add('hidden');
+        if (panelPiantone) {
+            panelPiantone.classList.add('hidden');
+            panelPiantone.style.display = 'none';
+        }
+        currentPren = null; // Azzeriamo la variabile di stato globale del pass corrente
         return;
     }
 
@@ -853,7 +862,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
         const btnIngresso = document.getElementById('btn-ingresso');
         const btnUscita = document.getElementById('btn-uscita');
 
-        // RESET BOTTONI STANDARD DI NAVIGAZIONE
+        // RESET COMPLETO DEI BOTTONI DI NAVIGAZIONE STANDARD (ENTRATA / USCITA)
         if (btnIngresso && btnUscita) {
             btnIngresso.style.display = 'inline-block';
             btnUscita.style.display = 'inline-block';
@@ -889,7 +898,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 }
                 if (regE) regE.innerHTML = `<span style="color:#ef4444; font-weight:bold;">⚠️ Non prima del ${fmtData(currentPren.data_inizio)}</span>`;
             }
-            // 2️⃣ STATO STANDARD: PRENOTATO (In tempo reale)
+            // 2️⃣ STATO STANDARD: PRENOTATO
             else if (currentPren.stato === 'PRENOTATO') {
                 if (btnIngresso) btnIngresso.disabled = false;
             }
@@ -909,7 +918,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     btnUscita.innerText = isGiaDentro ? 'VERIFICATO' : 'VERIFICARE'; 
                 }
 
-                // Configurazione chirurgica dei testi sul box anomalia (senza distruggere l'HTML)
+                // Configurazione del box anomalie
                 if (boxAnomalia) {
                     if (titoloBox) titoloBox.innerText = "🚨 STATO: DA VERIFICARE";
                     if (btnAzioneArancione) btnAzioneArancione.innerText = "VERIFICARE";
@@ -918,8 +927,8 @@ async function cercaPass(passManuale = null, idRecord = null) {
                         btnAzioneVerde.disabled = isGiaDentro;
                         btnAzioneVerde.style.opacity = isGiaDentro ? "0.4" : "1";
                         btnAzioneVerde.style.cursor = isGiaDentro ? "not-allowed" : "pointer";
+                        btnAzioneVerde.innerHTML = "✓ PRESENTE <br><small style='font-weight:normal;'>(Verificata Presenza)</small>";
                         
-                        // Rimuove vecchi listener per evitare doppie esecuzioni involontarie
                         const newBtnVerde = btnAzioneVerde.cloneNode(true);
                         btnAzioneVerde.parentNode.replaceChild(newBtnVerde, btnAzioneVerde);
                         
@@ -934,8 +943,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
 
                     if (btnAzioneRosso) {
                         btnAzioneRosso.dataset.azione = isGiaDentro ? 'uscito' : 'non-presente';
-                        btnAzioneRosso.innerHTML = isGiaDentro ? '❌ USCITO' : '❌ NON PRESENTE';
-                        if (sottotextRosso) sottotextRosso.innerText = isGiaDentro ? '(Registra Uscita)' : '(Annulla Prenotazione)';
+                        btnAzioneRosso.innerHTML = isGiaDentro ? '❌ USCITO <br><small id="sottotesto-rosso" style="font-weight:normal;">(Registra Uscita)</small>' : '❌ NON PRESENTE <br><small id="sottotesto-rosso" style="font-weight:normal;">(Annulla Prenotazione)</small>';
 
                         const newBtnRosso = btnAzioneRosso.cloneNode(true);
                         btnAzioneRosso.parentNode.replaceChild(newBtnRosso, btnAzioneRosso);
@@ -1033,8 +1041,12 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 }
             }
 
-            // PANNELLO UI INFRASTRUTTURA DETTAGLI PASS
-            document.getElementById('panel-piantone')?.classList.remove('hidden');
+            // PANNELLO DETTAGLI DEL PASS (MOSTRA CONTENUTO)
+            if (panelPiantone) {
+                panelPiantone.classList.remove('hidden');
+                panelPiantone.style.display = 'block';
+            }
+
             const labPass = document.getElementById('lab-pass');
             if (labPass) {
                 labPass.style.textAlign = 'center';
@@ -1060,12 +1072,12 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     : `<div style="font-size: 13px; color: #64748b; text-align:center;">Nessun ingresso registrato</div>`;
             }
             if (currentPren.stato !== 'SCADUTO' && currentPren.stato !== 'MAI_ENTRATO') {
-                if (regU) regU.innerHTML = currentPren.orario_Dynamic || currentPren.orario_uscita
+                if (regU) regU.innerHTML = currentPren.orario_uscita
                     ? `<div style="font-size: 14px; font-weight: bold; color: #1e293b; margin-top: 4px; text-align:center;">(U) Registrata il ${new Date(currentPren.orario_uscita).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</div>`
                     : "";
             }
 
-            // GESTIONE DEI COLORI DEL BANNER DELLO STATO DELLA RICERCA SOTTOSTANTE
+            // GESTIONE DEI COLORI DEL BANNER SOTTOSTANTE
             const bannerCerca = document.getElementById('stato-tabella'); 
             const tabularCorpo = document.getElementById('lista-veicoli');
             if (bannerCerca) {
@@ -1094,7 +1106,10 @@ async function cercaPass(passManuale = null, idRecord = null) {
             }
         } else {
             alert("Nessuna prenotazione trovata per questo PASS.");
-            document.getElementById('panel-piantone')?.classList.add('hidden');
+            if (panelPiantone) {
+                panelPiantone.classList.add('hidden');
+                panelPiantone.style.display = 'none';
+            }
         }
     } catch (err) {
         console.error("ERRORE CRITICO CERCA PASS:", err);
