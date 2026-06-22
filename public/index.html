@@ -344,19 +344,25 @@
           </div>
         </div>
         
-        <div id="box-verifica" class="hidden" style="
-           gap: 8px;
-           justify-content: center;
-           margin-top: 15px;
-        ">
-            <button id="btn-presente" type="button" style="width: auto; padding:6px 10px; font-size:12px; border:none; border-radius:8px; background:#16a34a; color:white; margin:0;">
-                ✅ PRESENTE
-            </button>
-            <button id="btn-non-presente" type="button" style="width: auto; padding:6px 10px; font-size:12px; border:none; border-radius:8px; background:#dc2626; color:white; margin:0;">
-                ❌ NON PRESENTE
-            </button>
-        </div>
-      </div> 
+       <div class="box-verifica">
+          <h3>${titoloBox}</h3>
+          <p>L'auto è effettivamente presente nel parcheggio?</p>
+          
+          <div class="pulsanti-azione">
+              <!-- Arancione principale -->
+              <button class="btn-arancione">${testoPulsanteArancione}</button>
+              
+              <!-- Verde: PRESENTE (Disattivato se l'auto è già registrata in ingresso) -->
+              <button class="btn-verde" ${attributoPulsanteVerde}>
+                  ✓ PRESENTE <br><small>(Verificata Presenza)</small>
+              </button>
+              
+              <!-- Rosso: Diventa USCITO se l'auto era già dentro -->
+              <button class="btn-rosso" data-azione="${èGiaEntrato ? 'uscito' : 'non-presente'}">
+                  ${testoPulsanteRosso} <br><small>${sottoTestoPulsanteRosso}</small>
+              </button>
+          </div>
+      </div>
             
 <h4 style="margin-top:25px; text-align:center; font-size:18px;">🚘 Accesso Veicoli</h4>
     
