@@ -902,15 +902,24 @@ async function cercaPass(passManuale = null, idRecord = null) {
             }
             
             // 🎯 STATO: DA VERIFICARE
-                else if (currentPren.stato === 'DA_VERIFICARE') {
-                    btnIngresso.style.display = 'none'; 
-                    
-                    btnUscita.disabled = true; 
-                    btnUscita.style.display = 'inline-block';
-                    btnUscita.style.background = '#ea580c'; 
-                    btnUscita.innerText = 'VERIFICATO'; 
+            else if (currentPren.stato === 'DA_VERIFICARE') {
+                btnIngresso.style.display = 'none'; 
                 
-                    if (boxVerifica) {
+                btnUscita.disabled = true; 
+                btnUscita.style.display = 'inline-block';
+                btnUscita.style.background = '#ea580c'; 
+                btnUscita.innerText = 'VERIFICATO'; 
+            
+                // 🔍 CONTROLLO EXTRA: Se c'è già un orario d'ingresso e manca l'uscita, significa che è già dentro!
+                const giaEntrato = currentPren.orario_ingresso && !currentPren.orario_uscita;
+            
+                if (boxVerifica) {
+                    if (giaEntrato) {
+                        // Se è già dentro, nascondiamo i tasti di scelta per evitare pasticci
+                        boxVerifica.style.display = 'none';
+                        boxVerifica.classList.add('hidden');
+                    } else {
+                        // Altrimenti mostriamo il box per permettere la verifica
                         boxVerifica.style.display = 'flex';
                         boxVerifica.style.gap = '10px';
                         boxVerifica.style.marginTop = '15px';
@@ -919,28 +928,25 @@ async function cercaPass(passManuale = null, idRecord = null) {
                         const btnPresente = document.getElementById('btn-presente');
                         const btnNonPresente = document.getElementById('btn-non-presente');
                         
-                        // Assicuriamoci che partano sbloccati ad ogni renderizzazione della scheda
                         if (btnPresente) btnPresente.disabled = false;
                         if (btnNonPresente) btnNonPresente.disabled = false;
-                
+            
                         // --- CLICK SU PRESENTE ---
                         btnPresente?.addEventListener('click', async (ev) => { 
                             ev.preventDefault(); 
                             if (!confirm('Confermi la presenza del veicolo? Verrà registrato come Entrato.')) return;
                             
-                            // 🚫 DISABILITAZIONE IMMEDIATA DEI TASTI AI DOPPI CLICK
                             if (btnPresente) btnPresente.disabled = true;
                             if (btnNonPresente) btnNonPresente.disabled = true;
                             
                             await gestisciVerificaPiantone('/api/piantone/verificato-dentro', currentId);
                         });
-                
+            
                         // --- CLICK SU NON PRESENTE ---
                         btnNonPresente?.addEventListener('click', async (ev) => { 
                             ev.preventDefault(); 
                             if (!confirm('Confermi che il veicolo sia uscito? Verrà registrato come USCITO "con ritardo"')) return;
                             
-                            // 🚫 DISABILITAZIONE IMMEDIATA DEI TASTI AI DOPPI CLICK
                             if (btnPresente) btnPresente.disabled = true;
                             if (btnNonPresente) btnNonPresente.disabled = true;
                             
@@ -948,6 +954,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                         });
                     }
                 }
+            }
                 
             // MAI ENTRATO (ARCHIVIATO)
             else if (currentPren.stato === 'MAI_ENTRATO') {
