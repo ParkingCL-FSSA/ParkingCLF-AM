@@ -1273,6 +1273,31 @@ async function aggiornaVeicoli() {
         const urlChiamata = `/api/veicoli-dentro?npass=${userPass}`;
         const res = await fetch(urlChiamata);
 
+        // 🔥 GESTIONE SPECIFICA DELL'ERRORE 403 (UTENTE STANDARD)
+        if (res.status === 403) {
+            console.log("ℹ️ [INFO] Accesso come utente standard (403). Reindirizzo sul pannello utente.");
+            
+            // 1. Nascondiamo il caricamento/login
+            const loginBox = document.getElementById('schermata-login-box') || document.getElementById('login-box');
+            if (loginBox) loginBox.style.display = 'none';
+
+            // 2. Mostriamo il pannello specifico per l'utente/dipendente (cambia 'view-utente' con l'ID reale del tuo div utente)
+            const viewUtente = document.getElementById('view-utente') || document.getElementById('panel-utente');
+            if (viewUtente) {
+                viewUtente.classList.remove('hidden');
+                viewUtente.style.setProperty('display', 'block', 'important');
+            } else {
+                // Se non c'è un'interfaccia utente separata e deve comunque usare il panel-piantone filtrato solo su se stesso:
+                const viewPiantone = document.getElementById('view-piantone');
+                if (viewPiantone) {
+                    viewPiantone.classList.remove('hidden');
+                    viewPiantone.style.setProperty('display', 'block', 'important');
+                }
+            }
+            return; // Usciamo in modo pulito senza lanciare errori in cascata
+        }
+
+        // Gestione degli altri errori generici (es. 500, 404)
         if (!res.ok) {
             console.warn(`⚠️ Errore server: ${res.status}`);
             return;
