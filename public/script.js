@@ -1169,7 +1169,8 @@ async function aggiornaVeicoli() {
         const oggiTime = oraSolareOggi.getTime();
         const oggiString = oraSolareOggi.toISOString().split('T')[0];
 
-        const inputSearch = document.getElementById('search-p');
+        // 🎯 CORREZIONE SELETTORE: Cerca l'input provando sia il vecchio ID, sia il nuovo 'search-codice'
+        const inputSearch = document.getElementById('search-p') || document.getElementById('search-codice') || document.querySelector('input[placeholder*="CERCA"]');
 
         // ==========================================
         // ⚠️ INIZIALIZZAZIONE PULITA DEI CONTATORI
@@ -1365,7 +1366,7 @@ async function aggiornaVeicoli() {
                     if (f.daVerificare) return 1; 
                     if (f.entrato || (item.stato === 'PRENOTATO' && inizioTime === oggiTime)) return 2; 
                     if (['SCADUTO', 'MAI_ENTRATO'].includes(item.stato)) return 3;                
-                    if (f.storico) return 4;                    
+                    if (f.storico) return 4;                     
                     return 5;
                 };
                 const pesoA = getPriorita(a); const pesoB = getPriorita(b);
@@ -1417,66 +1418,76 @@ async function aggiornaVeicoli() {
         }
         
         // --- INIEZIONE RIGHE IN TABELLA HTML ---
-        document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
-            const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
-            const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
-            const dataIng = ing ? ing.toLocaleDateString('it-IT') : '--';
-            const oraIng = ing ? ing.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
-            const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '--';
-            const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
-            
-            const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
-            if (dataFineData) dataFineData.setHours(0,0,0,0);
-            const fineTime = dataFineData ? dataFineData.getTime() : 0;
+        const contenitoreLista = document.getElementById('lista-veicoli');
+        if (contenitoreLista) {
+            contenitoreLista.innerHTML = lista.map(x => {
+                const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
+                const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
+                const dataIng = ing ? ing.toLocaleDateString('it-IT') : '--';
+                const oraIng = ing ? ing.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
+                const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '--';
+                const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
+                
+                const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
+                if (dataFineData) dataFineData.setHours(0,0,0,0);
+                const fineTime = dataFineData ? dataFineData.getTime() : 0;
 
-            const evidenzia = x.npass === ultimoAggiornato; 
-            const f = getFlags(x);
-            
-            const isMaiEntrato = x.stato === 'MAI_ENTRATO' || (x.stato === 'SCADUTO' && !x.orario_ingresso && fineTime && oggiTime > fineTime);
-            const isScadutoEsplicito = x.stato === 'SCADUTO' && !isMaiEntrato;
+                const evidenzia = x.npass === ultimoAggiornato; 
+                const f = getFlags(x);
+                
+                const isMaiEntrato = x.stato === 'MAI_ENTRATO' || (x.stato === 'SCADUTO' && !x.orario_ingresso && fineTime && oggiTime > fineTime);
+                const isScadutoEsplicito = x.stato === 'SCADUTO' && !isMaiEntrato;
 
-            const wPass = 'width: 16%;';
-            const wDataIng = 'width: 26%;';
-            const wOraIng = 'width: 15%;';
-            const wDataUsc = 'width: 28%;';
-            const wOraUsc = 'width: 15%;';
-        
-            const baseStyle = 'padding: 8px 6px; text-align: left; vertical-align: middle; box-sizing: border-box;';
-        
-            return `<tr style="
-                border-bottom: 1px solid #f1f5f9;
-                ${isScadutoEsplicito ? 'background:#fee2e2; color:#991b1b;' : ''}
-                ${isMaiEntrato ? 'background:#f8fafc; color:#64748b;' : ''} 
-                ${f.storico && !isMaiEntrato ? 'background:#f1f5f9;' : ''}
-                ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
-                ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
-            ">
-                <td style="${baseStyle} ${wPass}">
-                    <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" 
-                        style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline; padding:0; margin:0; font-size:14px;">
-                        ${x.npass}
-                    </button>
-                </td>
-                <td style="${baseStyle} ${wDataIng}">${isMaiEntrato ? 'MAI PRESENTATO' : (isScadutoEsplicito ? 'NON ENTRATO' : dataIng)}</td>
-                <td style="${baseStyle} ${wOraIng} font-weight:bold;">${isScadutoEsplicito || isMaiEntrato ? '' : oraIng}</td>
-                <td style="${baseStyle} ${wDataUsc}">${dataUsc}</td>
-                <td style="${baseStyle} ${wOraUsc} font-weight:bold;">${oraUsc}</td>
-            </tr>`;
-        }).join('') || `<tr><td colspan="5" style="text-align:center; color:black; padding:16px;">Nessun veicolo presente</td></tr>`;
+                const wPass = 'width: 16%;';
+                const wDataIng = 'width: 26%;';
+                const wOraIng = 'width: 15%;';
+                const wDataUsc = 'width: 28%;';
+                const wOraUsc = 'width: 15%;';
             
-        // Aggancio eventi pulsanti lista
-        document.querySelectorAll('.btn-pass').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const pass = btn.dataset.pass; 
-                const idRecord = btn.dataset.id; 
-                if (inputSearch) inputSearch.value = pass;
-                await cercaPass(pass, idRecord);
-                setTimeout(() => { document.getElementById('panel-piantone')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
+                const baseStyle = 'padding: 8px 6px; text-align: left; vertical-align: middle; box-sizing: border-box;';
+            
+                return `<tr style="
+                    border-bottom: 1px solid #f1f5f9;
+                    ${isScadutoEsplicito ? 'background:#fee2e2; color:#991b1b;' : ''}
+                    ${isMaiEntrato ? 'background:#f8fafc; color:#64748b;' : ''} 
+                    ${f.storico && !isMaiEntrato ? 'background:#f1f5f9;' : ''}
+                    ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
+                    ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
+                ">
+                    <td style="${baseStyle} ${wPass}">
+                        <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" 
+                            style="border:none; background:none; color:#2563eb; font-weight:bold; cursor:pointer; text-decoration:underline; padding:0; margin:0; font-size:14px;">
+                            ${x.npass}
+                        </button>
+                    </td>
+                    <td style="${baseStyle} ${wDataIng}">${isMaiEntrato ? 'MAI PRESENTATO' : (isScadutoEsplicito ? 'NON ENTRATO' : dataIng)}</td>
+                    <td style="${baseStyle} ${wOraIng} font-weight:bold;">${isScadutoEsplicito || isMaiEntrato ? '' : oraIng}</td>
+                    <td style="${baseStyle} ${wDataUsc}">${dataUsc}</td>
+                    <td style="${baseStyle} ${wOraUsc} font-weight:bold;">${oraUsc}</td>
+                </tr>`;
+            }).join('') || `<tr><td colspan="5" style="text-align:center; color:black; padding:16px;">Nessun veicolo presente</td></tr>`;
+                
+            // Aggancio eventi pulsanti lista
+            document.querySelectorAll('.btn-pass').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const pass = btn.dataset.pass; 
+                    const idRecord = btn.dataset.id; 
+                    if (inputSearch) inputSearch.value = pass;
+                    await cercaPass(pass, idRecord);
+                    setTimeout(() => { document.getElementById('panel-piantone')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
+                });
             });
-        });
+        }
 
         const btnFiltro = document.getElementById('btn-filtro');
         if (btnFiltro) btnFiltro.innerText = "MOSTRA STATI";
+
+        // 🎯 DISINNESCHIAMO IL BLOCK CSS: Forza il pannello principale ad essere visibile
+        const panelPiantone = document.getElementById('panel-piantone');
+        if (panelPiantone) {
+            panelPiantone.classList.remove('hidden');
+            panelPiantone.style.display = 'block';
+        }
 
     } catch (err) {
         console.error("💥 Errore critico durante l'aggiornamento dei veicoli:", err);
