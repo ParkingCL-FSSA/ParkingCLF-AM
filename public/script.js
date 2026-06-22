@@ -825,14 +825,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
     if (boxVerifica) {
         boxVerifica.classList.add('hidden');
         boxVerifica.style.display = 'none'; // Resetta lo stile iniziale
-        boxVerifica.innerHTML = `
-            <button id="btn-presente" type="button" style="flex: 1; padding: 12px 10px; font-size: 14px; border: none; border-radius: 8px; background: #16a34a; color: white; margin: 0; font-weight: bold; cursor: pointer; text-align: center;">
-                ✅ PRESENTE
-            </button>
-            <button id="btn-non-presente" type="button" style="flex: 1; padding: 12px 10px; font-size: 14px; border: none; border-radius: 8px; background: #dc2626; color: white; margin: 0; font-weight: bold; cursor: pointer; text-align: center;">
-                ❌ NON PRESENTE
-            </button>
-        `;
+        // NOTA: I bottoni vengono generati dinamicamente sotto in base allo stato reale
     }
     if (boxVerificaScaduti) {
         boxVerificaScaduti.classList.add('hidden');
@@ -901,34 +894,57 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 btnUscita.disabled = false;
             }
             
-// 🎯 STATO: DA VERIFICARE
+            // 🎯 STATO: DA VERIFICARE (LOGICA DINAMICA RICHIESTA)
             else if (currentPren.stato === 'DA_VERIFICARE') {
                 btnIngresso.style.display = 'none'; 
                 
                 btnUscita.disabled = true; 
                 btnUscita.style.display = 'inline-block';
                 btnUscita.style.background = '#ea580c'; 
-                //btnUscita.style.fontSize = '18px';
-                btnUscita.innerText = 'VERIFICARE'; 
+                
+                // Determinazione dinamica se l'auto è già passata dall'ingresso
+                const isGiaDentro = currentPren.orario_ingresso ? true : false;
+                
+                // Aggiorna testo del pulsante centrale della sbarra
+                btnUscita.innerText = isGiaDentro ? 'VERIFICATO' : 'VERIFICARE'; 
             
                 if (boxVerifica) {
+                    // Rigeneriamo i pulsanti del box con le condizioni dinamiche
+                    boxVerifica.innerHTML = `
+                        <button id="btn-presente" type="button" 
+                            ${isGiaDentro ? "disabled style='flex: 1; padding: 12px 10px; font-size: 14px; border: none; border-radius: 8px; background: #16a34a; color: white; margin: 0; font-weight: bold; opacity: 0.4; cursor: not-allowed; text-align: center;'" : "style='flex: 1; padding: 12px 10px; font-size: 14px; border: none; border-radius: 8px; background: #16a34a; color: white; margin: 0; font-weight: bold; cursor: pointer; text-align: center;'"}>
+                            ✅ PRESENTE
+                        </button>
+                        <button id="btn-non-presente" type="button" style="flex: 1; padding: 12px 10px; font-size: 14px; border: none; border-radius: 8px; background: #dc2626; color: white; margin: 0; font-weight: bold; cursor: pointer; text-align: center;">
+                            ${isGiaDentro ? '❌ USCITO' : '❌ NON PRESENTE'}
+                        </button>
+                    `;
+
                     boxVerifica.style.display = 'flex';
                     boxVerifica.style.gap = '10px';
                     boxVerifica.style.marginTop = '15px';
                     boxVerifica.classList.remove('hidden');
                     
-                    // --- CLICK SU PRESENTE ---
-                    document.getElementById('btn-presente')?.addEventListener('click', async (ev) => { 
-                        ev.preventDefault(); 
-                        if (!confirm('Confermi la presenza del veicolo? Verrà registrato come Entrato.')) return;
-                        await gestisciVerificaPiantone('/api/piantone/verificato-dentro', currentId);
-                    });
+                    // --- CLICK SU PRESENTE (Attivo solo se NON è già dentro) ---
+                    if (!isGiaDentro) {
+                        document.getElementById('btn-presente')?.addEventListener('click', async (ev) => { 
+                            ev.preventDefault(); 
+                            if (!confirm('Confermi la presenza del veicolo? Verrà registrato come Entrato.')) return;
+                            await gestisciVerificaPiantone('/api/piantone/verificato-dentro', currentId);
+                        });
+                    }
 
-                    // --- CLICK SU NON PRESENTE ---
+                    // --- CLICK SU ROSSO (Cambia endpoint e messaggio in base allo stato) ---
                     document.getElementById('btn-non-presente')?.addEventListener('click', async (ev) => { 
                         ev.preventDefault(); 
-                        if (!confirm('Confermi che il veicolo sia uscito? Verrà registrato come USCITO "con ritardo"')) return;
-                        await gestisciVerificaPiantone('/api/piantone/post-uscito', currentId);
+                        if (isGiaDentro) {
+                            if (!confirm('Confermi che il veicolo stia USCENDO adesso? Verrà registrato come USCITO dal parcheggio.')) return;
+                            // Endpoint corretto per registrare l'uscita effettiva
+                            await gestisciVerificaPiantone('/api/piantone/post-uscito', currentId);
+                        } else {
+                            if (!confirm('Confermi che il veicolo NON sia presente? Verrà registrato come USCITO "con ritardo"')) return;
+                            await gestisciVerificaPiantone('/api/piantone/post-uscito', currentId);
+                        }
                     });
                 }
             }
@@ -962,10 +978,10 @@ async function cercaPass(passManuale = null, idRecord = null) {
                                 <p style="margin: 0 0 12px 0; font-size: 13px; color: #9b2c2c;">L'auto è effettivamente presente nel parcheggio?</p>
                                 <div style="display: flex; flex-direction: row; flex-wrap: nowrap; gap: 10px; justify-content: center; width: 100%; box-sizing: border-box;">
                                     <button id="btn-scaduto-dentro" type="button" style="flex: 1; background: #10b981; color: white; border: none; padding: 10px 4px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; min-width: 0; line-height: 1.3;">
-                                        📩 SI - DENTRO<br><span style="font-size: 10px; font-weight: normal;">(Verificata Presenza)</span>
+                                        📩 AUTO DENTRO<br><span style="font-size: 10px; font-weight: normal;">(Verificata Presenza)</span>
                                     </button>
                                     <button id="btn-scaduto-mai-entrato" type="button" style="flex: 1; background: #ef4444; color: white; border: none; padding: 10px 4px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; min-width: 0; line-height: 1.3;">
-                                        ❌ MAI ENTRATO<br><span style="font-size: 10px; font-weight: normal;">(Annulla Prenotazione)</span>
+                                        ❌ MAI ENTRATO<br><span style="font-size: 10px; font-weight: normal;">(Archivia Prenotazione)</span>
                                     </button>
                                 </div>
                             </div>
