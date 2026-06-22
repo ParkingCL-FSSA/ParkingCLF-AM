@@ -1896,6 +1896,9 @@ async function eseguiScadutoMaiEntrato() {
 }
 
     
+// ============================================================
+    // 🔧 ASSEGNAZIONI GLOBALI E LISTENER DI NAVIGAZIONE
+    // ============================================================
     window.eseguiScadutoDentro = eseguiScadutoDentro;
     window.eseguiScadutoMaiEntrato = eseguiScadutoMaiEntrato;
     
@@ -1914,7 +1917,7 @@ async function eseguiScadutoMaiEntrato() {
     document.getElementById('btn-ritardi')?.addEventListener('click', mostraRitardi);
     document.getElementById('btn-logout-admin')?.addEventListener('click', () => { location.reload(); });
 
-// ============================================================
+    // ============================================================
     // 🎯 AUTOMAZIONE FOCUS AUTOMATICO AL RAGGIUNGIMENTO DELLE 5 CIFRE
     // ============================================================
     // 1. Sposta il focus sul tasto Login appena si inserisce il pass a 5 cifre
@@ -1926,34 +1929,17 @@ async function eseguiScadutoMaiEntrato() {
     });
 
     // 2. Sposta il focus sul tasto Cerca appena il piantone digita le 5 cifre del pass
-    inputSearch?.addEventListener('input', () => {
-        if (inputSearch.value.trim().length === 5) {
-            document.getElementById('btn-cerca')?.focus();
-        }
-    });
-}); // <--- Fine del tuo window.addEventListener originale o della funzione principale
-
-// ============================================================
-    // 🎯 AUTOMAZIONE FOCUS AUTOMATICO AL RAGGIUNGIMENTO DELLE 5 CIFRE
-    // ============================================================
-    // 1. Sposta il focus sul tasto Login appena si inserisce il pass a 5 cifre
-    const inputLogin = document.getElementById('in-npass');
-    inputLogin?.addEventListener('input', () => {
-        if (inputLogin.value.trim().length === 5) {
-            document.getElementById('btn-login')?.focus();
-        }
-    });
-
-    // 2. Sposta il focus sul tasto Cerca appena il piantone digita le 5 cifre del pass
-    if (typeof inputSearch !== 'undefined' && inputSearch) {
-        inputSearch.addEventListener('input', () => {
-            if (inputSearch.value.trim().length === 5) {
+    const inputSearchField = document.getElementById('search-p') || document.getElementById('search-codice');
+    if (inputSearchField) {
+        inputSearchField.addEventListener('input', () => {
+            if (inputSearchField.value.trim().length === 5) {
                 document.getElementById('btn-cerca')?.focus();
             }
         });
     }
     
-}); // <--- ✅ Questa chiude correttamente la funzione principale/EventListener globale dell'app
+}); // <--- ✅ Questa chiude UNICA E SOLA il window.addEventListener principale dell'applicazione
+
 
 // ============================================================
 // ✅ INTERCETTAZIONE LOGICA DI ACCESSO (ENTRA)
@@ -1967,100 +1953,53 @@ document.getElementById('btn-login')?.addEventListener('click', () => {
         return;
     }
 
-    // Salva il codice nella variabile globale
+    // Salva il codice nella variabile globale per le chiamate API
     userPass = codiceInserito; 
     console.log("🔓 Accesso eseguito con userPass:", userPass);
 
-    // Svuota l'input di ricerca per evitare filtri vecchi
-    const inputSearchField = document.getElementById('search-p') || document.getElementById('search-codice');
-    if (inputSearchField) inputSearchField.value = "";
+    // Svuota l'input di ricerca per evitare filtri residui
+    const inputSearch = document.getElementById('search-p') || document.getElementById('search-codice');
+    if (inputSearch) inputSearch.value = "";
 
-    // Pulisce e nasconde la scheda dettagli pass vuota
+    // Pulisce visivamente l'interfaccia nascondendo schede orfane
     if (typeof resetPannello === 'function') resetPannello();
 
-    // Carica la lista veicoli adesso che sei loggato
+    // Forza il caricamento immediato e pulito di tutta la lista veicoli
     if (typeof aggiornaVeicoli === 'function') {
         aggiornaVeicoli();
     }
 });
 
+
 // ============================================================
 // 🚪 INTERCETTAZIONE LOGICA DI USCITA (ESCI DALL'APP)
 // ============================================================
 document.getElementById('btn-logout')?.addEventListener('click', () => {
+    // Svuota la sessione attiva
     userPass = "";
     
+    // Ripristina vuoto il campo di login iniziale
     const inputLogin = document.getElementById('in-npass');
     if (inputLogin) inputLogin.value = "";
 
+    // Resetta i pannelli intermedi
     if (typeof resetPannello === 'function') resetPannello();
     
+    // Nasconde l'intera dashboard piantone tornando al login pulito
     const viewPiantone = document.getElementById('view-piantone');
     if (viewPiantone) {
         viewPiantone.classList.add('hidden');
         viewPiantone.style.display = 'none';
     }
     
-    console.log("🔒 Logout effettuato. Pannelli resettati.");
+    console.log("🔒 Logout effettuato con successo. Interfaccia ripristinata.");
 });
 
-// Forza la pulizia e il nascondimento dei pannelli all'avvio dell'applicazione
+
+// ============================================================
+// 🛡️ RESET DI SICUREZZA DI DEFAULT ALL'AVVIO PAGINA
+// ============================================================
 document.addEventListener("DOMContentLoaded", () => {
-    if (typeof resetPannello === 'function') {
-        resetPannello();
-    }
-});
-
-// Controlla ogni mezzo secondo se userPass è pronto; appena lo trova, carica la lista e si spegne.
-const checkUserPassReady = setInterval(() => {
-    if (typeof userPass !== 'undefined' && userPass && userPass.trim() !== "") {
-        clearInterval(checkUserPassReady); // Interrompe il ciclo di controllo
-        if (typeof resetPannello === 'function') resetPannello(); // Tende nascosta la scheda dettagli pass vuota
-        if (typeof aggiornaVeicoli === 'function') aggiornaVeicoli(); // Carica la lista automaticamente!
-    }
-}, 500);
-
-// ✅ INNESCO AUTOMATICO DI SICUREZZA ALL'AVVIO
-document.addEventListener("DOMContentLoaded", () => {
-    // Svuota l'input di ricerca all'avvio per evitare filtri fantasma
-    const inputSearch = document.getElementById('search-p') || document.getElementById('search-codice');
-    if (inputSearch) inputSearch.value = "";
-
-    // Chiude e nasconde la scheda dettagli pass vuota
+    // Evita la comparsa di schede dettagli pass vuote prima del login
     if (typeof resetPannello === 'function') resetPannello();
-
-    // Forza il caricamento iniziale automatico della lista completa
-    if (typeof aggiornaVeicoli === 'function') {
-        // Un piccolo delay di 300ms assicura che le variabili utente siano caricate sul browser
-        setTimeout(() => {
-            aggiornaVeicoli();
-        }, 300);
-    }
 });
-
-// ✅ RECLUTAMENTO E INNESCO AUTOMATICO INTELLIGENTE
-// Controlla ciclicamente se userPass è pronto per evitare lo schermo vuoto all'avvio
-const attendiUserPassEInizia = setInterval(() => {
-    if (typeof userPass !== 'undefined' && userPass && userPass.trim() !== "") {
-        // 1. Ferma immediatamente il timer perché userPass è finalmente pronto!
-        clearInterval(attendiUserPassEInizia);
-        console.log("✅ userPass agganciato con successo! Avvio caricamento liste...");
-
-        // 2. Svuota eventuali residui nell'input di ricerca
-        const inputSearch = document.getElementById('search-p') || document.getElementById('search-codice');
-        if (inputSearch) inputSearch.value = "";
-
-        // 3. Nasconde la scheda dettagli pass vuota iniziale
-        if (typeof resetPannello === 'function') resetPannello();
-
-        // 4. Carica automaticamente la lista completa (con Scaduti e Da Verificare in evidenza)
-        if (typeof aggiornaVeicoli === 'function') {
-            aggiornaVeicoli();
-        }
-    }
-}, 300); // Controlla ogni 300ms (impercettibile all'utente)
-
-// Paracadute di sicurezza nel caso il timer rimanga appeso troppo a lungo (es: sessione scaduta)
-setTimeout(() => {
-    clearInterval(attendiUserPassEInizia);
-}, 10000); // Si spegne dopo 10 secondi in ogni caso per non consumare batteria
