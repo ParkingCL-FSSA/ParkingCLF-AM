@@ -1315,6 +1315,7 @@ async function aggiornaVeicoli() {
             return;
         }
 
+        
         const inputSearch = document.getElementById('search-p') || document.getElementById('search-codice');
         const valeurCercato = inputSearch ? inputSearch.value.trim().toUpperCase() : "";
 
@@ -1373,7 +1374,10 @@ async function aggiornaVeicoli() {
             }
 
             // Generazione delle righe adattate alle percentuali del tuo THEAD (16% - 26% - 15% - 28% - 15%)
-            contenitoreLista.innerHTML = lista.map(x => {
+            if (lista.length === 0) {
+                contenitoreLista.innerHTML = `<tr><td colspan="5" style="padding: 18px; text-align: center; color: #64748b; font-weight: bold;">Nessun veicolo da mostrare per questo filtro.</td></tr>`;
+            } else {
+                contenitoreLista.innerHTML = lista.map(x => {
                 const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
                 const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
                 const dataIng = ing ? ing.toLocaleDateString('it-IT') : '--';
@@ -1399,8 +1403,8 @@ async function aggiornaVeicoli() {
                     <td style="padding: 10px 4px; width: 28%;">${dataUsc}</td>
                     <td style="padding: 10px 4px; font-weight: bold; width: 15%;">${oraUsc}</td>
                 </tr>`;
-            }).join('');
-
+                }).join('');
+            }
             // Riaggancia gli eventi click sui pulsanti dei codici PASS caricate
             document.querySelectorAll('.btn-pass').forEach(btn => {
                 btn.addEventListener('click', async () => {
