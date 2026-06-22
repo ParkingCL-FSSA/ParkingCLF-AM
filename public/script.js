@@ -1327,12 +1327,24 @@ async function aggiornaVeicoli() {
 
         console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Record filtrati pronti da stampare in tabella:", lista.length);
 
-       // --- INIEZIONE NELLA TABELLA HTML (CON FORZATURA VISIVA) ---
+      // --- INIEZIONE NELLA TABELLA HTML (CON RIMOZIONE LOADING) ---
         const contenitoreLista = document.getElementById('lista-veicoli');
         console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Elemento DOM della tabella trovato con ID 'lista-veicoli'?:", contenitoreLista);
 
         if (contenitoreLista) {
-            // Sblocchiamo la tabella stessa a livello visivo da possibili CSS esterni killer
+            
+            // 🔥 CRUCIALE: Cerchiamo e nascondiamo il testo o il box di caricamento prima di mostrare la lista
+            // Proviamo a intercettare l'ID o la classe del testo "Caricamento dati reali sbarra..."
+            const loadingText = document.getElementById('loading-sbarra') || 
+                                document.querySelector('.loading-text') || 
+                                document.getElementById('caricamento-dati');
+            
+            if (loadingText) {
+                loadingText.style.display = 'none'; // Nasconde l'avviso di caricamento
+            }
+
+            // Se per caso il testo "Caricamento dati reali sbarra..." è stato scritto direttamente 
+            // dentro il tbody prima che si caricassero i dati, il .innerHTML qui sotto lo sovrascriverà e pulirà del tutto!
             contenitoreLista.style.display = "table-row-group";
             if (contenitoreLista.parentElement) {
                 contenitoreLista.parentElement.style.display = "table";
@@ -1340,6 +1352,7 @@ async function aggiornaVeicoli() {
                 contenitoreLista.parentElement.style.opacity = "1";
             }
 
+            // Iniezione delle 281 righe dei veicoli
             contenitoreLista.innerHTML = lista.map(x => {
                 const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
                 const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
@@ -1348,14 +1361,13 @@ async function aggiornaVeicoli() {
                 const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '--';
                 const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
                 
-                // Colore di sfondo e testo forzato per evitare scritte bianche su sfondo bianco
                 let stileRiga = 'border-bottom: 2px solid #cbd5e1; color: #0f172a !important;'; 
                 if (x.stato === 'SCADUTO') {
                     stileRiga += ' background: #fee2e2 !important; color: #991b1b !important;';
                 } else if (x.stato === 'DA_VERIFICARE') {
                     stileRiga += ' background: #fff7ed !important; color: #c2410c !important;';
                 } else {
-                    stileRiga += ' background: #ffffff !important;'; // Forza sfondo bianco per le righe standard
+                    stileRiga += ' background: #ffffff !important;';
                 }
 
                 return `<tr style="${stileRiga}">
