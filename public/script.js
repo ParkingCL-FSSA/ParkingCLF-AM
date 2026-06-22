@@ -1142,50 +1142,45 @@ async function gestisciVerificaPiantone(endpoint, idPrenotazione) {
 }
 
 function resetSchermataPiantone() {
-    // 1. Recuperiamo gli elementi della UI
-    const boxVerifica = document.getElementById('box-verifica-anomalia') || document.getElementById('box-verifica');
-    const panelPiantone = document.getElementById('panel-piantone');
     const inp = document.getElementById('search-p');
+    if (inp) inp.value = '';
+
+    currentPren = null;
+    filtroPiantone = 'attivi';
+    if (typeof ultimoAggiornato !== 'undefined') ultimoAggiornato = null;
+
+    // Elementi della UI da nascondere e resettare drasticamente
+    const panelPiantone = document.getElementById('panel-piantone');
+    if (panelPiantone) {
+        panelPiantone.classList.add('hidden');
+        panelPiantone.style.display = 'none'; // Spazza via il display block
+    }
+
+    const boxVerifica = document.getElementById('box-verifica-anomalia') || document.getElementById('box-verifica');
+    if (boxVerifica) {
+        boxVerifica.classList.add('hidden');
+        boxVerifica.style.display = 'none';
+    }
+
+    const boxScaduti = document.getElementById('box-verifica-scaduti');
+    if (boxScaduti) {
+        boxScaduti.classList.add('hidden');
+        boxScaduti.style.display = 'none';
+        boxScaduti.innerHTML = '';
+    }
+
+    // Svuotamento registri orari e banner sottostanti
     const regE = document.getElementById('reg-e');
     const regU = document.getElementById('reg-u');
     const bannerCerca = document.getElementById('stato-tabella');
 
-    // 2. Nascondiamo il box anomalie resettando anche lo stile inline
-    if (boxVerifica) {
-        boxVerifica.classList.add('hidden');
-        boxVerifica.style.display = 'none'; // 🔥 Forza la sparizione totale dei vecchi bottoni
-    }
-
-    // 3. Nascondiamo il pannello dettagli resettando lo stile inline
-    if (panelPiantone) {
-        panelPiantone.classList.add('hidden');
-        panelPiantone.style.display = 'none'; // 🔥 Nasconde il pannello in modo definitivo
-    }
-
-    // 4. Ripuliamo i registri degli orari per non trovarli scritti alla prossima ricerca
     if (regE) regE.innerHTML = '';
     if (regU) regU.innerHTML = '';
-
-    // 5. Ripristiniamo il banner dello stato della tabella sottostante
     if (bannerCerca) {
         bannerCerca.style.background = '';
         bannerCerca.style.color = '';
         bannerCerca.style.borderColor = '';
-        bannerCerca.innerHTML = '📋 ELENCO COMPLETO'; // Torna alla dicitura base
-    }
-
-    // 6. Svuotiamo l'input di testo
-    if (inp) inp.value = '';
-
-    // 7. Resettiamo le variabili globali di stato
-    currentPren = null;
-    if (typeof ultimoAggiornato !== 'undefined') ultimoAggiornato = null; // Rimuove l'evidenziazione verde dall'elenco
-
-    // 8. 🔥 Aggiorna la griglia per ricaricare tutti i veicoli attivi
-    if (typeof aggiornaVeicoli === 'function') {
-        aggiornaVeicoli();
-    } else if (typeof caricaInArrivoOggi === 'function') {
-        caricaInArrivoOggi(); // Usa la tua funzione di caricamento principale se ha un altro nome
+        bannerCerca.innerHTML = '📋 ELENCO COMPLETO';
     }
 }
 
