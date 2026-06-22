@@ -908,7 +908,6 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 btnUscita.disabled = true; 
                 btnUscita.style.display = 'inline-block';
                 btnUscita.style.background = '#ea580c'; 
-                // Se btnIngresso è nascosto o se il veicolo risulta entrato, mostriamo 'VERIFICATO'
                 btnUscita.innerText = 'VERIFICATO'; 
             
                 if (boxVerifica) {
@@ -921,6 +920,11 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     document.getElementById('btn-presente')?.addEventListener('click', async (ev) => { 
                         ev.preventDefault(); 
                         if (!confirm('Confermi la presenza del veicolo? Verrà registrato come Entrato.')) return;
+                        
+                        // 🚫 INTERCETTAZIONE IMMEDIATA: Nascondiamo il box delle opzioni per evitare doppi click
+                        boxVerifica.style.display = 'none';
+                        boxVerifica.classList.add('hidden');
+                        
                         await gestisciVerificaPiantone('/api/piantone/verificato-dentro', currentId);
                     });
             
@@ -928,6 +932,11 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     document.getElementById('btn-non-presente')?.addEventListener('click', async (ev) => { 
                         ev.preventDefault(); 
                         if (!confirm('Confermi che il veicolo sia uscito? Verrà registrato come USCITO "con ritardo"')) return;
+                        
+                        // Nascondiamo anche qui in caso di uscita
+                        boxVerifica.style.display = 'none';
+                        boxVerifica.classList.add('hidden');
+                        
                         await gestisciVerificaPiantone('/api/piantone/post-uscito', currentId);
                     });
                 }
