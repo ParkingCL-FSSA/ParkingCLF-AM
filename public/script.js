@@ -1894,6 +1894,8 @@ async function eseguiScadutoMaiEntrato() {
         alert("Errore durante l'archiviazione: " + err.message);
     }
 }
+
+    
     window.eseguiScadutoDentro = eseguiScadutoDentro;
     window.eseguiScadutoMaiEntrato = eseguiScadutoMaiEntrato;
     
@@ -1961,3 +1963,30 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 300);
     }
 });
+
+// ✅ RECLUTAMENTO E INNESCO AUTOMATICO INTELLIGENTE
+// Controlla ciclicamente se userPass è pronto per evitare lo schermo vuoto all'avvio
+const attendiUserPassEInizia = setInterval(() => {
+    if (typeof userPass !== 'undefined' && userPass && userPass.trim() !== "") {
+        // 1. Ferma immediatamente il timer perché userPass è finalmente pronto!
+        clearInterval(attendiUserPassEInizia);
+        console.log("✅ userPass agganciato con successo! Avvio caricamento liste...");
+
+        // 2. Svuota eventuali residui nell'input di ricerca
+        const inputSearch = document.getElementById('search-p') || document.getElementById('search-codice');
+        if (inputSearch) inputSearch.value = "";
+
+        // 3. Nasconde la scheda dettagli pass vuota iniziale
+        if (typeof resetPannello === 'function') resetPannello();
+
+        // 4. Carica automaticamente la lista completa (con Scaduti e Da Verificare in evidenza)
+        if (typeof aggiornaVeicoli === 'function') {
+            aggiornaVeicoli();
+        }
+    }
+}, 300); // Controlla ogni 300ms (impercettibile all'utente)
+
+// Paracadute di sicurezza nel caso il timer rimanga appeso troppo a lungo (es: sessione scaduta)
+setTimeout(() => {
+    clearInterval(attendiUserPassEInizia);
+}, 10000); // Si spegne dopo 10 secondi in ogni caso per non consumare batteria
