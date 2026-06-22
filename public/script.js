@@ -910,49 +910,51 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 btnUscita.style.background = '#ea580c'; 
                 btnUscita.innerText = 'VERIFICATO'; 
             
-                // 🔍 CONTROLLO EXTRA: Se c'è già un orario d'ingresso e manca l'uscita, significa che è già dentro!
+                // 🔍 Verifichiamo se il veicolo è già registrato come entrato
                 const giaEntrato = currentPren.orario_ingresso && !currentPren.orario_uscita;
             
                 if (boxVerifica) {
-                    if (giaEntrato) {
-                        // Se è già dentro, nascondiamo i tasti di scelta per evitare pasticci
-                        boxVerifica.style.display = 'none';
-                        boxVerifica.classList.add('hidden');
-                    } else {
-                        // Altrimenti mostriamo il box per permettere la verifica
-                        boxVerifica.style.display = 'flex';
-                        boxVerifica.style.gap = '10px';
-                        boxVerifica.style.marginTop = '15px';
-                        boxVerifica.classList.remove('hidden');
-                        
-                        const btnPresente = document.getElementById('btn-presente');
-                        const btnNonPresente = document.getElementById('btn-non-presente');
-                        
-                        if (btnPresente) btnPresente.disabled = false;
-                        if (btnNonPresente) btnNonPresente.disabled = false;
-            
-                        // --- CLICK SU PRESENTE ---
-                        btnPresente?.addEventListener('click', async (ev) => { 
-                            ev.preventDefault(); 
-                            if (!confirm('Confermi la presenza del veicolo? Verrà registrato come Entrato.')) return;
-                            
-                            if (btnPresente) btnPresente.disabled = true;
-                            if (btnNonPresente) btnNonPresente.disabled = true;
-                            
-                            await gestisciVerificaPiantone('/api/piantone/verificato-dentro', currentId);
-                        });
-            
-                        // --- CLICK SU NON PRESENTE ---
-                        btnNonPresente?.addEventListener('click', async (ev) => { 
-                            ev.preventDefault(); 
-                            if (!confirm('Confermi che il veicolo sia uscito? Verrà registrato come USCITO "con ritardo"')) return;
-                            
-                            if (btnPresente) btnPresente.disabled = true;
-                            if (btnNonPresente) btnNonPresente.disabled = true;
-                            
-                            await gestisciVerificaPiantone('/api/piantone/post-uscito', currentId);
-                        });
+                    boxVerifica.style.display = 'flex';
+                    boxVerifica.style.gap = '10px';
+                    boxVerifica.style.marginTop = '15px';
+                    boxVerifica.classList.remove('hidden');
+                    
+                    const btnPresente = document.getElementById('btn-presente');
+                    const btnNonPresente = document.getElementById('btn-non-presente');
+                    
+                    // 🎯 GESTIONE STATO INIZIALE DEI TASTI
+                    if (btnPresente) {
+                        // Se è già dentro, il tasto PRESENTE viene disabilitato
+                        btnPresente.disabled = giaEntrato ? true : false;
                     }
+                    if (btnNonPresente) {
+                        // Il tasto NON PRESENTE rimane sempre attivo per permettere l'uscita
+                        btnNonPresente.disabled = false;
+                    }
+            
+                    // --- CLICK SU PRESENTE ---
+                    btnPresente?.addEventListener('click', async (ev) => { 
+                        ev.preventDefault(); 
+                        if (btnPresente.disabled) return; // Sicurezza extra
+                        
+                        if (!confirm('Confermi la presenza del veicolo? Verrà registrato come Entrato.')) return;
+                        
+                        if (btnPresente) btnPresente.disabled = true;
+                        if (btnNonPresente) btnNonPresente.disabled = true;
+                        
+                        await gestisciVerificaPiantone('/api/piantone/verificato-dentro', currentId);
+                    });
+            
+                    // --- CLICK SU NON PRESENTE ---
+                    btnNonPresente?.addEventListener('click', async (ev) => { 
+                        ev.preventDefault(); 
+                        if (!confirm('Confermi che il veicolo sia uscito? Verrà registrato come USCITO "con ritardo"')) return;
+                        
+                        if (btnPresente) btnPresente.disabled = true;
+                        if (btnNonPresente) btnNonPresente.disabled = true;
+                        
+                        await gestisciVerificaPiantone('/api/piantone/post-uscito', currentId);
+                    });
                 }
             }
                 
