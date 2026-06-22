@@ -1327,11 +1327,19 @@ async function aggiornaVeicoli() {
 
         console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Record filtrati pronti da stampare in tabella:", lista.length);
 
-        // --- INIEZIONE NELLA TABELLA HTML ---
+       // --- INIEZIONE NELLA TABELLA HTML (CON FORZATURA VISIVA) ---
         const contenitoreLista = document.getElementById('lista-veicoli');
         console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Elemento DOM della tabella trovato con ID 'lista-veicoli'?:", contenitoreLista);
 
         if (contenitoreLista) {
+            // Sblocchiamo la tabella stessa a livello visivo da possibili CSS esterni killer
+            contenitoreLista.style.display = "table-row-group";
+            if (contenitoreLista.parentElement) {
+                contenitoreLista.parentElement.style.display = "table";
+                contenitoreLista.parentElement.style.visibility = "visible";
+                contenitoreLista.parentElement.style.opacity = "1";
+            }
+
             contenitoreLista.innerHTML = lista.map(x => {
                 const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
                 const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
@@ -1340,16 +1348,22 @@ async function aggiornaVeicoli() {
                 const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '--';
                 const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
                 
-                let sfondoRiga = 'border-bottom: 1px solid #f1f5f9;';
-                if (x.stato === 'SCADUTO') sfondoRiga += ' background: #fee2e2; color: #991b1b;';
-                if (x.stato === 'DA_VERIFICARE') sfondoRiga += ' background: #fff7ed; color: #c2410c;';
+                // Colore di sfondo e testo forzato per evitare scritte bianche su sfondo bianco
+                let stileRiga = 'border-bottom: 2px solid #cbd5e1; color: #0f172a !important;'; 
+                if (x.stato === 'SCADUTO') {
+                    stileRiga += ' background: #fee2e2 !important; color: #991b1b !important;';
+                } else if (x.stato === 'DA_VERIFICARE') {
+                    stileRiga += ' background: #fff7ed !important; color: #c2410c !important;';
+                } else {
+                    stileRiga += ' background: #ffffff !important;'; // Forza sfondo bianco per le righe standard
+                }
 
-                return `<tr style="${sfondoRiga}">
-                    <td style="padding: 10px 6px;"><button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; text-decoration:underline; padding:0; cursor:pointer;">${x.npass}</button></td>
-                    <td style="padding: 10px 6px;">${x.stato === 'MAI_ENTRATO' ? 'MAI PRESENTATO' : dataIng}</td>
-                    <td style="padding: 10px 6px; font-weight:bold;">${x.stato === 'MAI_ENTRATO' ? '' : oraIng}</td>
-                    <td style="padding: 10px 6px;">${dataUsc}</td>
-                    <td style="padding: 10px 6px; font-weight:bold;">${oraUsc}</td>
+                return `<tr style="${stileRiga}">
+                    <td style="padding: 12px 8px; font-size: 15px; border-bottom: 1px solid #e2e8f0;"><button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb !important; font-weight:bold; text-decoration:underline; padding:0; cursor:pointer; font-size: 15px;">${x.npass}</button></td>
+                    <td style="padding: 12px 8px; font-size: 15px; border-bottom: 1px solid #e2e8f0; color: #0f172a !important;">${x.stato === 'MAI_ENTRATO' ? 'MAI PRESENTATO' : dataIng}</td>
+                    <td style="padding: 12px 8px; font-size: 15px; font-weight:bold; border-bottom: 1px solid #e2e8f0; color: #0f172a !important;">${x.stato === 'MAI_ENTRATO' ? '' : oraIng}</td>
+                    <td style="padding: 12px 8px; font-size: 15px; border-bottom: 1px solid #e2e8f0; color: #0f172a !important;">${dataUsc}</td>
+                    <td style="padding: 12px 8px; font-size: 15px; font-weight:bold; border-bottom: 1px solid #e2e8f0; color: #0f172a !important;">${oraUsc}</td>
                 </tr>`;
             }).join('');
             
@@ -1361,10 +1375,7 @@ async function aggiornaVeicoli() {
                     if (typeof cercaPass === 'function') await cercaPass(btn.dataset.pass, btn.dataset.id);
                 });
             });
-        } else {
-            console.error("💥 [ERRORE HTML] Non trovo nell'HTML nessun elemento con id='lista-veicoli'! Controlla il tag <tbody> o <table>!");
         }
-
         // Mostra il blocco macro piantone generale
         const viewPiantone = document.getElementById('view-piantone');
         console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Elemento macro 'view-piantone' trovato?:", viewPiantone);
@@ -1864,45 +1875,35 @@ async function eseguiScadutoMaiEntrato() {
 
 
 // ============================================================
-// ✅ INTERCETTAZIONE LOGICA DI ACCESSO (ENTRA) - CON DIAGNOSTICA
+// ✅ INTERCETTAZIONE LOGICA DI ACCESSO (ENTRA) - CON CANCELLAZIONE BOX LOGIN
 // ============================================================
 document.getElementById('btn-login')?.addEventListener('click', () => {
-    // Proviamo a cercare sia 'in-npass' che gli altri ID usati nei tuoi screenshot per sicurezza
-    const inputLogin = document.getElementById('in-npass') || document.getElementById('input-codice-identificativo') || document.querySelector('input[type="text"]');
+    const inputLogin = document.getElementById('in-npass');
     const codiceInserito = inputLogin ? inputLogin.value.trim().toUpperCase() : "";
-
-    console.log("🔍 [DIAGNOSTICA] Hai cliccato su ENTRA.");
-    console.log("🔍 [DIAGNOSTICA] Elemento input trovato:", inputLogin);
-    console.log("🔍 [DIAGNOSTICA] Valore letto dall'input:", codiceInserito);
 
     if (codiceInserito === "") {
         alert("⚠️ Inserisci un codice identificativo per accedere!");
         return;
     }
 
-    // Salva il codice nella variabile globale per le chiamate API
     userPass = codiceInserito; 
-    console.log("🔓 [DIAGNOSTICA] userPass impostato a:", userPass);
 
-    // Svuota l'input di ricerca per evitare filtri residui
+    // 🔥 SCOMPENSA E NASCONDI IL BOX DI LOGIN (Proviamo tutti i possibili ID comuni)
+    const loginBox = document.getElementById('schermata-login-box') || document.getElementById('login-box') || inputLogin.closest('div');
+    if (loginBox) {
+        loginBox.style.display = 'none'; // Nasconde il login fisicamente!
+        loginBox.classList.add('hidden');
+    }
+
     const inputSearch = document.getElementById('search-p') || document.getElementById('search-codice');
     if (inputSearch) inputSearch.value = "";
 
-    // Pulisce visivamente l'interfaccia nascondendo schede orfane
-    if (typeof resetPannello === 'function') {
-        console.log("🧹 [DIAGNOSTICA] Eseguo resetPannello()");
-        resetPannello();
-    }
+    if (typeof resetPannello === 'function') resetPannello();
 
-    // Forza il caricamento immediato e pulito di tutta la lista veicoli
     if (typeof aggiornaVeicoli === 'function') {
-        console.log("🚀 [DIAGNOSTICA] Lancio aggiornaVeicoli()...");
         aggiornaVeicoli();
-    } else {
-        console.error("💥 [ERRORE CRITICO] La funzione aggiornaVeicoli() non esiste o non è visibile qui!");
     }
 });
-
 
 // ============================================================
 // 🚪 INTERCETTAZIONE LOGICA DI USCITA (ESCI DALL'APP)
