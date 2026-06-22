@@ -1234,7 +1234,31 @@ async function aggiornaPostiLiberiPiantone() {
         `;
     }
 }
+function resetPannello() {
+    // 1. Svuota i testi dei pass del pannello principale
+    const labPass = document.getElementById('lab-pass');
+    const labPeriodo = document.getElementById('lab-periodo');
+    if (labPass) labPass.innerText = "PASS: ---";
+    if (labPeriodo) labPeriodo.innerText = "(Periodo: --/--/----)";
 
+    // 2. Nascondi il pannello del piantone principale
+    const panelPiantone = document.getElementById('panel-piantone');
+    if (panelPiantone) {
+        panelPiantone.classList.add('hidden');
+        panelPiantone.style.display = 'none';
+    }
+
+    // 3. Nascondi il sotto-box delle verifiche/anomalie che generava il casino visivo
+    const boxAnomalia = document.getElementById('box-verifica-anomalia');
+    if (boxAnomalia) {
+        boxAnomalia.classList.add('hidden');
+        boxAnomalia.style.display = 'none';
+    }
+    
+    // 4. Svuota l'input di ricerca se necessario
+    const inputSearch = document.getElementById('search-p');
+    if (inputSearch) inputSearch.value = "";
+}
 async function aggiornaVeicoli() {
     // 🛡️ CONTROLLO DI SICUREZZA INTEGRATO: Se userPass è vuoto o non definito, interrompiamo subito
     if (typeof userPass === 'undefined' || !userPass || userPass.trim() === "") {
