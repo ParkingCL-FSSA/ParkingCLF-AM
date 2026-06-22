@@ -1262,185 +1262,85 @@ function resetPannello() {
 }
 
 async function aggiornaVeicoli() {
-    // 🛡️ Controllo di sicurezza iniziale: se userPass non c'è, usciamo
+    // 🛡️ CONTROLLO APERTO: Se userPass non è ancora pronto, non blocchiamo tutto in silenzio.
+    // Proviamo a recuperarlo se esiste in sessione o lasciamo un log chiaro.
     if (typeof userPass === 'undefined' || !userPass || userPass.trim() === "") {
-        console.warn("⚠️ Richiesta annullata: userPass non ancora disponibile.");
+        console.warn("⚠️ Richiesta in attesa: userPass non ancora disponibile all'avvio.");
+        
+        // Tentativo di autoguarigione: Mostriamo comunque la vista per non lasciare lo schermo vuoto
+        const viewPiantone = document.getElementById('view-piantone');
+        if (viewPiantone) {
+            viewPiantone.classList.remove('hidden');
+            viewPiantone.style.display = 'block';
+        }
         return;
     }
 
     try {
         const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
-        
         if (!res.ok) {
-            console.warn(`⚠️ Impossibile recuperare i dati dei veicoli: ${res.status}`);
+            console.warn(`⚠️ Errore server durante il recupero dei dati: ${res.status}`);
             return;
         }
 
         const dati = await res.json();
-        
         if (!Array.isArray(dati)) {
-            console.error("💥 I dati ricevuti non sono un array valido:", dati);
+            console.error("💥 I dati ricevuti non sono un array:", dati);
             return;
         }
-        
+
+        const inputSearch = document.getElementById('search-p') || document.getElementById('search-codice');
+        const valeurCercato = inputSearch?.value?.trim()?.toUpperCase() || "";
+
+        // Inizializzazione contatori per la sbarra in alto
+        let countDentro = 0;
+        let countListaV1p = 0;
+        let countPrenotatiOggi = 0;
+
         const oraSolareOggi = new Date();
         oraSolareOggi.setHours(0, 0, 0, 0);
         const oggiTime = oraSolareOggi.getTime();
-        const oggiString = oraSolareOggi.toISOString().split('T')[0];
-
-        const inputSearch = document.getElementById('search-p') || document.getElementById('search-codice');
-
-        // Contatori
-        let countDentro = 0; 
-        let countListaV1p = 0; 
-        let countEntratiOggi = 0;
-        let countPrenotatiOggi = 0;
-        let countVerificare = 0;
-        let countScaduti = 0; 
-        
-        const passDaArchiviareSuDB = [];
 
         dati.forEach(x => {
-            try {
-                const passCorrente = (x.npass || '').toUpperCase().trim();
-                const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
-                if (dataInizioData) dataInizioData.setHours(0,0,0,0);
-                const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
-
-                const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
-                if (dataFineData) dataFineData.setHours(0,0,0,0);
-                const fineTime = dataFineData ? dataFineData.getTime() : 0;
-
-                const dataIngressoString = x.orario_ingresso ? x.orario_ingresso.substring(0, 10) : '';
-
-                if (x.orario_ingresso && !x.orario_uscita) {
-                    if (passCorrente.startsWith('V1P')) {
-                        countListaV1p++;
-                    } else {
-                        countDentro++;
-                    }
+            const passCorrente = (x.npass || '').toUpperCase().trim();
+            if (x.orario_ingresso && !x.orario_uscita) {
+                if (passCorrente.startsWith('V1P')) {
+                    countListaV1p++;
+                } else {
+                    countDentro++;
                 }
-
-                if (x.orario_ingresso && dataIngressoString === oggiString) {
-                    countEntratiOggi++;
-                }
-                if (x.stato === 'PRENOTATO' && inizioTime === oggiTime) {
-                    countPrenotatiOggi++;
-                }
-                
-                const f = (typeof getFlags === 'function') ? (getFlags(x) || {}) : {};
-                if (f.daVerificare) countVerificare++;
-                
-                if (['SCADUTO', 'MAI_ENTRATO'].includes(x.stato) && !x.orario_ingresso) {
-                    if (fineTime && oggiTime > fineTime) {
-                        if (x.stato === 'SCADUTO') {
-                            passDaArchiviareSuDB.push({ id: x.id, npass: x.npass });
-                        }
-                    } else {
-                        countScaduti++;
-                    }
-                }
-            } catch (errLoop) {
-                console.error("Errore loop record: ", errLoop);
+            }
+            const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
+            if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+            if (x.stato === 'PRENOTATO' && dataInizioData && dataInizioData.getTime() === oggiTime) {
+                countPrenotatiOggi++;
             }
         });
-        
-        if (typeof totaleScaduti !== 'undefined') totaleScaduti = countScaduti;
-        if (typeof totaleVerificare !== 'undefined') totaleVerificare = countVerificare;
-        
-        const postiLiberi = 90 - countDentro; 
 
-        // Rendering contatori in alto
+        const postiLiberi = 90 - countDentro;
+
+        // Render contatori sbarra alto
         let stringaContatoriNuova = `
             <span style="display:inline-block; margin:0 3px; font-weight:600; color:#1e293b;">🚗 Dentro: <span style="color:#ea580c;">${countDentro}</span></span> | 
             <span style="display:inline-block; margin:0 3px; font-weight:600; color:#1e293b;">📅 Prenotati Oggi: <span style="color:#2563eb;">${countPrenotatiOggi}</span></span> | 
             <span style="display:inline-block; margin:0 3px; font-weight:600; color:#1e293b;">🅿️ Liberi: <span style="color:#16a34a;">${postiLiberi}</span></span>
         `;
-
         if (countListaV1p > 0) {
             stringaContatoriNuova += ` | <span style="display:inline-block; margin:0 3px; font-weight:600; color:#2563eb;">🔹 Lista Esterni: <span style="font-weight:bold;">${countListaV1p}</span></span>`;
         }
 
-        const displaySotto = document.getElementById('total-free-display');
         const cardSbarraAlto = document.getElementById('card-sbarra-alto') || document.getElementById('status-parcheggio');
-        
-        if (displaySotto) displaySotto.innerHTML = stringaContatoriNuova;
         if (cardSbarraAlto) cardSbarraAlto.innerHTML = stringaContatoriNuova;
 
-        const badgeContatori = document.getElementById('badge-contatori');
-        if (badgeContatori) {
-            if (countVerificare > 0 || countScaduti > 0) {
-                badgeContatori.style.display = "block";
-                badgeContatori.innerHTML = `
-                    <div style="margin-top: 4px; text-align:center;">
-                        <span class="badge-blink" style="display:inline-block; background:#fff7ed; color:#c2410c; padding:5px 14px; border-radius:8px; border:1px solid #fed7aa; font-weight:bold; font-size:13px;">
-                            ⚠️ ATTENZIONE: Ci sono ${countVerificare} Veicoli Dentro e ${countScaduti} Prenotazioni Scadute!
-                        </span>
-                    </div>
-                `;
-            } else {
-                badgeContatori.innerHTML = "";
-                badgeContatori.style.display = "none";
-            }
-        }
-
-        // Filtro locale della lista veicoli da mostrare in tabella
-        const valeurCercato = inputSearch?.value?.trim()?.toUpperCase() || "";
-        const statoTabella = document.getElementById('stato-tabella');
-
+        // 🎯 FILTRAGGIO INTELLIGENTE: Se l'input di ricerca è vuoto, MOSTRAMO TUTTO di default
         const lista = dati.filter(x => {
             if (valeurCercato !== "") {
                 return x.npass?.toUpperCase() === valeurCercato;
             }
-            
-            const f = (typeof getFlags === 'function') ? (getFlags(x) || {}) : {};
-            const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
-            if (dataFineData) dataFineData.setHours(0,0,0,0);
-            const fineTime = dataFineData ? dataFineData.getTime() : 0;
+            return true; 
+        }).sort((a, b) => (a.npass || "").localeCompare(b.npass || "", undefined, { numeric: true }));
 
-            const èScadutoOltreFine = (x.stato === 'SCADUTO' || x.stato === 'MAI_ENTRATO') && !x.orario_ingresso && fineTime && oggiTime > fineTime;
-
-            if (typeof filtroPiantone !== 'undefined') {
-                if (filtroPiantone === 'verificare') return f.daVerificare;
-                if (filtroPiantone === 'scaduti') {
-                    if (èScadutoOltreFine) return false; 
-                    return x.stato === 'SCADUTO' && !x.orario_ingresso;
-                }      
-                if (filtroPiantone === 'attivi') {
-                    if (f.daVerificare) return false;
-                    if (['SCADUTO', 'MAI_ENTRATO'].includes(x.stato)) return false; 
-                    if (x.orario_ingresso && !x.orario_uscita) return true; 
-                    const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
-                    if (dataInizioData) dataInizioData.setHours(0,0,0,0);
-                    return (x.stato === 'PRENOTATO' && (dataInizioData ? dataInizioData.getTime() : 0) === oggiTime && !x.orario_ingresso);
-                }
-                if (filtroPiantone === 'storico') {
-                    return x.stato === 'USCITO' || x.stato === 'MAI_ENTRATO' || èScadutoOltreFine;
-                }
-            }
-            return true;
-        })
-        .sort((a, b) => {
-            const passA = a.npass || "";
-            const passB = b.npass || "";
-            return passA.localeCompare(passB, undefined, { numeric: true, sensitivity: 'base' });
-        });
-
-        if (valeurCercato !== "" && statoTabella) {
-            let label = "🔍 RISULTATO RICERCA";
-            let colore = "#334155"; let sfondo = "#f8fafc";
-            if (lista.length > 0) {
-                const f = (typeof getFlags === 'function') ? (getFlags(lista[0]) || {}) : {};
-                if (f.daVerificare) { label = "🚨 DA VERIFICARE"; colore = "#ea580c"; sfondo = "#ffedd5"; } 
-                else if (f.entrato) { label = "📋 ATTIVO"; colore = "#2563eb"; sfondo = "#dbeafe"; }
-            } else { label = "🔍 NESSUN RISULTATO"; }
-            statoTabella.style.color = colore; statoTabella.style.background = sfondo;
-            statoTabella.innerHTML = label;
-        } else if (typeof aggiornaGraficaBadge === 'function') {
-            try { aggiornaGraficaBadge(); } catch(e){}
-        }
-        
-        // --- INIEZIONE RIGHE IN TABELLA HTML ---
+        // Costruzione Tabella HTML
         const contenitoreLista = document.getElementById('lista-veicoli');
         if (contenitoreLista) {
             contenitoreLista.innerHTML = lista.map(x => {
@@ -1451,22 +1351,19 @@ async function aggiornaVeicoli() {
                 const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '--';
                 const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
                 
-                const f = (typeof getFlags === 'function') ? (getFlags(x) || {}) : {};
-                const evidenzia = typeof ultimoAggiornato !== 'undefined' && x.npass === ultimoAggiornato; 
-                
                 const isMaiEntrato = x.stato === 'MAI_ENTRATO';
                 const isScadutoEsplicito = x.stato === 'SCADUTO' && !x.orario_ingresso;
 
-                return `<tr style="border-bottom: 1px solid #f1f5f9; ${isScadutoEsplicito ? 'background:#fee2e2;' : ''} ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''} ${f.daVerificare ? 'background:#fff7ed; color:#c2410c;' : ''}">
+                return `<tr style="border-bottom: 1px solid #f1f5f9; ${isScadutoEsplicito ? 'background:#fee2e2;' : ''}">
                     <td style="padding: 8px 6px;"><button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; text-decoration:underline; padding:0;">${x.npass}</button></td>
                     <td style="padding: 8px 6px;">${isMaiEntrato ? 'MAI PRESENTATO' : dataIng}</td>
                     <td style="padding: 8px 6px; font-weight:bold;">${isMaiEntrato ? '' : oraIng}</td>
                     <td style="padding: 8px 6px;">${dataUsc}</td>
                     <td style="padding: 8px 6px; font-weight:bold;">${oraUsc}</td>
                 </tr>`;
-            }).join('') || `<tr><td colspan="5" style="text-align:center; padding:16px; color:black;">Nessun veicolo presente</td></tr>`;
+            }).join('') || `<tr><td colspan="5" style="text-align:center; padding:16px; color:black;">Nessun veicolo in elenco</td></tr>`;
                 
-            // Eventi click sui pass
+            // Aggancio eventi click sui link della tabella
             document.querySelectorAll('.btn-pass').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     if (inputSearch) inputSearch.value = btn.dataset.pass;
@@ -1475,11 +1372,7 @@ async function aggiornaVeicoli() {
             });
         }
 
-        const btnFiltro = document.getElementById('btn-filtro');
-        if (btnFiltro) btnFiltro.innerText = "MOSTRA STATI";
-
-        // 🔥 ASSICURIAMOCI CHE LA VISTA GENERALE SIA VISIBILE
-        // Questo fa apparire la tabella dei veicoli e la barra di ricerca!
+        // Assicuriamo la visibilità macro della sezione piantone
         const viewPiantone = document.getElementById('view-piantone');
         if (viewPiantone) {
             viewPiantone.classList.remove('hidden');
@@ -2059,3 +1952,11 @@ document.addEventListener("DOMContentLoaded", () => {
         resetPannello();
     }
 });
+// Controlla ogni mezzo secondo se userPass è pronto; appena lo trova, carica la lista e si spegne.
+const checkUserPassReady = setInterval(() => {
+    if (typeof userPass !== 'undefined' && userPass && userPass.trim() !== "") {
+        clearInterval(checkUserPassReady); // Interrompe il ciclo di controllo
+        if (typeof resetPannello === 'function') resetPannello(); // Tende nascosta la scheda dettagli pass vuota
+        if (typeof aggiornaVeicoli === 'function') aggiornaVeicoli(); // Carica la lista automaticamente!
+    }
+}, 500);
