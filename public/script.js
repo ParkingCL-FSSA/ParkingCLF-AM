@@ -1914,7 +1914,7 @@ async function eseguiScadutoMaiEntrato() {
     document.getElementById('btn-ritardi')?.addEventListener('click', mostraRitardi);
     document.getElementById('btn-logout-admin')?.addEventListener('click', () => { location.reload(); });
 
-    // ============================================================
+// ============================================================
     // 🎯 AUTOMAZIONE FOCUS AUTOMATICO AL RAGGIUNGIMENTO DELLE 5 CIFRE
     // ============================================================
     // 1. Sposta il focus sul tasto Login appena si inserisce il pass a 5 cifre
@@ -1924,6 +1924,67 @@ async function eseguiScadutoMaiEntrato() {
             document.getElementById('btn-login')?.focus();
         }
     });
+
+    // 2. Sposta il focus sul tasto Cerca appena il piantone digita le 5 cifre del pass
+    inputSearch?.addEventListener('input', () => {
+        if (inputSearch.value.trim().length === 5) {
+            document.getElementById('btn-cerca')?.focus();
+        }
+    });
+}); // <--- Fine del tuo window.addEventListener originale o della funzione principale
+
+// ============================================================
+// ✅ INTERCETTAZIONE LOGICA DI ACCESSO (ENTRA)
+// ============================================================
+// Trova il pulsante ENTRA della schermata di login iniziale
+document.getElementById('btn-login')?.addEventListener('click', () => {
+    const inputLogin = document.getElementById('in-npass');
+    const codiceInserito = inputLogin ? inputLogin.value.trim().toUpperCase() : "";
+
+    if (codiceInserito === "") {
+        alert("⚠️ Inserisci un codice identificativo per accedere!");
+        return;
+    }
+
+    // 1. Salva il codice nella variabile globale
+    userPass = codiceInserito; 
+    console.log("🔓 Accesso eseguito con userPass:", userPass);
+
+    // 2. Svuota l'input di ricerca per evitare filtri vecchi
+    const inputSearch = document.getElementById('search-p') || document.getElementById('search-codice');
+    if (inputSearch) inputSearch.value = "";
+
+    // 3. Pulisce e nasconde la scheda dettagli pass vuota
+    if (typeof resetPannello === 'function') resetPannello();
+
+    // 4. 🔥 SBLOCCA E CARICA LA LISTA VEICOLI ADESSO CHE SEI LOGGATO!
+    if (typeof aggiornaVeicoli === 'function') {
+        aggiornaVeicoli();
+    }
+});
+
+// ============================================================
+// 🚪 INTERCETTAZIONE LOGICA DI USCITA (ESCI DALL'APP)
+// ============================================================
+document.getElementById('btn-logout')?.addEventListener('click', () => {
+    // 1. Svuota la sessione
+    userPass = "";
+    
+    // 2. Svuota i campi di testo
+    const inputLogin = document.getElementById('in-npass');
+    if (inputLogin) inputLogin.value = "";
+
+    // 3. Ri-nasconde tutto il pannello piantone
+    if (typeof resetPannello === 'function') resetPannello();
+    
+    const viewPiantone = document.getElementById('view-piantone');
+    if (viewPiantone) {
+        viewPiantone.classList.add('hidden');
+        viewPiantone.style.display = 'none';
+    }
+    
+    console.log("🔒 Logout effettuato. Pannelli resettati.");
+});
 
     // 2. Sposta il focus sul tasto Cerca appena il piantone digita le 5 cifre del pass
     inputSearch?.addEventListener('input', () => {
