@@ -1142,24 +1142,33 @@ async function gestisciVerificaPiantone(endpoint, idPrenotazione) {
 }
 
 function resetSchermataPiantone() {
+    // 1. Svuota l'input di ricerca immediatamente
     const inp = document.getElementById('search-p');
     if (inp) inp.value = '';
 
+    // 2. Distruggi i riferimenti in memoria dei pass precedenti
     currentPren = null;
     filtroPiantone = 'attivi';
     if (typeof ultimoAggiornato !== 'undefined') ultimoAggiornato = null;
 
-    // Elementi della UI da nascondere e resettare drasticamente
+    // 3. Pannello Dettagli Pass: Nascondi e SVUOTA l'HTML per evitare "fantasmi"
     const panelPiantone = document.getElementById('panel-piantone');
     if (panelPiantone) {
         panelPiantone.classList.add('hidden');
-        panelPiantone.style.display = 'none'; // Spazza via il display block
+        panelPiantone.style.display = 'none';
     }
+    
+    const labPass = document.getElementById('lab-pass');
+    const labPeriodo = document.getElementById('lab-periodo');
+    if (labPass) labPass.innerHTML = '';
+    if (labPeriodo) labPeriodo.innerHTML = '';
 
+    // 4. Box Anomalie: Nascondi e resetta radicalmente
     const boxVerifica = document.getElementById('box-verifica-anomalia') || document.getElementById('box-verifica');
     if (boxVerifica) {
         boxVerifica.classList.add('hidden');
         boxVerifica.style.display = 'none';
+        boxVerifica.innerHTML = ''; // Svuota i bottoni generati precedentemente
     }
 
     const boxScaduti = document.getElementById('box-verifica-scaduti');
@@ -1169,13 +1178,14 @@ function resetSchermataPiantone() {
         boxScaduti.innerHTML = '';
     }
 
-    // Svuotamento registri orari e banner sottostanti
+    // 5. Svuota i registri orari dei timestamp (Entrata/Uscita del vecchio pass)
     const regE = document.getElementById('reg-e');
     const regU = document.getElementById('reg-u');
-    const bannerCerca = document.getElementById('stato-tabella');
-
     if (regE) regE.innerHTML = '';
     if (regU) regU.innerHTML = '';
+
+    // 6. Ripristina il banner informativo della tabella inferiore
+    const bannerCerca = document.getElementById('stato-tabella');
     if (bannerCerca) {
         bannerCerca.style.background = '';
         bannerCerca.style.color = '';
@@ -1849,12 +1859,13 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
     
 // ✖ INTERCETTAZIONE DEL CLICK SUL PULSANTE RESET
 document.getElementById('btn-reset-search')?.addEventListener('click', () => {
-    // Richiamiamo la funzione centralizzata che svuota l'input, azzera i display e i dati in memoria
+    // Esegue la pulizia totale di tutti i campi, scritte vecchie e box visibili
     resetSchermataPiantone();
     
-    // Manteniamo le funzioni specifiche di aggiornamento dei badge e della tabella
+    // Aggiorna l'interfaccia grafica dei contatori/badge se presenti
     if (typeof aggiornaGraficaBadge === 'function') aggiornaGraficaBadge();
     
+    // Ricarica la tabella pulita senza filtri di ricerca
     if (typeof aggiornaVeicoli === 'function') {
         aggiornaVeicoli();
     }
