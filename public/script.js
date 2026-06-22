@@ -901,15 +901,15 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 btnUscita.disabled = false;
             }
             
-// 🎯 STATO: DA VERIFICARE
+            // 🎯 STATO: DA VERIFICARE
             else if (currentPren.stato === 'DA_VERIFICARE') {
                 btnIngresso.style.display = 'none'; 
                 
                 btnUscita.disabled = true; 
                 btnUscita.style.display = 'inline-block';
                 btnUscita.style.background = '#ea580c'; 
-                //btnUscita.style.fontSize = '18px';
-                btnUscita.innerText = 'VERIFICARE'; 
+                // Se btnIngresso è nascosto o se il veicolo risulta entrato, mostriamo 'VERIFICATO'
+                btnUscita.innerText = 'VERIFICATO'; 
             
                 if (boxVerifica) {
                     boxVerifica.style.display = 'flex';
@@ -923,7 +923,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                         if (!confirm('Confermi la presenza del veicolo? Verrà registrato come Entrato.')) return;
                         await gestisciVerificaPiantone('/api/piantone/verificato-dentro', currentId);
                     });
-
+            
                     // --- CLICK SU NON PRESENTE ---
                     document.getElementById('btn-non-presente')?.addEventListener('click', async (ev) => { 
                         ev.preventDefault(); 
