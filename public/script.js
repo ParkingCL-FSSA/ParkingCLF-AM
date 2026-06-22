@@ -902,45 +902,52 @@ async function cercaPass(passManuale = null, idRecord = null) {
             }
             
             // 🎯 STATO: DA VERIFICARE
-            else if (currentPren.stato === 'DA_VERIFICARE') {
-                btnIngresso.style.display = 'none'; 
-                
-                btnUscita.disabled = true; 
-                btnUscita.style.display = 'inline-block';
-                btnUscita.style.background = '#ea580c'; 
-                btnUscita.innerText = 'VERIFICATO'; 
-            
-                if (boxVerifica) {
-                    boxVerifica.style.display = 'flex';
-                    boxVerifica.style.gap = '10px';
-                    boxVerifica.style.marginTop = '15px';
-                    boxVerifica.classList.remove('hidden');
+                else if (currentPren.stato === 'DA_VERIFICARE') {
+                    btnIngresso.style.display = 'none'; 
                     
-                    // --- CLICK SU PRESENTE ---
-                    document.getElementById('btn-presente')?.addEventListener('click', async (ev) => { 
-                        ev.preventDefault(); 
-                        if (!confirm('Confermi la presenza del veicolo? Verrà registrato come Entrato.')) return;
+                    btnUscita.disabled = true; 
+                    btnUscita.style.display = 'inline-block';
+                    btnUscita.style.background = '#ea580c'; 
+                    btnUscita.innerText = 'VERIFICATO'; 
+                
+                    if (boxVerifica) {
+                        boxVerifica.style.display = 'flex';
+                        boxVerifica.style.gap = '10px';
+                        boxVerifica.style.marginTop = '15px';
+                        boxVerifica.classList.remove('hidden');
                         
-                        // 🚫 INTERCETTAZIONE IMMEDIATA: Nascondiamo il box delle opzioni per evitare doppi click
-                        boxVerifica.style.display = 'none';
-                        boxVerifica.classList.add('hidden');
+                        const btnPresente = document.getElementById('btn-presente');
+                        const btnNonPresente = document.getElementById('btn-non-presente');
                         
-                        await gestisciVerificaPiantone('/api/piantone/verificato-dentro', currentId);
-                    });
-            
-                    // --- CLICK SU NON PRESENTE ---
-                    document.getElementById('btn-non-presente')?.addEventListener('click', async (ev) => { 
-                        ev.preventDefault(); 
-                        if (!confirm('Confermi che il veicolo sia uscito? Verrà registrato come USCITO "con ritardo"')) return;
-                        
-                        // Nascondiamo anche qui in caso di uscita
-                        boxVerifica.style.display = 'none';
-                        boxVerifica.classList.add('hidden');
-                        
-                        await gestisciVerificaPiantone('/api/piantone/post-uscito', currentId);
-                    });
+                        // Assicuriamoci che partano sbloccati ad ogni renderizzazione della scheda
+                        if (btnPresente) btnPresente.disabled = false;
+                        if (btnNonPresente) btnNonPresente.disabled = false;
+                
+                        // --- CLICK SU PRESENTE ---
+                        btnPresente?.addEventListener('click', async (ev) => { 
+                            ev.preventDefault(); 
+                            if (!confirm('Confermi la presenza del veicolo? Verrà registrato come Entrato.')) return;
+                            
+                            // 🚫 DISABILITAZIONE IMMEDIATA DEI TASTI AI DOPPI CLICK
+                            if (btnPresente) btnPresente.disabled = true;
+                            if (btnNonPresente) btnNonPresente.disabled = true;
+                            
+                            await gestisciVerificaPiantone('/api/piantone/verificato-dentro', currentId);
+                        });
+                
+                        // --- CLICK SU NON PRESENTE ---
+                        btnNonPresente?.addEventListener('click', async (ev) => { 
+                            ev.preventDefault(); 
+                            if (!confirm('Confermi che il veicolo sia uscito? Verrà registrato come USCITO "con ritardo"')) return;
+                            
+                            // 🚫 DISABILITAZIONE IMMEDIATA DEI TASTI AI DOPPI CLICK
+                            if (btnPresente) btnPresente.disabled = true;
+                            if (btnNonPresente) btnNonPresente.disabled = true;
+                            
+                            await gestisciVerificaPiantone('/api/piantone/post-uscito', currentId);
+                        });
+                    }
                 }
-            }
                 
             // MAI ENTRATO (ARCHIVIATO)
             else if (currentPren.stato === 'MAI_ENTRATO') {
