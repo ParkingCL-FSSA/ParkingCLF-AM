@@ -1142,11 +1142,51 @@ async function gestisciVerificaPiantone(endpoint, idPrenotazione) {
 }
 
 function resetSchermataPiantone() {
-    document.getElementById('box-verifica')?.classList.add('hidden');
-    document.getElementById('panel-piantone')?.classList.add('hidden');
+    // 1. Recuperiamo gli elementi della UI
+    const boxVerifica = document.getElementById('box-verifica-anomalia') || document.getElementById('box-verifica');
+    const panelPiantone = document.getElementById('panel-piantone');
     const inp = document.getElementById('search-p');
+    const regE = document.getElementById('reg-e');
+    const regU = document.getElementById('reg-u');
+    const bannerCerca = document.getElementById('stato-tabella');
+
+    // 2. Nascondiamo il box anomalie resettando anche lo stile inline
+    if (boxVerifica) {
+        boxVerifica.classList.add('hidden');
+        boxVerifica.style.display = 'none'; // 🔥 Forza la sparizione totale dei vecchi bottoni
+    }
+
+    // 3. Nascondiamo il pannello dettagli resettando lo stile inline
+    if (panelPiantone) {
+        panelPiantone.classList.add('hidden');
+        panelPiantone.style.display = 'none'; // 🔥 Nasconde il pannello in modo definitivo
+    }
+
+    // 4. Ripuliamo i registri degli orari per non trovarli scritti alla prossima ricerca
+    if (regE) regE.innerHTML = '';
+    if (regU) regU.innerHTML = '';
+
+    // 5. Ripristiniamo il banner dello stato della tabella sottostante
+    if (bannerCerca) {
+        bannerCerca.style.background = '';
+        bannerCerca.style.color = '';
+        bannerCerca.style.borderColor = '';
+        bannerCerca.innerHTML = '📋 ELENCO COMPLETO'; // Torna alla dicitura base
+    }
+
+    // 6. Svuotiamo l'input di testo
     if (inp) inp.value = '';
+
+    // 7. Resettiamo le variabili globali di stato
     currentPren = null;
+    if (typeof ultimoAggiornato !== 'undefined') ultimoAggiornato = null; // Rimuove l'evidenziazione verde dall'elenco
+
+    // 8. 🔥 Aggiorna la griglia per ricaricare tutti i veicoli attivi
+    if (typeof aggiornaVeicoli === 'function') {
+        aggiornaVeicoli();
+    } else if (typeof caricaInArrivoOggi === 'function') {
+        caricaInArrivoOggi(); // Usa la tua funzione di caricamento principale se ha un altro nome
+    }
 }
 
 function getFlags(x) {
@@ -1811,42 +1851,15 @@ document.getElementById('modal-btn-accetta')?.addEventListener('click', () => {
             cercaPass();
         }
     });
-
- document.getElementById('btn-reset-search')?.addEventListener('click', () => {
-    // Recupero dell'input per evitare errori di riferimento se non definito globalmente
-    const inputSearch = document.getElementById('search-p');
-    if (inputSearch) inputSearch.value = '';
     
-    currentPren = null;
-    filtroPiantone = 'attivi'; 
+// ✖ INTERCETTAZIONE DEL CLICK SUL PULSANTE RESET
+document.getElementById('btn-reset-search')?.addEventListener('click', () => {
+    // Richiamiamo la funzione centralizzata che svuota l'input, azzera i display e i dati in memoria
+    resetSchermataPiantone();
     
-    // 🎯 NASCONDI TUTTI I BOX DI VERIFICA (Sia Standard che Scaduti)
-    document.getElementById('panel-piantone')?.classList.add('hidden');
-    
-    // 🎯 AGGIORNATO: Resetta anche il display inline oltre a nasconderlo
-    const boxVerifica = document.getElementById('box-verifica');
-    if (boxVerifica) {
-        boxVerifica.classList.add('hidden');
-        boxVerifica.style.display = ''; // Pulizia dello stile flex/block precedente
-    } 
-    
-    const boxScaduti = document.getElementById('box-verifica-scaduti');
-    if (boxScaduti) {
-        boxScaduti.classList.add('hidden');
-        boxScaduti.innerHTML = ''; // 🧼 PULIZIA CRUCIALE: Svuota l'HTML dinamico (Archiviato/Pulsanti Grandi)
-    }
-    
-    // 🧼 PULIZIA EXTRA: Svuota i vecchi testi dei timestamp e banner per sicurezza
-    const regE = document.getElementById('reg-e');
-    const regU = document.getElementById('reg-u');
-    const bannerCerca = document.getElementById('stato-tabella');
-    if (regE) regE.innerHTML = '';
-    if (regU) regU.innerHTML = '';
-    if (bannerCerca) bannerCerca.innerHTML = '';
-
+    // Manteniamo le funzioni specifiche di aggiornamento dei badge e della tabella
     if (typeof aggiornaGraficaBadge === 'function') aggiornaGraficaBadge();
     
-    // Ripristina la tabella reale
     if (typeof aggiornaVeicoli === 'function') {
         aggiornaVeicoli();
     }
