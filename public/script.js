@@ -961,7 +961,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     }
 
                     boxAnomalia.style.display = 'block';
-                    boxAnomalia.classList.remove('hidden');
+                    boxAnomalia
                 }
             }
                 
@@ -977,7 +977,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     if (btnAzioneRosso) btnAzioneRosso.style.display = 'none';
                     
                     boxAnomalia.style.display = 'block';
-                    boxAnomalia.classList.remove('hidden');
+                    boxAnomalia
                 }
             }   
 
@@ -1020,7 +1020,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                         }
 
                         boxAnomalia.style.display = 'block';
-                        boxAnomalia.classList.remove('hidden');
+                        boxAnomalia
                     }
                 } else {
                     if (btnIngresso) btnIngresso.style.display = 'none';
@@ -1234,6 +1234,7 @@ async function aggiornaPostiLiberiPiantone() {
         `;
     }
 }
+
 function resetPannello() {
     // 1. Svuota i testi dei pass del pannello principale
     const labPass = document.getElementById('lab-pass');
@@ -1241,24 +1242,25 @@ function resetPannello() {
     if (labPass) labPass.innerText = "PASS: ---";
     if (labPeriodo) labPeriodo.innerText = "(Periodo: --/--/----)";
 
-    // 2. Nascondi il pannello del piantone principale
+    // 2. 🔥 CORREZIONE: Nascondi COMPLETAMENTE il pannello piantone principale (Evita la scheda fissa vuota)
     const panelPiantone = document.getElementById('panel-piantone');
     if (panelPiantone) {
         panelPiantone.classList.add('hidden');
-        panelPiantone.style.display = 'none';
+        panelPiantone.style.setProperty('display', 'none', 'important'); 
     }
 
-    // 3. Nascondi il sotto-box delle verifiche/anomalie che generava il casino visivo
+    // 3. Nascondi il sotto-box delle verifiche/anomalie
     const boxAnomalia = document.getElementById('box-verifica-anomalia');
     if (boxAnomalia) {
         boxAnomalia.classList.add('hidden');
         boxAnomalia.style.display = 'none';
     }
     
-    // 4. Svuota l'input di ricerca se necessario
-    const inputSearch = document.getElementById('search-p');
+    // 4. Pulisce l'input di ricerca text
+    const inputSearch = document.getElementById('search-p') || document.getElementById('search-codice');
     if (inputSearch) inputSearch.value = "";
 }
+
 async function aggiornaVeicoli() {
     // 🛡️ CONTROLLO DI SICUREZZA INTEGRATO: Se userPass è vuoto o non definito, interrompiamo subito
     if (typeof userPass === 'undefined' || !userPass || userPass.trim() === "") {
@@ -1509,11 +1511,11 @@ async function aggiornaVeicoli() {
         const btnFiltro = document.getElementById('btn-filtro');
         if (btnFiltro) btnFiltro.innerText = "MOSTRA STATI";
 
-        // 🔥 FORZATURA VISIBILITÀ PANNELLO (Risolve lo schermo vuoto)
-        const panelPiantone = document.getElementById('panel-piantone');
-        if (panelPiantone) {
-            panelPiantone.classList.remove('hidden');
-            panelPiantone.style.display = 'block';
+        // ✅ CORREZIONE: Mostriamo solo la vista generale (se era nascosta), 
+        // MA lasciamo che il singolo "panel-piantone" rimanga chiuso finché non si cerca un pass!
+        const viewPiantone = document.getElementById('view-piantone');
+        if (viewPiantone) {
+            viewPiantone.classList.remove('hidden');
         }
 
     } catch (err) {
@@ -2082,4 +2084,10 @@ async function eseguiScadutoMaiEntrato() {
             document.getElementById('btn-cerca')?.focus();
         }
     });
+});
+// Forza la pulizia e il nascondimento dei pannelli all'avvio dell'applicazione
+document.addEventListener("DOMContentLoaded", () => {
+    if (typeof resetPannello === 'function') {
+        resetPannello();
+    }
 });
