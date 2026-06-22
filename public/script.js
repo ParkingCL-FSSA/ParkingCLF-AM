@@ -1262,24 +1262,16 @@ function resetPannello() {
 }
 
 async function aggiornaVeicoli() {
-    console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Funzione avviata. userPass attuale:", typeof userPass !== 'undefined' ? userPass : 'NON DEFINITO');
+    console.log("⚙️ [DIAGNOSTICA] Avvio aggiornaVeicoli.");
 
     if (typeof userPass === 'undefined' || !userPass || userPass.trim() === "") {
-        console.warn("⚠️ [DIAGNOSTICA aggiornaVeicoli] Interrotto: userPass vuoto.");
-        const viewPiantone = document.getElementById('view-piantone');
-        if (viewPiantone) {
-            viewPiantone.classList.remove('hidden');
-            viewPiantone.style.display = 'block';
-        }
+        console.warn("⚠️ userPass non disponibile.");
         return;
     }
 
     try {
         const urlChiamata = `/api/veicoli-dentro?npass=${userPass}`;
-        console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Provo a fare la fetch a:", urlChiamata);
-        
         const res = await fetch(urlChiamata);
-        console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Risposta server ricevuta. Status:", res.status);
 
         if (!res.ok) {
             console.warn(`⚠️ Errore server: ${res.status}`);
@@ -1287,16 +1279,13 @@ async function aggiornaVeicoli() {
         }
 
         const dati = await res.json();
-        console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Array dati scaricato dal DB. Numero record:", Array.isArray(dati) ? dati.length : 'NON È UN ARRAY!', dati);
-
         if (!Array.isArray(dati)) {
-            console.error("💥 I dati non sono un array valido:", dati);
+            console.error("💥 I dati scaricati non sono un array valido.");
             return;
         }
 
         const inputSearch = document.getElementById('search-p') || document.getElementById('search-codice');
         const valeurCercato = inputSearch ? inputSearch.value.trim().toUpperCase() : "";
-        console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Filtro di ricerca digitato:", valeurCercato);
 
         // --- CONTEGGI ---
         let countDentro = 0; let countListaV1p = 0; let countPrenotatiOggi = 0;
@@ -1311,30 +1300,20 @@ async function aggiornaVeicoli() {
             if (x.stato === 'DA_VERIFICARE') countVerificare++;
         });
 
-        console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Conteggi effettuati -> Dentro:", countDentro, "Scaduti:", countScaduti, "Da Verificare:", countVerificare);
-
-        // ============================================================
-        // 🔥 AGGIORNAMENTO DINAMICO DEI CONTATORI (RIMOZIONE LOADING)
-        // ============================================================
-        const postiLiberi = 90 - countDentro; // Gestione capienza sbarra
-        let stringaContatoriNuova = `
-            <span style="display:inline-block; margin:0 5px; color:#1e293b;">🚗 Dentro: <span style="color:#ea580c; font-weight:bold;">${countDentro}</span></span> | 
-            <span style="display:inline-block; margin:0 5px; color:#1e293b;">📅 Scaduti: <span style="color:#dc2626; font-weight:bold;">${countScaduti}</span></span> | 
-            <span style="display:inline-block; margin:0 5px; color:#16a34a; font-weight:bold;">🅿️ Liberi: <span>${postiLiberi}</span></span>
-        `;
-        if (countListaV1p > 0) {
-            stringaContatoriNuova += ` | <span style="display:inline-block; margin:0 5px; color:#2563eb;">🔹 Lista Esterni: <b>${countListaV1p}</b></span>`;
-        }
-
-        // Sovrascriviamo il testo "Caricamento dati reali sbarra..." con i dati reali
+        // --- SOLUZIONE 1: AGGIORNAMENTO DEL BOX SUPERIORE DELL'HTML ---
         const cardSbarraAlto = document.getElementById('card-sbarra-alto');
         if (cardSbarraAlto) {
-            cardSbarraAlto.innerHTML = stringaContatoriNuova;
-            cardSbarraAlto.style.background = "#f8fafc"; // Cambia lo sfondo in un grigio/azzurro pulito da dati pronti
-            cardSbarraAlto.style.borderColor = "#e2e8f0";
+            const postiLiberi = 90 - countDentro;
+            let infoString = `🚗 Dentro: ${countDentro} | 📅 Scaduti: ${countScaduti} | 🅿️ Liberi: ${postiLiberi}`;
+            if (countListaV1p > 0) infoString += ` | 🔹 Esterni: ${countListaV1p}`;
+            
+            cardSbarraAlto.innerHTML = infoString;
+            cardSbarraAlto.style.background = "#f1f5f9"; // Sfondo neutro chiaro di avvenuto caricamento
+            cardSbarraAlto.style.color = "#1e293b";      // Testo scuro visibile
+            cardSbarraAlto.style.borderColor = "#cbd5e1";
         }
 
-        // --- FILTRAGGIO E ORDINAMENTO ---
+        // --- FILTRAGGIO ---
         const lista = dati.filter(x => {
             if (valeurCercato !== "") return x.npass?.toUpperCase().includes(valeurCercato);
             return true;
@@ -1345,21 +1324,24 @@ async function aggiornaVeicoli() {
             return (a.npass || "").localeCompare(b.npass || "", undefined, { numeric: true });
         });
 
-        console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Record filtrati pronti da stampare in tabella:", lista.length);
-
-        // --- INIEZIONE NELLA TABELLA HTML ---
+        // --- SOLUZIONE 2: RIGENERAZIONE E FORZATURA VISIVA DELLA TABELLA ---
         const contenitoreLista = document.getElementById('lista-veicoli');
-        console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Elemento DOM della tabella trovato con ID 'lista-veicoli'?:", contenitoreLista);
-
         if (contenitoreLista) {
+            // Sblocchiamo i nodi genitori dell'HTML che potrebbero avere display:none ereditati
             contenitoreLista.style.display = "table-row-group";
-            if (contenitoreLista.parentElement) {
-                contenitoreLista.parentElement.style.display = "table";
-                contenitoreLista.parentElement.style.visibility = "visible";
-                contenitoreLista.parentElement.style.opacity = "1";
+            const tabellaPadre = contenitoreLista.closest('table');
+            if (tabellaPadre) {
+                tabellaPadre.style.display = "table";
+                tabellaPadre.style.width = "100%";
+            }
+            const containerScroll = contenitoreLista.closest('.tabella-scroll-container');
+            if (containerScroll) {
+                containerScroll.style.display = "block";
+                containerScroll.style.visibility = "visible";
+                containerScroll.style.opacity = "1";
             }
 
-            // Generazione dinamica delle righe
+            // Generazione delle righe adattate alle percentuali del tuo THEAD (16% - 26% - 15% - 28% - 15%)
             contenitoreLista.innerHTML = lista.map(x => {
                 const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
                 const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
@@ -1368,26 +1350,27 @@ async function aggiornaVeicoli() {
                 const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '--';
                 const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
                 
-                let stileRiga = 'border-bottom: 2px solid #cbd5e1; color: #0f172a !important;'; 
+                let stileRiga = 'border-bottom: 1px solid #cbd5e1;'; 
                 if (x.stato === 'SCADUTO') {
-                    stileRiga += ' background: #fee2e2 !important; color: #991b1b !important;';
+                    stileRiga += ' background: #fee2e2; color: #991b1b;';
                 } else if (x.stato === 'DA_VERIFICARE') {
-                    stileRiga += ' background: #fff7ed !important; color: #c2410c !important;';
+                    stileRiga += ' background: #fff7ed; color: #c2410c;';
                 } else {
-                    stileRiga += ' background: #ffffff !important;';
+                    stileRiga += ' background: #ffffff; color: #0f172a;';
                 }
 
                 return `<tr style="${stileRiga}">
-                    <td style="padding: 12px 8px; font-size: 15px; border-bottom: 1px solid #e2e8f0;"><button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb !important; font-weight:bold; text-decoration:underline; padding:0; cursor:pointer; font-size: 15px;">${x.npass}</button></td>
-                    <td style="padding: 12px 8px; font-size: 15px; border-bottom: 1px solid #e2e8f0; color: #0f172a !important;">${x.stato === 'MAI_ENTRATO' ? 'MAI PRESENTATO' : dataIng}</td>
-                    <td style="padding: 12px 8px; font-size: 15px; font-weight:bold; border-bottom: 1px solid #e2e8f0; color: #0f172a !important;">${x.stato === 'MAI_ENTRATO' ? '' : oraIng}</td>
-                    <td style="padding: 12px 8px; font-size: 15px; border-bottom: 1px solid #e2e8f0; color: #0f172a !important;">${dataUsc}</td>
-                    <td style="padding: 12px 8px; font-size: 15px; font-weight:bold; border-bottom: 1px solid #e2e8f0; color: #0f172a !important;">${oraUsc}</td>
+                    <td style="padding: 10px 4px; text-align: center; font-weight: bold; width: 16%;">
+                        <button class="btn-pass" data-pass="${x.npass}" data-id="${x.id}" type="button" style="border:none; background:none; color:#2563eb; font-weight:bold; text-decoration:underline; cursor:pointer; font-size:14px;">${x.npass}</button>
+                    </td>
+                    <td style="padding: 10px 4px; width: 26%;">${x.stato === 'MAI_ENTRATO' ? 'MAI PRES.' : dataIng}</td>
+                    <td style="padding: 10px 4px; font-weight: bold; width: 15%;">${x.stato === 'MAI_ENTRATO' ? '' : oraIng}</td>
+                    <td style="padding: 10px 4px; width: 28%;">${dataUsc}</td>
+                    <td style="padding: 10px 4px; font-weight: bold; width: 15%;">${oraUsc}</td>
                 </tr>`;
             }).join('');
-            
-            console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] HTML iniettato con successo nella tabella.");
 
+            // Riaggancia gli eventi click sui pulsanti dei codici PASS caricate
             document.querySelectorAll('.btn-pass').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     if (inputSearch) inputSearch.value = btn.dataset.pass;
@@ -1396,23 +1379,19 @@ async function aggiornaVeicoli() {
             });
         }
 
-        // Mostra la dashboard piantone e rimuove lo stato hidden
+        // --- SOLUZIONE 3: FORZATURA APERTURA SCHERMATA PADRE ---
         const viewPiantone = document.getElementById('view-piantone');
-        console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Elemento macro 'view-piantone' trovato?:", viewPiantone);
-        
         if (viewPiantone) {
             viewPiantone.classList.remove('hidden');
             viewPiantone.style.setProperty('display', 'block', 'important');
-            console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] 'view-piantone' reso visibile a schermo.");
-        } else {
-            console.error("💥 [ERRORE HTML] Manca l'elemento macro id='view-piantone' nell'HTML!");
+            viewPiantone.style.visibility = "visible";
+            viewPiantone.style.opacity = "1";
         }
 
     } catch (err) {
-        console.error("💥 Errore critico interno a aggiornaVeicoli:", err);
+        console.error("💥 Errore in aggiornaVeicoli:", err);
     }
 }
-
 let arriviVisible = false;
 
 async function mostraArriviOggi() {
