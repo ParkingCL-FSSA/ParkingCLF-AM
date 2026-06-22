@@ -1301,7 +1301,6 @@ async function aggiornaVeicoli() {
         // --- CONTEGGI ---
         let countDentro = 0; let countListaV1p = 0; let countPrenotatiOggi = 0;
         let countVerificare = 0; let countScaduti = 0;
-        const oggiTime = new Date().setHours(0,0,0,0);
 
         dati.forEach(x => {
             const passCorrente = (x.npass || '').toUpperCase().trim();
@@ -1314,7 +1313,28 @@ async function aggiornaVeicoli() {
 
         console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Conteggi effettuati -> Dentro:", countDentro, "Scaduti:", countScaduti, "Da Verificare:", countVerificare);
 
-        // --- FILTRAGGIO ---
+        // ============================================================
+        // 🔥 AGGIORNAMENTO DINAMICO DEI CONTATORI (RIMOZIONE LOADING)
+        // ============================================================
+        const postiLiberi = 90 - countDentro; // Gestione capienza sbarra
+        let stringaContatoriNuova = `
+            <span style="display:inline-block; margin:0 5px; color:#1e293b;">🚗 Dentro: <span style="color:#ea580c; font-weight:bold;">${countDentro}</span></span> | 
+            <span style="display:inline-block; margin:0 5px; color:#1e293b;">📅 Scaduti: <span style="color:#dc2626; font-weight:bold;">${countScaduti}</span></span> | 
+            <span style="display:inline-block; margin:0 5px; color:#16a34a; font-weight:bold;">🅿️ Liberi: <span>${postiLiberi}</span></span>
+        `;
+        if (countListaV1p > 0) {
+            stringaContatoriNuova += ` | <span style="display:inline-block; margin:0 5px; color:#2563eb;">🔹 Lista Esterni: <b>${countListaV1p}</b></span>`;
+        }
+
+        // Sovrascriviamo il testo "Caricamento dati reali sbarra..." con i dati reali
+        const cardSbarraAlto = document.getElementById('card-sbarra-alto');
+        if (cardSbarraAlto) {
+            cardSbarraAlto.innerHTML = stringaContatoriNuova;
+            cardSbarraAlto.style.background = "#f8fafc"; // Cambia lo sfondo in un grigio/azzurro pulito da dati pronti
+            cardSbarraAlto.style.borderColor = "#e2e8f0";
+        }
+
+        // --- FILTRAGGIO E ORDINAMENTO ---
         const lista = dati.filter(x => {
             if (valeurCercato !== "") return x.npass?.toUpperCase().includes(valeurCercato);
             return true;
@@ -1327,24 +1347,11 @@ async function aggiornaVeicoli() {
 
         console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Record filtrati pronti da stampare in tabella:", lista.length);
 
-      // --- INIEZIONE NELLA TABELLA HTML (CON RIMOZIONE LOADING) ---
+        // --- INIEZIONE NELLA TABELLA HTML ---
         const contenitoreLista = document.getElementById('lista-veicoli');
         console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Elemento DOM della tabella trovato con ID 'lista-veicoli'?:", contenitoreLista);
 
         if (contenitoreLista) {
-            
-            // 🔥 CRUCIALE: Cerchiamo e nascondiamo il testo o il box di caricamento prima di mostrare la lista
-            // Proviamo a intercettare l'ID o la classe del testo "Caricamento dati reali sbarra..."
-            const loadingText = document.getElementById('loading-sbarra') || 
-                                document.querySelector('.loading-text') || 
-                                document.getElementById('caricamento-dati');
-            
-            if (loadingText) {
-                loadingText.style.display = 'none'; // Nasconde l'avviso di caricamento
-            }
-
-            // Se per caso il testo "Caricamento dati reali sbarra..." è stato scritto direttamente 
-            // dentro il tbody prima che si caricassero i dati, il .innerHTML qui sotto lo sovrascriverà e pulirà del tutto!
             contenitoreLista.style.display = "table-row-group";
             if (contenitoreLista.parentElement) {
                 contenitoreLista.parentElement.style.display = "table";
@@ -1352,7 +1359,7 @@ async function aggiornaVeicoli() {
                 contenitoreLista.parentElement.style.opacity = "1";
             }
 
-            // Iniezione delle 281 righe dei veicoli
+            // Generazione dinamica delle righe
             contenitoreLista.innerHTML = lista.map(x => {
                 const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
                 const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
@@ -1388,13 +1395,14 @@ async function aggiornaVeicoli() {
                 });
             });
         }
-        // Mostra il blocco macro piantone generale
+
+        // Mostra la dashboard piantone e rimuove lo stato hidden
         const viewPiantone = document.getElementById('view-piantone');
         console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] Elemento macro 'view-piantone' trovato?:", viewPiantone);
         
         if (viewPiantone) {
             viewPiantone.classList.remove('hidden');
-            viewPiantone.style.display = 'block';
+            viewPiantone.style.setProperty('display', 'block', 'important');
             console.log("⚙️ [DIAGNOSTICA aggiornaVeicoli] 'view-piantone' reso visibile a schermo.");
         } else {
             console.error("💥 [ERRORE HTML] Manca l'elemento macro id='view-piantone' nell'HTML!");
