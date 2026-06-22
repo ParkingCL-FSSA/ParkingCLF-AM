@@ -298,9 +298,9 @@ async function doLogin() {
         if (avviso) avviso.style.display = 'none';
         
         // ============================================================
-        // 🚨 GESTIONE DEI RUOLI CON ALLINEAMENTO DINAMICO DEI FILTRI
+        // 🚨 GESTIONE DEI RUOLI CON ALLINEAMENTO DINAMICO DEI FILTRI (FIXED)
         // ============================================================
-          if (data.ruolo === 'piantone') {
+        if (data.ruolo === 'piantone') {
             show('view-piantone');
             
             try {
@@ -330,11 +330,11 @@ async function doLogin() {
             } catch(e) { 
                 console.log("Errore inizializzazione dati piantone:", e); 
             }
-        }
             
-            try { aggiornaPostiLiberiPiantone(); } catch(e){ console.log(e); }
+            // ✅ Spostato dentro l'if del piantone per sicurezza, evitando che rompa gli altri ruoli
+            try { await aggiornaPostiLiberiPiantone(); } catch(e){ console.log(e); }
         }
-      else if (data.ruolo === 'admin') { 
+        else if (data.ruolo === 'admin') { 
             if (card) {
                 card.classList.add('admin-wide');
             }
@@ -342,6 +342,7 @@ async function doLogin() {
             
             // Applichiamo la stessa logica di allineamento anche se l'admin guarda la visuale piantone
             try {
+                filtroPiantone = 'attivi';
                 await aggiornaVeicoli();
                 if (typeof totaleVerificare !== 'undefined' && totaleVerificare > 0) {
                     filtroPiantone = 'verificare';
@@ -389,7 +390,7 @@ async function doLogin() {
         alert("Errore login");
     }
 }
-
+        
 // ============================================================
 // 🗓️ FUNZIONE PER AGGIORNARE IL TESTO DELLE DATE DINAMICHE (45 GG)
 // ============================================================
