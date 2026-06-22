@@ -1809,8 +1809,8 @@ async function eseguiScadutoMaiEntrato() {
 }
 
     
-// ============================================================
-    // 🔧 ASSEGNAZIONI GLOBALI E LISTENER DI NAVIGAZIONE
+/// ============================================================
+    // 🔧 ASSEGNAZIONI GLOBALI E LISTENER DI NAVIGAZIONE (PROTETTI)
     // ============================================================
     window.eseguiScadutoDentro = eseguiScadutoDentro;
     window.eseguiScadutoMaiEntrato = eseguiScadutoMaiEntrato;
@@ -1827,7 +1827,16 @@ async function eseguiScadutoMaiEntrato() {
     document.getElementById('btn-filtro')?.addEventListener('click', toggleScaduti);
     document.getElementById('search-p')?.addEventListener('input', aggiornaVeicoli);
     document.getElementById('btn-logout-piantone')?.addEventListener('click', () => { location.reload(); });
-    document.getElementById('btn-ritardi')?.addEventListener('click', mostraRitardi);
+    
+    // 🛡️ CONTROLLO DI SICUREZZA SUI RITARDI: Se non esiste la funzione, evita il crash totale
+    document.getElementById('btn-ritardi')?.addEventListener('click', () => {
+        if (typeof mostraRitardi === 'function') {
+            mostraRitardi();
+        } else {
+            console.warn("⚠️ La funzione mostraRitardi() non è definita nel codice.");
+        }
+    });
+    
     document.getElementById('btn-logout-admin')?.addEventListener('click', () => { location.reload(); });
 
     // ============================================================
