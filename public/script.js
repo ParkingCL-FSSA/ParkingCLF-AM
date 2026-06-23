@@ -126,6 +126,37 @@ function resetSelezione() {
         el.style.backgroundColor = '';
     });
 }
+// FORMATTAZIONE ORA CON CORREZIONE FUSO ORARIO (+2 ORE)
+function fmtOra(isoStr) {
+    if (!isoStr) return '--:--';
+    
+    let str = isoStr.toString().trim();
+    
+    // Se la stringa contiene già solo l'orario (es: "06:03"), la restituisce pulita
+    if (str.includes(':') && !str.includes('-') && !str.includes('T')) {
+        return str.substring(0, 5);
+    }
+
+    let d;
+    if (isoStr instanceof Date) {
+        d = isoStr;
+    } else {
+        // Se la stringa termina con la Z (UTC), forziamo l'offset italiano (+02:00) per bloccare lo sfasamento
+        if (str.endsWith('Z')) {
+            str = str.replace('Z', '+02:00');
+        }
+        d = new Date(str);
+    }
+
+    if (isNaN(d.getTime())) {
+        return str.substring(0, 5);
+    }
+
+    const ore = d.getHours().toString().padStart(2, '0');
+    const minuti = d.getMinutes().toString().padStart(2, '0');
+    
+    return `${ore}:${minuti}`;
+}
 
 function show(id) {
 
