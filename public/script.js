@@ -394,7 +394,7 @@ async function doLogin() {
             if (selectProfilo) {
                 // Controlliamo se il server ha risposto che l'utente ha il ruolo 'guest'
                 if (data.ruolo === 'guest') {
-                    selectProfilo.value = 'STD';       // Forza su Standard (15 giorni)
+                    selectProfilo.value = 'TRN';     
                     selectProfilo.disabled = true;     // Blocca e ingrigisce il menu
                     console.log("Accesso Ospite rilevato tramite Ruolo: Profilo bloccato.");
                 } else {
