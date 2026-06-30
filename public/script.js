@@ -389,16 +389,25 @@ async function doLogin() {
         else {
             show('view-user');
             
-            // 🔒 BLOCCO GUEST BASATO SUL RUOLO DEL DATABASE
+        // 🔒 BLOCCO GUEST BASATO SUL RUOLO DEL DATABASE
             const selectProfilo = document.getElementById('select-profilo');
             if (selectProfilo) {
+                // Troviamo il contenitore del combobox per nasconderlo del tutto (es: la riga o il form-group)
+                const containerProfilo = selectProfilo.closest('.form-group') || selectProfilo.parentElement;
+            
                 // Controlliamo se il server ha risposto che l'utente ha il ruolo 'guest'
                 if (data.ruolo === 'guest') {
-                    selectProfilo.value = 'TRN';     
-                    selectProfilo.disabled = true;     // Blocca e ingrigisce il menu
-                    console.log("Accesso Ospite rilevato tramite Ruolo: Profilo bloccato.");
+                    selectProfilo.value = 'TRN';       // Forza su Turnisti sotto il cofano
+                    
+                    if (containerProfilo) {
+                        containerProfilo.style.display = 'none'; // 👁️ Fa sparire completamente il combobox dalla vista
+                    }
+                    console.log("Accesso Ospite rilevato tramite Ruolo: Profilo nascosto.");
                 } else {
-                    selectProfilo.disabled = false;    // Sblocca per utenti normali (STD, MIS, TRN)
+                    selectProfilo.disabled = false;    // Sblocca per utenti normali
+                    if (containerProfilo) {
+                        containerProfilo.style.display = 'block'; // Mostra normalmente se l'utente non è guest
+                    }
                 }
             }
 
