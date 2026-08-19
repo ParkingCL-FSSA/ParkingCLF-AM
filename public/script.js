@@ -126,36 +126,29 @@ function resetSelezione() {
         el.style.backgroundColor = '';
     });
 }
+
 // FORMATTAZIONE ORA CON CORREZIONE FUSO ORARIO (+2 ORE)
 function fmtOra(isoStr) {
     if (!isoStr) return '--:--';
     
     let str = isoStr.toString().trim();
     
-    // Se la stringa contiene già solo l'orario (es: "06:03"), la restituisce pulita
+    // 1. Se è già un orario semplice "HH:mm" o "HH:mm:ss"
     if (str.includes(':') && !str.includes('-') && !str.includes('T')) {
         return str.substring(0, 5);
     }
 
-    let d;
-    if (isoStr instanceof Date) {
-        d = isoStr;
-    } else {
-        // Se la stringa termina con la Z (UTC), forziamo l'offset italiano (+02:00) per bloccare lo sfasamento
-        if (str.endsWith('Z')) {
-            str = str.replace('Z', '+02:00');
-        }
-        d = new Date(str);
+    // 2. Estrazione diretta HH:mm dalla stringa ISO (evita qualsiasi sfasamento di fuso orario)
+    const match = str.match(/T(\d{2}):(\d{2})/);
+    if (match) {
+        return `${match[1]}:${match[2]}`;
     }
 
-    if (isNaN(d.getTime())) {
-        return str.substring(0, 5);
-    }
-
-    const ore = d.getHours().toString().padStart(2, '0');
-    const minuti = d.getMinutes().toString().padStart(2, '0');
+    // 3. Fallback con fuso orario UTC bloccato
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return str.substring(0, 5);
     
-    return `${ore}:${minuti}`;
+    return d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
 }
 
 function show(id) {
