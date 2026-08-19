@@ -1212,7 +1212,7 @@ async function aggiornaPostiLiberiPiantone() {
 }
 
 async function aggiornaVeicoli() {
-    // 🛡️ CONTROLLO DI SICUREZZA INTEGRATO: Se userPass è vuoto o non definito, interrompiamo subito
+    // 🛡️ CONTROLLO DI SICUREZZA INTEGRATO
     if (typeof userPass === 'undefined' || !userPass || userPass.trim() === "") {
         console.warn("⚠️ Richiesta annullata: userPass non ancora disponibile (utente non loggato).");
         return;
@@ -1221,21 +1221,19 @@ async function aggiornaVeicoli() {
     try {
         const res = await fetch(`/api/veicoli-dentro?npass=${userPass}`);
         
-        // Se il server risponde con un errore (es: 403 o 500), usciamo in sicurezza
         if (!res.ok) {
-            console.warn(`⚠️ Impossibile recuperare i dati dei veicoli. Il server ha risposto con stato: ${res.status}`);
+            console.warn(`⚠️ Impossibile recuperare i dati dei veicoli. Stato server: ${res.status}`);
             return;
         }
 
         const dati = await res.json();
         
-        // 🎯 PROTEZIONE CRASH: Verifichiamo che 'dati' sia effettivamente un array valido
         if (!Array.isArray(dati)) {
             console.error("💥 I dati ricevuti dal server non sono un array valido:", dati);
             return;
         }
         
-        // Configurazione data odierna locale per i confronti
+        // Configurazione data odierna locale
         const oraSolareOggi = new Date();
         oraSolareOggi.setHours(0, 0, 0, 0);
         const oggiTime = oraSolareOggi.getTime();
@@ -1243,36 +1241,30 @@ async function aggiornaVeicoli() {
 
         const inputSearch = document.getElementById('search-p');
 
-        // ==========================================
-        // ⚠️ INIZIALIZZAZIONE PULITA DEI CONTATORI
-        // ==========================================
-        let countDentro = 0; // Solo pass standard
-        let countListaV1p = 0; // Solo pass che iniziano con V1P
-        
+        // INIZIALIZZAZIONE CONTATORI
+        let countDentro = 0;
+        let countListaV1p = 0;
         let countEntratiOggi = 0;
         let countPrenotatiOggi = 0;
         let countVerificare = 0;
         let countScaduti = 0; 
         
-        // Elenco dei pass da archiviare sul DB in background
         const passDaArchiviareSuDB = [];
 
         dati.forEach(x => {
             const passCorrente = (x.npass || '').toUpperCase().trim();
 
-            // Conversione date del DB per i confronti temporali
             const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
-            if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+            if (dataInizioData) dataInizioData.setHours(0, 0, 0, 0);
             const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
-            // Estrazione della data di fine prenotazione
             const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
-            if (dataFineData) dataFineData.setHours(0,0,0,0);
+            if (dataFineData) dataFineData.setHours(0, 0, 0, 0);
             const fineTime = dataFineData ? dataFineData.getTime() : 0;
 
             const dataIngressoString = x.orario_ingresso ? x.orario_ingresso.substring(0, 10) : '';
 
-            // Separazione conteggio interni
+            // Conteggio veicoli interni
             if (x.orario_ingresso && !x.orario_uscita) {
                 if (passCorrente.startsWith('V1P')) {
                     countListaV1p++;
@@ -1291,13 +1283,13 @@ async function aggiornaVeicoli() {
             const f = getFlags(x);
             if (f.daVerificare) countVerificare++;
             
-            // 🎯 LOGICA DI CONTROLLO SCADUTI SUL DB
+            // ARCHIVIAZIONE E CONTEGGIO SCADUTI (Escludendo i MAI PRESENTATO / MAI ENTRATO)
             if (['SCADUTO', 'MAI_ENTRATO'].includes(x.stato) && !x.orario_ingresso) {
                 if (fineTime && oggiTime > fineTime) {
                     if (x.stato === 'SCADUTO') {
                         passDaArchiviareSuDB.push({ id: x.id, npass: x.npass });
                     }
-                } else {
+                } else if (x.stato === 'SCADUTO') {
                     countScaduti++;
                 }
             }
@@ -1306,12 +1298,9 @@ async function aggiornaVeicoli() {
         totaleScaduti = countScaduti;
         totaleVerificare = countVerificare;
         
-        // Matematica posti liberi
         const postiLiberi = 101 - countDentro; 
 
-        // ================================================================
-        // 🎯 NUOVA COSTRUZIONE STRINGA RINOMINATA IN ALTO (EX SBARRA)
-        // ================================================================
+        // COSTRUZIONE RIGA CONTATORI
         let stringaContatoriNuova = `
             <span style="display:inline-block; margin:0 3px; font-weight:600; color:#1e293b;">🚗 Dentro: <span style="color:#ea580c;">${countDentro}</span></span> | 
             <span style="display:inline-block; margin:0 3px; font-weight:600; color:#1e293b;">📅 Prenotati Oggi: <span style="color:#2563eb;">${countPrenotatiOggi}</span></span> | 
@@ -1322,14 +1311,12 @@ async function aggiornaVeicoli() {
             stringaContatoriNuova += ` | <span style="display:inline-block; margin:0 3px; font-weight:600; color:#2563eb;">🔹 Lista Esterni: <span style="font-weight:bold;">${countListaV1p}</span></span>`;
         }
 
-        // Iniettiamo la nuova riga formattata al posto dei vecchi contatori "Liberi | Dentro"
         const displaySotto = document.getElementById('total-free-display');
         const cardSbarraAlto = document.getElementById('card-sbarra-alto') || document.getElementById('status-parcheggio');
         
         if (displaySotto) displaySotto.innerHTML = stringaContatoriNuova;
         if (cardSbarraAlto) cardSbarraAlto.innerHTML = stringaContatoriNuova;
 
-        // Gestione testo centrale della sbarra (se presente nel template)
         const stringaSbarraCentro = document.getElementById('testo-sbarra-centro');
         if (stringaSbarraCentro) {
             let testoCentro = `🚧 CONTROLLO SBARRA | 🚗 Dentro: ${countDentro} | 📅 Prenotati Oggi: ${countPrenotatiOggi} | 🅿️ Liberi: ${postiLiberi}`;
@@ -1337,12 +1324,9 @@ async function aggiornaVeicoli() {
             stringaSbarraCentro.innerHTML = testoCentro;
         }
 
-        // ================================================================
-        // 🎯 GESTIONE DINAMICA DEL BADGE SOTTO I PULSANTI (SOLO PER AVVISI CRITICI)
-        // ================================================================
-       const badgeContatori = document.getElementById('badge-contatori');
+        // GESTIONE BADGE AVVISI CRITICI
+        const badgeContatori = document.getElementById('badge-contatori');
         if (badgeContatori) {
-            // Verifichiamo se c'è almeno una delle due anomalie (dentro da verificare o scadenze non gestite)
             if (countVerificare > 0 || totaleScaduti > 0) {
                 badgeContatori.style.margin = "10px 0";
                 badgeContatori.style.paddingBottom = "10px";
@@ -1358,7 +1342,6 @@ async function aggiornaVeicoli() {
                     </div>
                 `;
             } else {
-                // Se non ci sono criticità, svuotiamo il div e lo nascondiamo completamente
                 badgeContatori.innerHTML = "";
                 badgeContatori.style.margin = "0";
                 badgeContatori.style.padding = "0";
@@ -1367,29 +1350,38 @@ async function aggiornaVeicoli() {
             }
         }
         
-        // 🚀 PROCESSO DI ARCHIVIAZIONE AUTOMATICA SUL SERVER (BACKGROUND) 🚀
+        // ARCHIVIAZIONE PARALLELA IN BACKGROUND (PROMISE.ALLSETTLED)
         if (passDaArchiviareSuDB.length > 0) {
-            for (const item of passDaArchiviareSuDB) {
-                console.log(`🤖 Sistema: Archiviazione automatica DB per il pass scaduto ${item.npass} (ID: ${item.id})`);
-                try {
+            Promise.allSettled(
+                passDaArchiviareSuDB.map(item =>
                     fetch('/api/piantone/scaduto-archivia', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ id: item.id, npass: item.npass })
-                    }).then(response => {
-                        if (!response.ok) console.warn(`⚠️ Errore archiviazione DB per pass ${item.npass}`);
-                    });
-                } catch (e) {
-                    console.error("💥 Impossibile connettersi all'API di archiviazione:", e);
-                }
-            }
+                    })
+                )
+            ).then(results => {
+                results.forEach((res, index) => {
+                    if (res.status === 'rejected' || (res.value && !res.value.ok)) {
+                        console.warn(`⚠️ Errore archiviazione DB per pass ${passDaArchiviareSuDB[index].npass}`);
+                    }
+                });
+            });
         }
 
-        // --- FILTRAGGIO LOCALE DELLA LISTA CORRENTE ---
+        // FILTRAGGIO LOCALE - CON RIMOZIONE TOTALE DI MAI_ENTRATO E MAI PRESENTATO
         const valeurCercato = inputSearch?.value?.trim()?.toUpperCase() || "";
         const statoTabella = document.getElementById('stato-tabella');
 
         const lista = dati.filter(x => {
+            const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
+            if (dataFineData) dataFineData.setHours(0,0,0,0);
+            const fineTime = dataFineData ? dataFineData.getTime() : 0;
+
+            // ⛔ ESCLUSIONE ASSOLUTA: Rimuove MAI_ENTRATO o pass scaduti mai presentati
+            const isMaiEntrato = x.stato === 'MAI_ENTRATO' || (x.stato === 'SCADUTO' && !x.orario_ingresso && fineTime && oggiTime > fineTime);
+            if (isMaiEntrato) return false;
+
             if (valeurCercato !== "") return x.npass?.toUpperCase() === valeurCercato;
             
             const f = getFlags(x);
@@ -1397,28 +1389,21 @@ async function aggiornaVeicoli() {
             if (dataInizioData) dataInizioData.setHours(0,0,0,0);
             const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
-            const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
-            if (dataFineData) dataFineData.setHours(0,0,0,0);
-            const fineTime = dataFineData ? dataFineData.getTime() : 0;
-
-            const èScadutoOltreFine = (x.stato === 'SCADUTO' || x.stato === 'MAI_ENTRATO') && !x.orario_ingresso && fineTime && oggiTime > fineTime;
-
             if (filtroPiantone === 'verificare') return f.daVerificare;
             
             if (filtroPiantone === 'scaduti') {
-                if (èScadutoOltreFine) return false; 
                 return x.stato === 'SCADUTO' && !x.orario_ingresso;
             }      
             
             if (filtroPiantone === 'attivi') {
                 if (f.daVerificare) return false;
-                if (['SCADUTO', 'MAI_ENTRATO'].includes(x.stato)) return false; 
+                if (x.stato === 'SCADUTO') return false; 
                 if (x.orario_ingresso && !x.orario_uscita) return true; 
                 return (x.stato === 'PRENOTATO' && inizioTime === oggiTime && !x.orario_ingresso);
             }
-           
+            
             if (filtroPiantone === 'storico') {
-                return x.stato === 'USCITO' || x.stato === 'MAI_ENTRATO' || èScadutoOltreFine;
+                return x.stato === 'USCITO';
             }
             
             return true;
@@ -1433,7 +1418,7 @@ async function aggiornaVeicoli() {
 
                     if (f.daVerificare) return 1; 
                     if (f.entrato || (item.stato === 'PRENOTATO' && inizioTime === oggiTime)) return 2; 
-                    if (['SCADUTO', 'MAI_ENTRATO'].includes(item.stato)) return 3;                
+                    if (item.stato === 'SCADUTO') return 3;                
                     if (f.storico) return 4;                    
                     return 5;
                 };
@@ -1455,7 +1440,7 @@ async function aggiornaVeicoli() {
             return (a.npass || "").localeCompare(b.npass || "", undefined, { numeric: true, sensitivity: 'base' });
         });
 
-        // Banner per la ricerca testuale
+        // BANNER DI RICERCA
         if (valeurCercato !== "") {
             let label = ""; let colore = "#334155"; let sfondo = "#f8fafc";
             if (lista.length > 0) {
@@ -1466,55 +1451,46 @@ async function aggiornaVeicoli() {
                 
                 if (f.daVerificare) { label = "🚨 DA VERIFICARE (Trovato da Ricerca)"; colore = "#ea580c"; sfondo = "#ffedd5"; } 
                 else if (f.entrato || (veicoloTrovato.stato === 'PRENOTATO' && inizioTime === oggiTime)) { label = "📋 ATTIVO (Trovato da Ricerca)"; colore = "#2563eb"; sfondo = "#dbeafe"; } 
-                else if (['SCADUTO', 'MAI_ENTRATO'].includes(veicoloTrovato.stato)) { label = `⏰ ${veicoloTrovato.stato} (Trovato da Ricerca)`; colore = "#dc2626"; sfondo = "#fee2e2"; } 
+                else if (veicoloTrovato.stato === 'SCADUTO') { label = "⏰ SCADUTO (Trovato da Ricerca)"; colore = "#dc2626"; sfondo = "#fee2e2"; } 
                 else if (f.storico) { label = "🕘 STORICO (Trovato da Ricerca)"; colore = "#475569"; sfondo = "#e2e8f0"; }
             } else {
                 label = "🔍 NESSUN RISULTATO"; colore = "#64748b"; sfondo = "#f1f5f9";
             }
             if (statoTabella) {
-                statoTabella.style.color = colore; statoTabella.style.background = sfondo;
+                statoTabella.style.color = colore;
+                statoTabella.style.background = sfondo;
                 statoTabella.style.borderColor = colore; statoTabella.innerHTML = label;
-                // Disattiva animazione lampeggio sul badge di stato durante la ricerca
-                statoTabella.classList.remove('badge-blink');
-                statoTabella.classList.remove('badge-blink-2');
+                statoTabella.classList.remove('badge-blink', 'badge-blink-2');
             }
         } else {
-            // Se non c'è ricerca attiva, sincronizza l'ovale del badge di stato
             if (typeof aggiornaGraficaBadge === 'function') {
                 aggiornaGraficaBadge();
             }
         }
         
-       // --- INIEZIONE RIGHE IN TABELLA HTML ---
-        document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
+        // RENDERING TABELLA HTML
+        const containerLista = document.getElementById('lista-veicoli');
+        containerLista.innerHTML = lista.map(x => {
             const dataIng = fmtData(x.orario_ingresso);
             const oraIng  = fmtOra(x.orario_ingresso);
             const dataUsc = fmtData(x.orario_uscita);
             const oraUsc  = fmtOra(x.orario_uscita);
-            
-            const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
-            if (dataFineData) dataFineData.setHours(0,0,0,0);
-            const fineTime = dataFineData ? dataFineData.getTime() : 0;
 
             const evidenzia = x.npass === ultimoAggiornato; 
             const f = getFlags(x);
-            
-            const isMaiEntrato = x.stato === 'MAI_ENTRATO' || (x.stato === 'SCADUTO' && !x.orario_ingresso && fineTime && oggiTime > fineTime);
-            const isScadutoEsplicito = x.stato === 'SCADUTO' && !isMaiEntrato;
+            const isScadutoEsplicito = x.stato === 'SCADUTO';
 
             const wPass = 'width: 16%;';
             const wDataIng = 'width: 26%;';
             const wOraIng = 'width: 15%;';
             const wDataUsc = 'width: 28%;';
             const wOraUsc = 'width: 15%;';
-        
             const baseStyle = 'padding: 8px 6px; text-align: left; vertical-align: middle; box-sizing: border-box;';
         
             return `<tr style="
                 border-bottom: 1px solid #f1f5f9;
                 ${isScadutoEsplicito ? 'background:#fee2e2; color:#991b1b;' : ''}
-                ${isMaiEntrato ? 'background:#f8fafc; color:#64748b;' : ''} 
-                ${f.storico && !isMaiEntrato ? 'background:#f1f5f9;' : ''}
+                ${f.storico ? 'background:#f1f5f9;' : ''}
                 ${evidenzia ? 'background:#d1fae5; font-weight:bold;' : ''}
                 ${f.daVerificare ? 'background:#fff7ed; color:#c2410c; font-weight:bold;' : ''}
             ">
@@ -1524,23 +1500,27 @@ async function aggiornaVeicoli() {
                         ${x.npass}
                     </button>
                 </td>
-                <td style="${baseStyle} ${wDataIng}">${isMaiEntrato ? 'MAI PRESENTATO' : (isScadutoEsplicito ? 'NON ENTRATO' : dataIng)}</td>
-                <td style="${baseStyle} ${wOraIng} font-weight:bold;">${isScadutoEsplicito || isMaiEntrato ? '' : oraIng}</td>
+                <td style="${baseStyle} ${wDataIng}">${isScadutoEsplicito ? 'NON ENTRATO' : dataIng}</td>
+                <td style="${baseStyle} ${wOraIng} font-weight:bold;">${isScadutoEsplicito ? '' : oraIng}</td>
                 <td style="${baseStyle} ${wDataUsc}">${dataUsc}</td>
                 <td style="${baseStyle} ${wOraUsc} font-weight:bold;">${oraUsc}</td>
             </tr>`;
         }).join('') || `<tr><td colspan="5" style="text-align:center; color:black; padding:16px;">Nessun veicolo presente</td></tr>`;
             
-        // Aggancio eventi pulsanti lista
-        document.querySelectorAll('.btn-pass').forEach(btn => {
-            btn.addEventListener('click', async () => {
+        // DELEGAZIONE EVENTI CLICK SU TABELLA
+        if (!containerLista.dataset.listenerAttached) {
+            containerLista.dataset.listenerAttached = "true";
+            containerLista.addEventListener('click', async (e) => {
+                const btn = e.target.closest('.btn-pass');
+                if (!btn) return;
+                
                 const pass = btn.dataset.pass; 
                 const idRecord = btn.dataset.id; 
                 if (inputSearch) inputSearch.value = pass;
                 await cercaPass(pass, idRecord);
                 setTimeout(() => { document.getElementById('panel-piantone')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
             });
-        });
+        }
 
         const btnFiltro = document.getElementById('btn-filtro');
         if (btnFiltro) btnFiltro.innerText = "MOSTRA STATI";
