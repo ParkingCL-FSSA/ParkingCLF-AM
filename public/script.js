@@ -1089,7 +1089,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 `;
             }
         
-            // Se le date oggiStr e dataInizioStr sono in ISO (YYYY-MM-DD), il confronto funziona correttamente.
+          // Se le date oggiStr e dataInizioStr sono in ISO (YYYY-MM-DD), il confronto funziona correttamente.
             if (oggiStr >= dataInizioStr && currentPren.stato !== 'SCADUTO' && currentPren.stato !== 'MAI_ENTRATO') {
                 if (regE) regE.innerHTML = currentPren.orario_ingresso
                     ? `<div style="font-size: 14px; font-weight: bold; color: #1e293b; margin-top: 4px; text-align:center;">(E) Registrata il ${fmtData(currentPren.orario_ingresso)} ore ${fmtOra(currentPren.orario_ingresso)}</div>`
