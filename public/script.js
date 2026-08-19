@@ -94,27 +94,41 @@ if (btnEsci) {
     });
 }
 
-// Function unica e robusta per le date
-function fmtData(isoStr) {
-    if (!isoStr) return '--';
-    
-    const str = isoStr.toString().trim();
-    
-    // 1. Estrazione diretta YYYY-MM-DD (evita new Date e fuso orario)
-    const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (match) {
-        return `${match[3]}/${match[2]}/${match[1]}`;
-    }
-    
-    // 2. Fallback in UTC
-    const d = new Date(isoStr);
-    if (isNaN(d.getTime())) return '--';
-    return d.toLocaleDateString('it-IT', { timeZone: 'UTC' });
+// ==========================================
+// HELPER PER LA GESTIONE CORRETTA DELLE DATE
+// ==========================================
+
+// Converte la stringa del DB (es. "2026-08-19 20:35:00") mantenendo l'ora locale italiana
+function parseLocalDate(str) {
+    if (!str) return null;
+    let cleanStr = String(str).trim().replace(' ', 'T');
+    if (!cleanStr.includes('T')) cleanStr += 'T00:00:00';
+    return new Date(cleanStr);
 }
 
-// Alias di sicurezza nel caso avessi chiamate a "formattaDataIT" nel resto del codice
-function formattaDataIT(data) {
-    return fmtData(data);
+// Estrae la stringa YYYY-MM-DD senza conversioni UTC
+function getLocalDateString(d) {
+    if (!d || isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// Formattazione data locale (GG/MM/AAAA)
+function fmtData(str) {
+    if (!str) return '';
+    const d = parseLocalDate(str);
+    if (!d || isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+// Formattazione ora locale (HH:MM)
+function fmtOra(str) {
+    if (!str) return '';
+    const d = parseLocalDate(str);
+    if (!d || isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 function resetSelezione() {
@@ -137,30 +151,6 @@ function resetSelezione() {
         // nel caso in cui i quadratini vengano colorati direttamente da script
         el.style.backgroundColor = '';
     });
-}
-
-// FORMATTAZIONE ORA CON CORREZIONE FUSO ORARIO (+2 ORE)
-function fmtOra(isoStr) {
-    if (!isoStr) return '--:--';
-    
-    let str = isoStr.toString().trim();
-    
-    // 1. Se è un orario semplice tipo "14:30" o "14:30:00" (senza T e senza data)
-    if (str.includes(':') && !str.includes('-') && !str.includes('T')) {
-        return str.substring(0, 5);
-    }
-
-    // 2. Se è una stringa ISO tipo "2026-08-19T14:30:00" oppure "2026-08-19 14:30:00"
-    const match = str.match(/(?:T|\s)(\d{2}):(\d{2})/);
-    if (match) {
-        return `${match[1]}:${match[2]}`;
-    }
-
-    // 3. Fallback per oggetti Date reali o altri formati
-    const d = new Date(isoStr);
-    if (isNaN(d.getTime())) return '--:--';
-    
-    return d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
 }
 
 function show(id) {
@@ -1233,11 +1223,11 @@ async function aggiornaVeicoli() {
             return;
         }
         
-        // Configurazione data odierna locale
+        // Configurazione data odierna locale corretta
         const oraSolareOggi = new Date();
         oraSolareOggi.setHours(0, 0, 0, 0);
         const oggiTime = oraSolareOggi.getTime();
-        const oggiString = oraSolareOggi.toISOString().split('T')[0];
+        const oggiString = getLocalDateString(oraSolareOggi);
 
         const inputSearch = document.getElementById('search-p');
 
@@ -1254,15 +1244,15 @@ async function aggiornaVeicoli() {
         dati.forEach(x => {
             const passCorrente = (x.npass || '').toUpperCase().trim();
 
-            const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
+            const dataInizioData = parseLocalDate(x.data_inizio);
             if (dataInizioData) dataInizioData.setHours(0, 0, 0, 0);
             const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
-            const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
+            const dataFineData = parseLocalDate(x.data_fine);
             if (dataFineData) dataFineData.setHours(0, 0, 0, 0);
             const fineTime = dataFineData ? dataFineData.getTime() : 0;
 
-            const dataIngressoString = x.orario_ingresso ? x.orario_ingresso.substring(0, 10) : '';
+            const dataIngressoString = x.orario_ingresso ? getLocalDateString(parseLocalDate(x.orario_ingresso)) : '';
 
             // Conteggio veicoli interni
             if (x.orario_ingresso && !x.orario_uscita) {
@@ -1283,7 +1273,7 @@ async function aggiornaVeicoli() {
             const f = getFlags(x);
             if (f.daVerificare) countVerificare++;
             
-            // ARCHIVIAZIONE E CONTEGGIO SCADUTI (Escludendo i MAI PRESENTATO / MAI ENTRATO)
+            // ARCHIVIAZIONE E CONTEGGIO SCADUTI (Escludendo MAI PRESENTATO / MAI ENTRATO)
             if (['SCADUTO', 'MAI_ENTRATO'].includes(x.stato) && !x.orario_ingresso) {
                 if (fineTime && oggiTime > fineTime) {
                     if (x.stato === 'SCADUTO') {
@@ -1350,7 +1340,7 @@ async function aggiornaVeicoli() {
             }
         }
         
-        // ARCHIVIAZIONE PARALLELA IN BACKGROUND (PROMISE.ALLSETTLED)
+        // ARCHIVIAZIONE PARALLELA IN BACKGROUND
         if (passDaArchiviareSuDB.length > 0) {
             Promise.allSettled(
                 passDaArchiviareSuDB.map(item =>
@@ -1369,24 +1359,24 @@ async function aggiornaVeicoli() {
             });
         }
 
-        // FILTRAGGIO LOCALE - CON RIMOZIONE TOTALE DI MAI_ENTRATO E MAI PRESENTATO
+        // FILTRAGGIO LOCALE - SENZA MAI_ENTRATO E MAI PRESENTATO
         const valeurCercato = inputSearch?.value?.trim()?.toUpperCase() || "";
         const statoTabella = document.getElementById('stato-tabella');
 
         const lista = dati.filter(x => {
-            const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
-            if (dataFineData) dataFineData.setHours(0,0,0,0);
+            const dataFineData = parseLocalDate(x.data_fine);
+            if (dataFineData) dataFineData.setHours(0, 0, 0, 0);
             const fineTime = dataFineData ? dataFineData.getTime() : 0;
 
-            // ⛔ ESCLUSIONE ASSOLUTA: Rimuove MAI_ENTRATO o pass scaduti mai presentati
+            // ⛔ ESCLUSIONE ASSOLUTA
             const isMaiEntrato = x.stato === 'MAI_ENTRATO' || (x.stato === 'SCADUTO' && !x.orario_ingresso && fineTime && oggiTime > fineTime);
             if (isMaiEntrato) return false;
 
             if (valeurCercato !== "") return x.npass?.toUpperCase() === valeurCercato;
             
             const f = getFlags(x);
-            const dataInizioData = x.data_inizio ? new Date(x.data_inizio) : null;
-            if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+            const dataInizioData = parseLocalDate(x.data_inizio);
+            if (dataInizioData) dataInizioData.setHours(0, 0, 0, 0);
             const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
             if (filtroPiantone === 'verificare') return f.daVerificare;
@@ -1412,8 +1402,8 @@ async function aggiornaVeicoli() {
             if (valeurCercato !== "") {
                 const getPriorita = (item) => {
                     const f = getFlags(item);
-                    const dataInizioData = item.data_inizio ? new Date(item.data_inizio) : null;
-                    if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+                    const dataInizioData = parseLocalDate(item.data_inizio);
+                    if (dataInizioData) dataInizioData.setHours(0, 0, 0, 0);
                     const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
 
                     if (f.daVerificare) return 1; 
@@ -1427,15 +1417,15 @@ async function aggiornaVeicoli() {
                 return (b.id || 0) - (a.id || 0);
             } 
             if (filtroPiantone === 'attivi') {
-                const dateA = a.orario_ingresso ? new Date(a.orario_ingresso).getTime() : 0;
-                const dateB = b.orario_ingresso ? new Date(b.orario_ingresso).getTime() : 0;
+                const dateA = parseLocalDate(a.orario_ingresso)?.getTime() || 0;
+                const dateB = parseLocalDate(b.orario_ingresso)?.getTime() || 0;
                 return dateB - dateA; 
             }
             if (filtroPiantone === 'verificare') {
-                return (a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0)) - (b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0));
+                return (parseLocalDate(a.orario_ingresso)?.getTime() || 0) - (parseLocalDate(b.orario_ingresso)?.getTime() || 0);
             }
             if (filtroPiantone === 'storico') {
-                return (b.orario_ingresso ? new Date(b.orario_ingresso) : new Date(0)) - (a.orario_ingresso ? new Date(a.orario_ingresso) : new Date(0));
+                return (parseLocalDate(b.orario_ingresso)?.getTime() || 0) - (parseLocalDate(a.orario_ingresso)?.getTime() || 0);
             }
             return (a.npass || "").localeCompare(b.npass || "", undefined, { numeric: true, sensitivity: 'base' });
         });
@@ -1445,8 +1435,8 @@ async function aggiornaVeicoli() {
             let label = ""; let colore = "#334155"; let sfondo = "#f8fafc";
             if (lista.length > 0) {
                 const veicoloTrovato = lista[0]; const f = getFlags(veicoloTrovato);
-                const dataInizioData = veicoloTrovato.data_inizio ? new Date(veicoloTrovato.data_inizio) : null;
-                if (dataInizioData) dataInizioData.setHours(0,0,0,0);
+                const dataInizioData = parseLocalDate(veicoloTrovato.data_inizio);
+                if (dataInizioData) dataInizioData.setHours(0, 0, 0, 0);
                 const inizioTime = dataInizioData ? dataInizioData.getTime() : 0;
                 
                 if (f.daVerificare) { label = "🚨 DA VERIFICARE (Trovato da Ricerca)"; colore = "#ea580c"; sfondo = "#ffedd5"; } 
