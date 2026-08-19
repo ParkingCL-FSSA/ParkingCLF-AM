@@ -100,16 +100,15 @@ function fmtData(isoStr) {
     
     const str = isoStr.toString().trim();
     
-    // 1. Estrazione diretta YYYY-MM-DD da qualsiasi stringa (ISO, solo data, ecc.)
+    // 1. Estrazione diretta YYYY-MM-DD (evita new Date e fuso orario)
     const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (match) {
         return `${match[3]}/${match[2]}/${match[1]}`;
     }
     
-    // 2. Fallback per oggetti Date o formati non standard (bloccando l'orario su UTC per evitare sfasamenti)
+    // 2. Fallback in UTC
     const d = new Date(isoStr);
     if (isNaN(d.getTime())) return '--';
-    
     return d.toLocaleDateString('it-IT', { timeZone: 'UTC' });
 }
 
