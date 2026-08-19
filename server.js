@@ -620,8 +620,8 @@ app.get('/api/piantone/liberi', async (req, res) => {
             }
         });
         
-        // Calcolo pulito: i V1P non toccano i 90 posti standard
-        const totaleLiberi = 90 - dentroStandard;
+        // Calcolo pulito: i V1P non toccano i 101 posti standard
+        const totaleLiberi = 101 - dentroStandard;
 
         res.json({ 
             dentro: dentroStandard, 
@@ -926,7 +926,7 @@ app.get('/api/admin/cruscotto', async (req, res) => {
 
         const output = Object.values(grouped).map(day => ({
             ...day,
-            totaleLiberi: 90 - day.totaleOccupati
+            totaleLiberi: 101 - day.totaleOccupati
         }));
 
         res.json(output);
