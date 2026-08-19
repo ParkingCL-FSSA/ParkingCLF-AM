@@ -1606,7 +1606,7 @@ async function mostraAdmin() {
     header += `</tr>`;
 
     const rows = dati.map(x => {
-        let row = `<tr><td>${fmtData(x.data)}</td><td style="font-weight:bold; color:var(--green);">${x.totaleLiberi}/90</td>`;
+        let row = `<tr><td>${fmtData(x.data)}</td><td style="font-weight:bold; color:var(--green);">${x.totaleLiberi}/101</td>`;
         enti.forEach(ente => {
             const info = x.enti[ente] || { liberi: 0, totale: 0 };
             const col = info.liberi === 0 ? 'var(--red)' : info.liberi < 4 ? 'var(--orange)' : 'var(--gray)';
