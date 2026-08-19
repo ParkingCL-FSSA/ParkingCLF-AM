@@ -1089,6 +1089,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
                 `;
             }
         
+            // Se le date oggiStr e dataInizioStr sono in ISO (YYYY-MM-DD), il confronto funziona correttamente.
             if (oggiStr >= dataInizioStr && currentPren.stato !== 'SCADUTO' && currentPren.stato !== 'MAI_ENTRATO') {
                 if (regE) regE.innerHTML = currentPren.orario_ingresso
                     ? `<div style="font-size: 14px; font-weight: bold; color: #1e293b; margin-top: 4px; text-align:center;">(E) Registrata il ${fmtData(currentPren.orario_ingresso)} ore ${fmtOra(currentPren.orario_ingresso)}</div>`
@@ -1484,14 +1485,12 @@ async function aggiornaVeicoli() {
             }
         }
         
-        // --- INIEZIONE RIGHE IN TABELLA HTML ---
+       // --- INIEZIONE RIGHE IN TABELLA HTML ---
         document.getElementById('lista-veicoli').innerHTML = lista.map(x => {
-            const ing = x.orario_ingresso ? new Date(x.orario_ingresso) : null;
-            const usc = x.orario_uscita ? new Date(x.orario_uscita) : null;
-            const dataIng = ing ? ing.toLocaleDateString('it-IT') : '--';
-            const oraIng = ing ? ing.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
-            const dataUsc = usc ? usc.toLocaleDateString('it-IT') : '--';
-            const oraUsc = usc ? usc.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '--';
+            const dataIng = fmtData(x.orario_ingresso);
+            const oraIng  = fmtOra(x.orario_ingresso);
+            const dataUsc = fmtData(x.orario_uscita);
+            const oraUsc  = fmtOra(x.orario_uscita);
             
             const dataFineData = x.data_fine ? new Date(x.data_fine) : null;
             if (dataFineData) dataFineData.setHours(0,0,0,0);
@@ -1703,13 +1702,11 @@ async function mostraArriviOggi() {
 
             dati.forEach(r => {
                 // 1. Formattazione "Dal giorno" (data_inizio)
-                const dInizio = r.data_inizio ? new Date(r.data_inizio) : null;
-                const dataInizioStr = (dInizio && !isNaN(dInizio.getTime())) ? dInizio.toLocaleDateString('it-IT') : '--';
-
+                const dataInizioStr = fmtData(r.data_inizio);
+                
                 // 2. Formattazione "Al giorno" (cerca data_fine, fine o scadenza)
                 const campoFine = r.data_fine || r.fine || r.scadenza || r.data_scadenza;
-                const dFine = campoFine ? new Date(campoFine) : null;
-                const dataFineStr = (dFine && !isNaN(dFine.getTime())) ? dFine.toLocaleDateString('it-IT') : '--';
+                const dataFineStr = fmtData(campoFine);
 
                 htmlRighe += `
                 <tr style="border-bottom: 1px solid #f1f5f9;">
