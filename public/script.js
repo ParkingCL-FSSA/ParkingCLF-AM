@@ -94,13 +94,26 @@ if (btnEsci) {
     });
 }
 
-// FIX: helper che evita lo sfasamento UTC (new Date("YYYY-MM-DD") = mezzanotte UTC → giorno sbagliato in IT)
+// Function unica e robusta per le date
 function fmtData(isoStr) {
     if (!isoStr) return '--';
-    const p = isoStr.toString().split('T')[0].split('-');
-    return `${p[2]}/${p[1]}/${p[0]}`;
+    
+    const str = isoStr.toString().trim();
+    
+    // 1. Estrazione diretta YYYY-MM-DD da qualsiasi stringa (ISO, solo data, ecc.)
+    const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+        return `${match[3]}/${match[2]}/${match[1]}`;
+    }
+    
+    // 2. Fallback per oggetti Date o formati non standard (bloccando l'orario su UTC per evitare sfasamenti)
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return '--';
+    
+    return d.toLocaleDateString('it-IT', { timeZone: 'UTC' });
 }
 
+// Alias di sicurezza nel caso avessi chiamate a "formattaDataIT" nel resto del codice
 function formattaDataIT(data) {
     return fmtData(data);
 }
