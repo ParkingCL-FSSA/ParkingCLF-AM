@@ -145,20 +145,20 @@ function fmtOra(isoStr) {
     
     let str = isoStr.toString().trim();
     
-    // 1. Se è già un orario semplice "HH:mm" o "HH:mm:ss"
+    // 1. Se è un orario semplice tipo "14:30" o "14:30:00" (senza T e senza data)
     if (str.includes(':') && !str.includes('-') && !str.includes('T')) {
         return str.substring(0, 5);
     }
 
-    // 2. Estrazione diretta HH:mm dalla stringa ISO (evita qualsiasi sfasamento di fuso orario)
-    const match = str.match(/T(\d{2}):(\d{2})/);
+    // 2. Se è una stringa ISO tipo "2026-08-19T14:30:00" oppure "2026-08-19 14:30:00"
+    const match = str.match(/(?:T|\s)(\d{2}):(\d{2})/);
     if (match) {
         return `${match[1]}:${match[2]}`;
     }
 
-    // 3. Fallback con fuso orario UTC bloccato
+    // 3. Fallback per oggetti Date reali o altri formati
     const d = new Date(isoStr);
-    if (isNaN(d.getTime())) return str.substring(0, 5);
+    if (isNaN(d.getTime())) return '--:--';
     
     return d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
 }
