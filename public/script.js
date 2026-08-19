@@ -858,13 +858,12 @@ async function cercaPass(passManuale = null, idRecord = null) {
     const boxVerifica = document.getElementById('box-verifica');
     const regE = document.getElementById('reg-e');
     const regU = document.getElementById('reg-u');
-    
     let boxVerificaScaduti = document.getElementById('box-verifica-scaduti');
     
-    // PULIZIA INIZIALE AD OGNI RICERCA (Nascondiamo tutto all'inizio)
+    // PULIZIA INIZIALE AD OGNI RICERCA
     if (boxVerifica) {
         boxVerifica.classList.add('hidden');
-        boxVerifica.style.display = 'none'; // Resetta lo stile iniziale
+        boxVerifica.style.display = 'none';
         boxVerifica.innerHTML = `
             <button id="btn-presente" type="button" style="flex: 1; padding: 12px 10px; font-size: 14px; border: none; border-radius: 8px; background: #16a34a; color: white; margin: 0; font-weight: bold; cursor: pointer; text-align: center;">
                 ✅ PRESENTE
@@ -901,15 +900,19 @@ async function cercaPass(passManuale = null, idRecord = null) {
         const btnIngresso = document.getElementById('btn-ingresso');
         const btnUscita = document.getElementById('btn-uscita');
 
-        // RESET BOTTONI STANDARD
-        btnIngresso.style.display = 'inline-block';
-        btnUscita.style.display = 'inline-block';
-        btnIngresso.disabled = true;
-        btnUscita.disabled = true;
-        btnIngresso.innerText = 'ENTRATA';
-        btnUscita.innerText = 'USCITA';
-        btnIngresso.style.background = '';
-        btnUscita.style.background = '';
+        // RESET BOTTONI STANDARD (con controlli di sicurezza)
+        if (btnIngresso) {
+            btnIngresso.style.display = 'inline-block';
+            btnIngresso.disabled = true;
+            btnIngresso.innerText = 'ENTRATA';
+            btnIngresso.style.background = '';
+        }
+        if (btnUscita) {
+            btnUscita.style.display = 'inline-block';
+            btnUscita.disabled = true;
+            btnUscita.innerText = 'USCITA';
+            btnUscita.style.background = '';
+        }
 
         if (data.trovato) {
             currentPren = data.prenotazione;
@@ -929,28 +932,31 @@ async function cercaPass(passManuale = null, idRecord = null) {
 
             // GESTIONE STATI
             if (oggiStr < dataInizioStr) {
-                btnIngresso.disabled = true;
-                btnIngresso.innerText = 'PRENOTAZIONE FUTURA';
-                btnIngresso.style.background = '#94a3b8'; 
+                if (btnIngresso) {
+                    btnIngresso.disabled = true;
+                    btnIngresso.innerText = 'PRENOTAZIONE FUTURA';
+                    btnIngresso.style.background = '#94a3b8'; 
+                }
                 if (regE) regE.innerHTML = `<span style="color:#ef4444; font-weight:bold;">⚠️ Non prima del ${fmtData(currentPren.data_inizio)}</span>`;
             }
             else if (currentPren.stato === 'PRENOTATO') {
-                btnIngresso.disabled = false;
+                if (btnIngresso) btnIngresso.disabled = false;
             }
             else if (currentPren.stato === 'ENTRATO') {
-                btnUscita.disabled = false;
+                if (btnUscita) btnUscita.disabled = false;
             }
             
             // 🎯 STATO: DA VERIFICARE
             else if (currentPren.stato === 'DA_VERIFICARE') {
-                btnIngresso.style.display = 'none'; 
+                if (btnIngresso) btnIngresso.style.display = 'none'; 
                 
-                btnUscita.disabled = true; 
-                btnUscita.style.display = 'inline-block';
-                btnUscita.style.background = '#ea580c'; 
-                btnUscita.innerText = 'VERIFICATO'; 
+                if (btnUscita) {
+                    btnUscita.disabled = true; 
+                    btnUscita.style.display = 'inline-block';
+                    btnUscita.style.background = '#ea580c'; 
+                    btnUscita.innerText = 'VERIFICATO'; 
+                }
             
-                // 🔍 Verifichiamo se il veicolo è già registrato come entrato
                 const giaEntrato = currentPren.orario_ingresso && !currentPren.orario_uscita;
             
                 if (boxVerifica) {
@@ -959,49 +965,45 @@ async function cercaPass(passManuale = null, idRecord = null) {
                     boxVerifica.style.marginTop = '15px';
                     boxVerifica.classList.remove('hidden');
                     
+                    // Recupero i riferimenti DOPO l'iniezione HTML
                     const btnPresente = document.getElementById('btn-presente');
                     const btnNonPresente = document.getElementById('btn-non-presente');
                     
-                    // 🎯 GESTIONE STATO INIZIALE DEI TASTI
+                    if (btnPresente) btnPresente.disabled = giaEntrato ? true : false;
+                    if (btnNonPresente) btnNonPresente.disabled = false;
+            
+                    // Assegnazione tramite onclick per evitare listener duplicati
                     if (btnPresente) {
-                        // Se è già dentro, il tasto PRESENTE viene disabilitato
-                        btnPresente.disabled = giaEntrato ? true : false;
+                        btnPresente.onclick = async (ev) => { 
+                            ev.preventDefault(); 
+                            if (btnPresente.disabled) return;
+                            if (!confirm('Confermi la presenza del veicolo? Verrà registrato come Entrato.')) return;
+                            
+                            btnPresente.disabled = true;
+                            if (btnNonPresente) btnNonPresente.disabled = true;
+                            
+                            await gestisciVerificaPiantone('/api/piantone/verificato-dentro', currentId);
+                        };
                     }
+            
                     if (btnNonPresente) {
-                        // Il tasto NON PRESENTE rimane sempre attivo per permettere l'uscita
-                        btnNonPresente.disabled = false;
+                        btnNonPresente.onclick = async (ev) => { 
+                            ev.preventDefault(); 
+                            if (!confirm('Confermi che il veicolo sia uscito? Verrà registrato come USCITO "con ritardo"')) return;
+                            
+                            if (btnPresente) btnPresente.disabled = true;
+                            btnNonPresente.disabled = true;
+                            
+                            await gestisciVerificaPiantone('/api/piantone/post-uscito', currentId);
+                        };
                     }
-            
-                    // --- CLICK SU PRESENTE ---
-                    btnPresente?.addEventListener('click', async (ev) => { 
-                        ev.preventDefault(); 
-                        if (btnPresente.disabled) return; // Sicurezza extra
-                        
-                        if (!confirm('Confermi la presenza del veicolo? Verrà registrato come Entrato.')) return;
-                        
-                        if (btnPresente) btnPresente.disabled = true;
-                        if (btnNonPresente) btnNonPresente.disabled = true;
-                        
-                        await gestisciVerificaPiantone('/api/piantone/verificato-dentro', currentId);
-                    });
-            
-                    // --- CLICK SU NON PRESENTE ---
-                    btnNonPresente?.addEventListener('click', async (ev) => { 
-                        ev.preventDefault(); 
-                        if (!confirm('Confermi che il veicolo sia uscito? Verrà registrato come USCITO "con ritardo"')) return;
-                        
-                        if (btnPresente) btnPresente.disabled = true;
-                        if (btnNonPresente) btnNonPresente.disabled = true;
-                        
-                        await gestisciVerificaPiantone('/api/piantone/post-uscito', currentId);
-                    });
                 }
             }
                 
             // MAI ENTRATO (ARCHIVIATO)
             else if (currentPren.stato === 'MAI_ENTRATO') {
-                btnIngresso.style.display = 'none'; 
-                btnUscita.style.display = 'none'; 
+                if (btnIngresso) btnIngresso.style.display = 'none'; 
+                if (btnUscita) btnUscita.style.display = 'none'; 
 
                 if (boxVerificaScaduti) {
                     boxVerificaScaduti.innerHTML = `
@@ -1017,8 +1019,8 @@ async function cercaPass(passManuale = null, idRecord = null) {
             // SCADUTO (Verifica Sanatoria)
             else if (currentPren.stato === 'SCADUTO') {
                 if (!currentPren.orario_ingresso) {
-                    btnIngresso.style.display = 'none'; 
-                    btnUscita.style.display = 'none'; 
+                    if (btnIngresso) btnIngresso.style.display = 'none'; 
+                    if (btnUscita) btnUscita.style.display = 'none'; 
                     
                     if (boxVerificaScaduti) {
                         boxVerificaScaduti.innerHTML = `
@@ -1037,35 +1039,50 @@ async function cercaPass(passManuale = null, idRecord = null) {
                         `;
                         boxVerificaScaduti.classList.remove('hidden');
 
-                        document.getElementById('btn-scaduto-dentro')?.addEventListener('click', (e) => { e.preventDefault(); if (typeof window.eseguiScadutoDentro === 'function') window.eseguiScadutoDentro(); });
-                        document.getElementById('btn-scaduto-mai-entrato')?.addEventListener('click', (e) => { e.preventDefault(); if (typeof window.eseguiScadutoMaiEntrato === 'function') window.eseguiScadutoMaiEntrato(); });
+                        const btnScadutoDentro = document.getElementById('btn-scaduto-dentro');
+                        const btnScadutoMaiEntrato = document.getElementById('btn-scaduto-mai-entrato');
+
+                        if (btnScadutoDentro) btnScadutoDentro.onclick = (e) => { e.preventDefault(); if (typeof window.eseguiScadutoDentro === 'function') window.eseguiScadutoDentro(); };
+                        if (btnScadutoMaiEntrato) btnScadutoMaiEntrato.onclick = (e) => { e.preventDefault(); if (typeof window.eseguiScadutoMaiEntrato === 'function') window.eseguiScadutoMaiEntrato(); };
                     }
                 } else {
-                    btnIngresso.style.display = 'none';
-                    btnUscita.disabled = false;
-                    btnUscita.style.display = 'inline-block';
-                    btnUscita.style.background = '#ef4444';
-                    btnUscita.innerText = 'USCITA (SCADUTO)';
+                    if (btnIngresso) btnIngresso.style.display = 'none';
+                    if (btnUscita) {
+                        btnUscita.disabled = false;
+                        btnUscita.style.display = 'inline-block';
+                        btnUscita.style.background = '#ef4444';
+                        btnUscita.innerText = 'USCITA (SCADUTO)';
+                    }
                 }
             }
             else if (currentPren.stato === 'USCITO') {
-                btnUscita.innerText = 'GIÀ USCITO';
-                btnUscita.style.background = '#64748b';
+                if (btnUscita) {
+                    btnUscita.innerText = 'GIÀ USCITO';
+                    btnUscita.style.background = '#64748b';
+                }
             }
 
             // PANNELLO UI DETTAGLI
-            document.getElementById('panel-piantone').classList.remove('hidden');
-            document.getElementById('lab-pass').style.textAlign = 'center';
-            document.getElementById('lab-pass').innerHTML = `
-                <div style="font-size: 18px; font-weight: bold; margin-bottom: 2px;">PASS: ${currentPren.npass}</div>
-                <div style="font-size: 13px; color: #64748b; margin-bottom: 2px; font-weight: normal;">(Prenotazione: ${currentPren.id})</div>
-            `;
-            document.getElementById('lab-periodo').style.textAlign = 'center';
-            document.getElementById('lab-periodo').innerHTML = `
-                <div style="font-size: 13px; color: #64748b; font-weight: normal; margin-bottom: 6px;">
-                    (Periodo: ${fmtData(currentPren.data_inizio)} - ${fmtData(currentPren.data_fine)})
-                </div>
-            `;
+            document.getElementById('panel-piantone')?.classList.remove('hidden');
+            
+            const labPass = document.getElementById('lab-pass');
+            if (labPass) {
+                labPass.style.textAlign = 'center';
+                labPass.innerHTML = `
+                    <div style="font-size: 18px; font-weight: bold; margin-bottom: 2px;">PASS: ${currentPren.npass}</div>
+                    <div style="font-size: 13px; color: #64748b; margin-bottom: 2px; font-weight: normal;">(Prenotazione: ${currentPren.id})</div>
+                `;
+            }
+
+            const labPeriodo = document.getElementById('lab-periodo');
+            if (labPeriodo) {
+                labPeriodo.style.textAlign = 'center';
+                labPeriodo.innerHTML = `
+                    <div style="font-size: 13px; color: #64748b; font-weight: normal; margin-bottom: 6px;">
+                        (Periodo: ${fmtData(currentPren.data_inizio)} - ${fmtData(currentPren.data_fine)})
+                    </div>
+                `;
+            }
         
             if (oggiStr >= dataInizioStr && currentPren.stato !== 'SCADUTO' && currentPren.stato !== 'MAI_ENTRATO') {
                 if (regE) regE.innerHTML = currentPren.orario_ingresso
@@ -1107,7 +1124,7 @@ async function cercaPass(passManuale = null, idRecord = null) {
             }
         } else {
             alert("Nessuna prenotazione trovata per questo PASS.");
-            document.getElementById('panel-piantone').classList.add('hidden');
+            document.getElementById('panel-piantone')?.classList.add('hidden');
         }
     } catch (err) {
         console.error("ERRORE CERCA PASS:", err);
