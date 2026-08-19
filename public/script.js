@@ -1307,7 +1307,7 @@ async function aggiornaVeicoli() {
         totaleVerificare = countVerificare;
         
         // Matematica posti liberi
-        const postiLiberi = 90 - countDentro; 
+        const postiLiberi = 101 - countDentro; 
 
         // ================================================================
         // 🎯 NUOVA COSTRUZIONE STRINGA RINOMINATA IN ALTO (EX SBARRA)
