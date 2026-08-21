@@ -52,7 +52,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const profilo = e.target.value;
         const nota = document.getElementById('nota-responsabilita');
         
-        let limiteMassimo = 15;
+        let limiteMassimo = 20;
 
         if (profilo === 'MIS') {
             limiteMassimo = 45;
@@ -61,7 +61,7 @@ window.addEventListener('DOMContentLoaded', () => {
             limiteMassimo = 30;
             if (nota) nota.style.display = 'block';
         } else {
-            limiteMassimo = 15;
+            limiteMassimo = 20;
             if (nota) nota.style.display = 'none';
         }
 
@@ -431,7 +431,7 @@ function aggiornaTestoFinestra() {
     const profilo = selectProfilo ? selectProfilo.value : 'STD';
 
     // Determina il Max in base al profilo
-    let maxGg = 15;
+    let maxGg = 20;
     if (profilo === 'MIS') maxGg = 45;
     if (profilo === 'TRN') maxGg = 30;
 
@@ -571,7 +571,7 @@ function buildCal() {
                 const selectProfilo = document.getElementById('select-profilo');
                 const profilo = selectProfilo ? selectProfilo.value : 'STD';
                 
-                let limiteSelezionabili = 15;
+                let limiteSelezionabili = 20;
                 if (profilo === 'MIS') limiteSelezionabili = 45;
                 else if (profilo === 'TRN') limiteSelezionabili = 30;
 
@@ -1795,7 +1795,7 @@ document.getElementById('btn-prenota')?.addEventListener('click', () => {
     const selectProfilo = document.getElementById('select-profilo');
     const profilo = selectProfilo ? selectProfilo.value : 'STD';
     
-    let limiteMassimo = 15;
+    let limiteMassimo = 20;
     if (profilo === 'MIS') {
         limiteMassimo = 45;
     } else if (profilo === 'TRN') {
