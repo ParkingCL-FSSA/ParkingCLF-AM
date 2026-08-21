@@ -124,7 +124,7 @@ app.post('/api/prenota', async (req, res) => {
     }
 
     // 🔄 IMPOSTAZIONE DINAMICA DEI LIMITI IN BASE AL PROFILO
-    let limiteMassimo = 15;
+    let limiteMassimo = 20;
     if (prof === 'MIS') {
         limiteMassimo = 45;
     } else if (prof === 'TRN') {
